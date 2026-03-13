@@ -589,6 +589,7 @@ function doForgotPassword() {
 // navTo global - works before and after module loads
 function navTo(idx) {
   if (typeof window._navTo === 'function') {
+    window._currentSection = idx;
     window._navTo(idx);
   } else {
     // Module not loaded yet - queue it
@@ -2948,6 +2949,7 @@ function doSignOut() {
 
   function navTo(idx) {
     currentSection = idx;
+    window._currentSection = idx; // expose for plain script
     localStorage.setItem('last-section', idx); // remember current page
     // Slide wrapper
     const wrapper = document.getElementById('sections-wrapper');
@@ -3020,8 +3022,9 @@ function doSignOut() {
       const isFlick = absDx >= 20 && dt < 250;
       if (absDx < 40 && !isFlick) return;
 
-      if (dx < 0 && currentSection < SECTION_COUNT - 1) navTo(currentSection + 1);
-      else if (dx > 0 && currentSection > 0) navTo(currentSection - 1);
+      const cs = currentSection;
+      if (dx < 0 && cs < SECTION_COUNT - 1) navTo(cs + 1);
+      else if (dx > 0 && cs > 0) navTo(cs - 1);
     }, { passive: true });
   })();
 
