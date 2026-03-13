@@ -1449,44 +1449,86 @@
   };
 
   // ── LISTENERS ─────────────────────────────────────────────────────────────
-  function startListeners() {
-    // No orderBy — avoids Firestore index requirements
-    jobsUnsubscribe = onSnapshot(collection(db, 'jobs'), snap => {
-      allJobs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
-      renderJobsTable(allJobs);
-      renderDashboardRecent(allJobs);
-      updateStats(allJobs);
-      renderSchedule();
-      checkPermitExpiry();
-      if (allContacts.length) renderContacts(allContacts);
-    }, err => console.error('jobs listener:', err));
+  // Firestore REST API helper (works without Firebase auth token)
+  const FS_REST = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
+  async function fsGet(col) {
+    const r = await fetch(`${FS_REST}/${col}?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c`);
+    if (!r.ok) return [];
+    const data = await r.json();
+    if (!data.documents) return [];
+    return data.documents.map(doc => {
+      const id = doc.name.split('/').pop();
+      const fields = {};
+      for (const [k, v] of Object.entries(doc.fields || {})) {
+        if (v.stringValue !== undefined) fields[k] = v.stringValue;
+        else if (v.integerValue !== undefined) fields[k] = parseInt(v.integerValue);
+        else if (v.doubleValue !== undefined) fields[k] = v.doubleValue;
+        else if (v.booleanValue !== undefined) fields[k] = v.booleanValue;
+        else if (v.timestampValue !== undefined) fields[k] = { seconds: Math.floor(new Date(v.timestampValue).getTime()/1000) };
+        else if (v.arrayValue !== undefined) fields[k] = (v.arrayValue.values||[]).map(av => av.mapValue ? Object.fromEntries(Object.entries(av.mapValue.fields||{}).map(([mk,mv])=>[mk,mv.stringValue||mv.integerValue||''])) : av.stringValue || '');
+        else fields[k] = null;
+      }
+      return { id, ...fields };
+    });
+  }
 
-    activityUnsubscribe = onSnapshot(collection(db, 'activity'), snap => {
-      const items = snap.docs.map(d => d.data())
-        .sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0))
-        .slice(0, 10);
-      renderActivityLog(items);
-      document.getElementById('notif-count').textContent = items.length;
-    }, err => console.error('activity listener:', err));
-
-    contactsUnsubscribe = onSnapshot(collection(db, 'contacts'), snap => {
-      allContacts = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a,b) => (b.updatedAt?.seconds||0) - (a.updatedAt?.seconds||0));
+  async function loadAllDataREST() {
+    try {
+      const [jobs, contacts, users, permits, activity] = await Promise.all([
+        fsGet('jobs'), fsGet('contacts'), fsGet('users'), fsGet('permits'), fsGet('activity')
+      ]);
+      allJobs = jobs.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+      allContacts = contacts.sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
+      allUsers = users.sort((a,b)=>(b.invitedAt?.seconds||0)-(a.invitedAt?.seconds||0));
+      allStandalonePermits = permits.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+      renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); renderSchedule(); checkPermitExpiry();
       renderContacts(allContacts);
-    }, err => console.error('contacts listener:', err));
+      renderUsers(allUsers);
+      renderPermitsCards(allStandalonePermits);
+      const acts = activity.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0)).slice(0,10);
+      renderActivityLog(acts);
+      // Poll every 15 seconds for updates
+      setTimeout(loadAllDataREST, 15000);
+    } catch(e) { console.error('REST load error:', e); }
+  }
 
-    usersUnsubscribe = onSnapshot(collection(db, 'users'), snap => {
+  function startListeners() {
+    // Try SDK listeners first; fall back to REST if they fail
+    let sdkWorking = false;
+    const testUnsub = onSnapshot(collection(db, 'users'), snap => {
+      sdkWorking = true;
       allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((a,b) => (b.invitedAt?.seconds||0) - (a.invitedAt?.seconds||0));
       renderUsers(allUsers);
-    }, err => console.error('users listener:', err));
+    }, err => {
+      console.warn('SDK auth failed, falling back to REST:', err);
+      loadAllDataREST();
+    });
 
-    permitsUnsubscribe = onSnapshot(collection(db, 'permits'), snap => {
-      allStandalonePermits = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
-      renderPermitsCards(allStandalonePermits);
-    }, err => console.error('permits listener:', err));
+    // If SDK works, attach full listeners
+    setTimeout(() => {
+      if (!sdkWorking) return; // REST fallback already running
+      jobsUnsubscribe = onSnapshot(collection(db, 'jobs'), snap => {
+        allJobs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+        renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); renderSchedule(); checkPermitExpiry();
+        if (allContacts.length) renderContacts(allContacts);
+      }, err => console.error('jobs:', err));
+      activityUnsubscribe = onSnapshot(collection(db, 'activity'), snap => {
+        const items = snap.docs.map(d => d.data()).sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0)).slice(0,10);
+        renderActivityLog(items);
+        document.getElementById('notif-count').textContent = items.length;
+      }, err => console.error('activity:', err));
+      contactsUnsubscribe = onSnapshot(collection(db, 'contacts'), snap => {
+        allContacts = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
+        renderContacts(allContacts);
+      }, err => console.error('contacts:', err));
+      usersUnsubscribe = testUnsub; // already attached
+      permitsUnsubscribe = onSnapshot(collection(db, 'permits'), snap => {
+        allStandalonePermits = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+        renderPermitsCards(allStandalonePermits);
+      }, err => console.error('permits:', err));
+    }, 3000);
   }
 
   // ── STATS ─────────────────────────────────────────────────────────────────
