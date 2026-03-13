@@ -2156,13 +2156,20 @@
   }
 
   window.editUser = function(userId, name, role, phone) {
-    const newName = prompt('Full name:', name || '');
-    if (newName === null) return;
-    const newRole = prompt('Role (e.g. Manager, Worker, Contractor):', role || 'Worker');
-    if (newRole === null) return;
-    const newPhone = prompt('Phone (optional):', phone || '');
-    if (newPhone === null) return;
-    window.saveUser(userId, newName.trim(), newRole.trim(), newPhone.trim());
+    document.getElementById('eu-id').value = userId;
+    document.getElementById('eu-name').value = name || '';
+    document.getElementById('eu-role').value = role || 'Worker';
+    document.getElementById('eu-phone').value = phone || '';
+    document.getElementById('edit-user-modal').style.display = 'flex';
+  };
+
+  window.submitEditUser = function() {
+    const userId = document.getElementById('eu-id').value;
+    const name = document.getElementById('eu-name').value.trim();
+    const role = document.getElementById('eu-role').value;
+    const phone = document.getElementById('eu-phone').value.trim();
+    document.getElementById('edit-user-modal').style.display = 'none';
+    window.saveUser(userId, name, role, phone);
   };
 
   window.saveUser = async function(userId, name, role, phone) {
@@ -3082,5 +3089,34 @@
     #sec-schedules { display: block !important; }
   }
 </style>
+<!-- EDIT USER MODAL -->
+<div id="edit-user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10001;align-items:center;justify-content:center;">
+  <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:28px;max-width:360px;width:90%;font-family:'Inter',sans-serif;">
+    <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:20px;">✏️ Edit User</div>
+    <input type="hidden" id="eu-id"/>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Full Name</label>
+      <input type="text" id="eu-name" placeholder="e.g. Mike Smith" style="width:100%;padding:11px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;box-sizing:border-box;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Role</label>
+      <select id="eu-role" style="width:100%;padding:11px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;box-sizing:border-box;">
+        <option value="Worker">Worker</option>
+        <option value="Manager">Manager</option>
+        <option value="Contractor">Contractor</option>
+        <option value="Supervisor">Supervisor</option>
+        <option value="Admin">Admin</option>
+      </select>
+    </div>
+    <div style="margin-bottom:20px;">
+      <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Phone</label>
+      <input type="tel" id="eu-phone" placeholder="e.g. (917) 555-1234" style="width:100%;padding:11px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;box-sizing:border-box;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="document.getElementById('edit-user-modal').style.display='none'" style="flex:1;padding:12px;background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
+      <button onclick="submitEditUser()" style="flex:2;padding:12px;background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">💾 Save</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
