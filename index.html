@@ -2166,7 +2166,8 @@
   };
 
   window.saveUser = async function(userId, name, role, phone) {
-    if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+    if (!currentUser) { alert('Not logged in — please refresh and try again.'); return; }
+    if (!window._isAdmin) { alert('Only admins can edit users.'); return; }
     try {
       await updateDoc(doc(db, 'users', userId), { name, role, phone, updatedAt: serverTimestamp() });
       // Update local cache immediately
@@ -2174,12 +2175,13 @@
       if (idx !== -1) { allUsers[idx] = { ...allUsers[idx], name, role, phone }; renderUsers(allUsers); }
       window.showToast('✅ User updated!');
     } catch(e) {
-      window.showToast('Error: ' + e.message, '#e53e3e');
+      console.error('saveUser error:', e);
+      alert('Save failed: ' + e.message);
     }
   };
 
   window.removeUser = async function(userId, email, name) {
-    if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+    if (!currentUser || !window._isAdmin) { alert('Only admins can remove users.'); return; }
     if (!confirm(`Remove ${name || email} from the app?`)) return;
     try {
       await updateDoc(doc(db, 'users', userId), { removed: true, removedAt: serverTimestamp(), removedBy: currentUser.email });
@@ -2191,7 +2193,7 @@
 
   // ── INVITE USER ────────────────────────────────────────────────────────────
   window.openInviteModal = function() {
-    if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+    if (!currentUser || !window._isAdmin) { alert('Only admins can invite users.'); return; }
     document.getElementById('invite-email').value = '';
     document.getElementById('invite-error').textContent = '';
     document.getElementById('invite-modal').classList.add('show');
