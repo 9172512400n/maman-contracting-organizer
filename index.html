@@ -551,8 +551,15 @@ function doLogin() {
   // Bypass check first
   if (email === 'nir@mamancontracting.com' && (pass === 'Maman2024!' || pass === 'Nirmaman1')) {
     localStorage.setItem('bypass-auth', 'true');
-    if (window.activateBypassLogin) { window.activateBypassLogin(); }
-    else { document.addEventListener('DOMContentLoaded', function(){ if(window.activateBypassLogin) window.activateBypassLogin(); }); }
+    var attempts = 0;
+    var tryActivate = function() {
+      if (window.activateBypassLogin) {
+        window.activateBypassLogin();
+      } else if (attempts++ < 20) {
+        setTimeout(tryActivate, 300);
+      }
+    };
+    tryActivate();
     return;
   }
   // Firebase login
@@ -1549,7 +1556,12 @@ function doForgotPassword() {
       renderActivityLog(acts);
       // Poll every 15 seconds for updates
       setTimeout(loadAllDataREST, 15000);
-    } catch(e) { console.error('REST load error:', e); }
+    } catch(e) {
+      console.error('REST load error:', e);
+      // Show error in users list so we know what happened
+      const ul = document.getElementById('users-list');
+      if (ul) ul.innerHTML = '<div style="color:#f87171;padding:20px;text-align:center;">Error loading users: ' + e.message + '</div>';
+    }
   }
 
   function startListeners() {
