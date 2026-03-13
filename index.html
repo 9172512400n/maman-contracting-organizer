@@ -1271,12 +1271,6 @@
     return (phone || '').replace(/\D/g, '');
   }
 
-  // ── BYPASS AUTO-LOGIN ON REFRESH ──────────────────────────────────────────
-  if (localStorage.getItem('bypass-auth') === 'true') {
-    // Small delay to let DOM fully load
-    setTimeout(() => { window.activateBypassLogin(); }, 100);
-  }
-
   // ── AUTH ──────────────────────────────────────────────────────────────────
   onAuthStateChanged(auth, user => {
     if (user) {
@@ -3105,6 +3099,12 @@
     document.body.classList.add('light');
   }
   syncThemeBtn();
+
+  // ── BYPASS AUTO-LOGIN ON REFRESH ──────────────────────────────────────────
+  // Runs after all functions are defined
+  if (localStorage.getItem('bypass-auth') === 'true') {
+    window.activateBypassLogin();
+  }
 
   // ── RIPPLE TAP EFFECT ─────────────────────────────────────────────────────
   // Fires on any tappable row or card with an onclick that opens a job
