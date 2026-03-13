@@ -593,14 +593,15 @@ function navTo(idx) {
 }
 
 function enterApp() {
+  localStorage.setItem('entered-app', 'true');
   var ls = document.getElementById('login-screen');
   if (ls) { ls.style.display = 'none'; ls.style.opacity = '0'; ls.style.pointerEvents = 'none'; }
-  // Trigger the rest of app init if not done yet
   if (window._enterAppCallback) window._enterAppCallback();
 }
 
 function doSignOut() {
   localStorage.removeItem('last-section');
+  localStorage.removeItem('entered-app');
   if (window._firebaseSignOut) {
     window._firebaseSignOut().then(function(){ window.location.reload(); }).catch(function(){ window.location.reload(); });
   } else {
@@ -1371,11 +1372,16 @@ function doSignOut() {
     if (user) {
       currentUser = user;
       const ls = document.getElementById('login-screen');
-      // Always show login screen — user must tap Sign In to enter (like a bank)
-      // Pre-fill email for convenience
+      // If already entered app (refresh), skip welcome screen and go straight in
+      if (localStorage.getItem('entered-app') === 'true') {
+        const ls2 = document.getElementById('login-screen');
+        if (ls2) { ls2.style.display = 'none'; }
+        window._enterAppCallback && window._enterAppCallback();
+        return;
+      }
+      // First visit — show welcome screen
       const emailEl = document.getElementById('login-email');
       if (emailEl && !emailEl.value) emailEl.value = user.email || '';
-      // Show welcome-back UI
       const loginFields = document.getElementById('login-fields-wrap');
       const welcomeBack = document.getElementById('welcome-back-wrap');
       if (loginFields && welcomeBack) {
