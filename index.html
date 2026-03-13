@@ -2229,7 +2229,8 @@ function doSignOut() {
     }
 
     const invitedCards = users.map(u => {
-      if (u.removed) return ''; // skip fully removed entries (UI only shows removed badge)
+      if (u.removed) return ''; // skip removed
+      if (u.email === ADMIN_EMAIL) return ''; // skip admin — shown in hardcoded nirCard above
       const initials = (u.name || u.email || '?').slice(0,2).toUpperCase();
       const isCurrentUser = currentUser && currentUser.email === u.email;
       let statusBadgeHtml = '<span class="badge badge-green">Active</span>';
