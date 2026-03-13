@@ -1394,34 +1394,13 @@ function doSignOut() {
       // Store admin status globally
       window._isAdmin = (user.email === ADMIN_EMAIL);
 
-      const doEnterApp = function() {
-        const ls = document.getElementById('login-screen');
-        if (ls) { ls.style.display = 'none'; ls.style.opacity = '0'; ls.style.pointerEvents = 'none'; }
-        try { startListeners(); } catch(e) { console.error('startListeners error:', e); }
-        const _savedSection = parseInt(localStorage.getItem('last-section') || '0');
-        if (_savedSection > 0) {
-          setTimeout(() => { if (typeof window._navTo === 'function') window._navTo(_savedSection); }, 600);
-        }
-      };
-
-      window._enterAppCallback = doEnterApp;
-
-      // If already entered before (refresh) — go straight in
-      if (localStorage.getItem('entered-app') === 'true') {
-        doEnterApp();
-        return;
-      }
-
-      // First visit — show welcome screen
-      const emailEl = document.getElementById('login-email');
-      if (emailEl && !emailEl.value) emailEl.value = user.email || '';
-      const loginFields = document.getElementById('login-fields-wrap');
-      const welcomeBack = document.getElementById('welcome-back-wrap');
-      if (loginFields && welcomeBack) {
-        loginFields.style.display = 'none';
-        welcomeBack.style.display = 'block';
-        const wname = document.getElementById('welcome-back-name');
-        if (wname) wname.textContent = user.displayName || user.email.split('@')[0] || 'back';
+      // Hide login screen and start app
+      const ls3 = document.getElementById('login-screen');
+      if (ls3) { ls3.style.display = 'none'; }
+      try { startListeners(); } catch(e) { console.error('startListeners error:', e); }
+      const _savedSection = parseInt(localStorage.getItem('last-section') || '0');
+      if (_savedSection > 0) {
+        setTimeout(() => { if (typeof window._navTo === 'function') window._navTo(_savedSection); }, 600);
       }
       // Auto-create user doc in Firestore if it doesn't exist yet
       try {
