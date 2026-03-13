@@ -1296,6 +1296,8 @@
       // Store admin status globally
       window._isAdmin = (user.email === ADMIN_EMAIL);
       startListeners();
+      // Re-render users after auth so admin buttons show correctly
+      setTimeout(() => { if (allUsers.length) renderUsers(allUsers); }, 800);
     } else {
       currentUser = null;
       const ls2 = document.getElementById('login-screen');
@@ -2089,7 +2091,7 @@
   }
 
   // ── USERS ──────────────────────────────────────────────────────────────────
-  function renderUsers(users) {
+  window.renderUsers = function renderUsers(users) {
     const list = document.getElementById('users-list');
     const isAdmin = window._isAdmin || (currentUser && currentUser.email === ADMIN_EMAIL);
 
