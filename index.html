@@ -1364,7 +1364,7 @@
   };
 
   window.doLogin = async function() {
-    const email = document.getElementById('login-email').value.trim();
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
     const pass  = document.getElementById('login-password').value;
     const errEl = document.getElementById('login-error');
     const btn   = document.getElementById('login-btn');
