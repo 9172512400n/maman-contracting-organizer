@@ -2237,9 +2237,9 @@ function doSignOut() {
     const isAdmin = window._isAdmin || (currentUser && currentUser.email === ADMIN_EMAIL);
 
     // Always show Nir at top
-    const nirCard = `<div class="user-card">
-      <div class="avatar" style="background:#333;border:1px solid #555;">NM</div>
-      <div class="user-info">
+    const nirCard = `<div class="user-card" style="border-left:3px solid #e53e3e;">
+      <div class="avatar" style="background:linear-gradient(135deg,#e53e3e,#c53030);box-shadow:0 2px 8px rgba(229,62,62,0.3);">NM</div>
+      <div class="user-info" style="flex:1;">
         <div class="user-name">Nir Maman</div>
         <div class="user-role-line"><span class="badge badge-red">Admin</span></div>
         <div class="user-contact">📞 (917) 251-2400 &nbsp;·&nbsp; ✉️ nir@mamancontracting.com</div>
@@ -2262,26 +2262,28 @@ function doSignOut() {
       if (u.removed) statusBadgeHtml = '<span class="badge badge-gray">Removed</span>';
 
       const editBtn = `<button onclick="editUser('${u.id}','${(u.name||'').replace(/'/g,"\\'")}','${(u.role||'Worker').replace(/'/g,"\\'")}','${(u.phone||'').replace(/'/g,"\\'")}')"
-            style="background:#1e3a5f;border:none;border-radius:6px;color:#60a5fa;padding:5px 8px;font-size:14px;cursor:pointer;flex-shrink:0;" title="Edit user">✏️</button>`;
+            style="display:flex;align-items:center;gap:5px;background:#1e3a5f;border:1px solid #2d5a9e;border-radius:8px;color:#93c5fd;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;" title="Edit user">✏️ Edit</button>`;
 
       const resendBtn = `<button onclick="openInviteEmail('${(u.email||'').replace(/'/g,"\\'")}')"
-            style="background:#1a2e1a;border:none;border-radius:6px;color:#4ade80;padding:5px 8px;font-size:14px;cursor:pointer;flex-shrink:0;" title="Resend invite email">📨</button>`;
+            style="display:flex;align-items:center;gap:5px;background:#14532d;border:1px solid #166534;border-radius:8px;color:#86efac;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;" title="Resend invite">📨 Invite</button>`;
 
       const removeBtn = !isCurrentUser
         ? `<button onclick="removeUser('${u.id}','${(u.email||'').replace(/'/g,"\\'")}','${(u.name||u.email||'').replace(/'/g,"\\'")}')"
-            style="background:#450a0a;border:none;border-radius:6px;color:#f87171;padding:5px 8px;font-size:14px;cursor:pointer;flex-shrink:0;" title="Remove user">🗑️</button>`
+            style="display:flex;align-items:center;gap:5px;background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;color:#fca5a5;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;" title="Remove user">🗑️ Remove</button>`
         : '';
 
       return `<div class="user-card" style="${u.removed ? 'opacity:0.5;' : ''}">
-        <div class="avatar" style="background:#3b82f6;">${initials}</div>
+        <div class="avatar" style="background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 2px 8px rgba(59,130,246,0.3);">${initials}</div>
         <div class="user-info" style="flex:1;">
           <div class="user-name">${u.name || u.email || '—'}</div>
           <div class="user-role-line"><span class="badge badge-orange">${u.role || 'Worker'}</span></div>
           <div class="user-contact">✉️ ${u.email || '—'}${u.phone ? ' &nbsp;·&nbsp; 📞 ' + u.phone : ''}</div>
           ${u.invitedBy && u.invitedBy !== u.email ? `<div class="user-contact" style="color:#444;">Invited by ${u.invitedBy}</div>` : ''}
         </div>
-        ${statusBadgeHtml}
-        <div style="display:flex;gap:6px;flex-shrink:0;">${resendBtn}${editBtn}${removeBtn}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end;">
+          ${statusBadgeHtml}
+          <div style="display:flex;gap:6px;">${resendBtn}${editBtn}${removeBtn}</div>
+        </div>
       </div>`;
     }).join('');
 
