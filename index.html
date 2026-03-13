@@ -1298,7 +1298,10 @@
       if (inviteBtn) inviteBtn.style.display = (user.email === ADMIN_EMAIL) ? 'inline-flex' : 'none';
       // Store admin status globally
       window._isAdmin = (user.email === ADMIN_EMAIL);
-      startListeners();
+      // Force hide login screen immediately
+      const ls2 = document.getElementById('login-screen');
+      if (ls2) { ls2.style.display = 'none'; }
+      try { startListeners(); } catch(e) { console.error('startListeners error:', e); }
       // Re-render users after auth so admin buttons show correctly
       setTimeout(() => { if (allUsers.length) renderUsers(allUsers); }, 800);
     } else {
