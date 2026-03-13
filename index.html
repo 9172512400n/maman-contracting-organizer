@@ -619,7 +619,7 @@ function doSignOut() {
       <div style="font-size:48px;margin-bottom:12px;">👋</div>
       <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:6px;">Welcome back, <span id="welcome-back-name"></span>!</div>
       <div style="font-size:13px;color:#666;margin-bottom:28px;">Tap to enter your workspace</div>
-      <button class="login-btn" onclick="enterApp()" style="font-size:16px;">Enter App →</button>
+      <button class="login-btn" onclick="enterApp()" style="font-size:16px;">🔓 Enter</button>
       <div style="margin-top:16px;">
         <button type="button" onclick="doSignOut()" style="background:none;border:none;color:#666;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;">Sign out &amp; switch account</button>
       </div>
@@ -1371,7 +1371,11 @@ function doSignOut() {
     if (user) {
       currentUser = user;
       const ls = document.getElementById('login-screen');
-      // Show welcome-back screen instead of jumping straight in
+      // Always show login screen — user must tap Sign In to enter (like a bank)
+      // Pre-fill email for convenience
+      const emailEl = document.getElementById('login-email');
+      if (emailEl && !emailEl.value) emailEl.value = user.email || '';
+      // Show welcome-back UI
       const loginFields = document.getElementById('login-fields-wrap');
       const welcomeBack = document.getElementById('welcome-back-wrap');
       if (loginFields && welcomeBack) {
@@ -1379,9 +1383,6 @@ function doSignOut() {
         welcomeBack.style.display = 'block';
         const wname = document.getElementById('welcome-back-name');
         if (wname) wname.textContent = user.displayName || user.email.split('@')[0] || 'back';
-      } else {
-        ls.style.display = 'none';
-        ls.classList.add('hidden', 'gone');
       }
       document.getElementById('topbar-user').style.display = 'flex';
       const displayEmail = user.email || 'nir@mamancontracting.com';
