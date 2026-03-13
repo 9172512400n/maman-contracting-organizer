@@ -1272,6 +1272,8 @@ function doSignOut() {
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  // Set persistence immediately so sessions survive page refresh
+  setPersistence(auth, browserLocalPersistence).catch(e => console.warn('setPersistence:', e));
   const db = getFirestore(app);
 
   const ADMIN_EMAIL = 'nir@mamancontracting.com';
@@ -2262,14 +2264,14 @@ function doSignOut() {
       if (u.removed) statusBadgeHtml = '<span class="badge badge-gray">Removed</span>';
 
       const editBtn = `<button onclick="editUser('${u.id}','${(u.name||'').replace(/'/g,"\\'")}','${(u.role||'Worker').replace(/'/g,"\\'")}','${(u.phone||'').replace(/'/g,"\\'")}')"
-            style="display:flex;align-items:center;gap:5px;background:#1e3a5f;border:1px solid #2d5a9e;border-radius:8px;color:#93c5fd;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;" title="Edit user">✏️ Edit</button>`;
+            style="display:flex;align-items:center;gap:5px;background:#1e3a5f;border:1px solid #2d5a9e;border-radius:8px;color:#93c5fd;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;" title="Edit">✏️ Edit</button>`;
 
       const resendBtn = `<button onclick="openInviteEmail('${(u.email||'').replace(/'/g,"\\'")}')"
-            style="display:flex;align-items:center;gap:5px;background:#14532d;border:1px solid #166534;border-radius:8px;color:#86efac;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;" title="Resend invite">📨 Invite</button>`;
+            style="display:flex;align-items:center;gap:5px;background:#14532d;border:1px solid #166534;border-radius:8px;color:#86efac;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;" title="Invite">📨</button>`;
 
       const removeBtn = !isCurrentUser
         ? `<button onclick="removeUser('${u.id}','${(u.email||'').replace(/'/g,"\\'")}','${(u.name||u.email||'').replace(/'/g,"\\'")}')"
-            style="display:flex;align-items:center;gap:5px;background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;color:#fca5a5;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;" title="Remove user">🗑️ Remove</button>`
+            style="display:flex;align-items:center;gap:5px;background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;color:#fca5a5;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;" title="Remove">🗑️</button>`
         : '';
 
       return `<div class="user-card" style="${u.removed ? 'opacity:0.5;' : ''}">
@@ -2282,7 +2284,7 @@ function doSignOut() {
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end;">
           ${statusBadgeHtml}
-          <div style="display:flex;gap:6px;">${resendBtn}${editBtn}${removeBtn}</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">${resendBtn}${editBtn}${removeBtn}</div>
         </div>
       </div>`;
     }).join('');
