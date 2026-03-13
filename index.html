@@ -1418,6 +1418,8 @@
   };
 
   window.activateBypassLogin = function() {
+    if (window._bypassActive) return; // prevent double-call
+    window._bypassActive = true;
     const email = 'nir@mamancontracting.com';
     currentUser = { email, uid: 'admin-local', isAnonymous: false };
     window._isAdmin = true;
@@ -1441,6 +1443,8 @@
 
   window.doSignOut = async function() {
     localStorage.removeItem('bypass-auth');
+    localStorage.removeItem('last-section');
+    window._bypassActive = false;
     await signOut(auth);
   };
 
