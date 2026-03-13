@@ -534,8 +534,6 @@
 
 <!-- LOGIN SCREEN -->
 <script>
-if(localStorage.getItem('bypass-auth')==='true'){document.addEventListener('DOMContentLoaded',function(){var ls=document.getElementById('login-screen');if(ls)ls.style.display='none';});}
-
 function togglePasswordVisibility() {
   var input = document.getElementById('login-password');
   var btn = document.getElementById('pw-toggle');
@@ -551,14 +549,6 @@ function doLogin() {
   var btn = document.getElementById('login-btn');
   if (errEl) { errEl.style.color = '#f87171'; errEl.textContent = ''; }
   if (!email || !pass) { if (errEl) errEl.textContent = 'Please enter email and password.'; return; }
-  // Bypass check — set flag and reload so module picks it up fresh
-  if (email === 'nir@mamancontracting.com' && (pass === 'Maman2024!' || pass === 'Nirmaman1')) {
-    localStorage.setItem('bypass-auth', 'true');
-    localStorage.setItem('bypass-ready', 'true');
-    window.location.reload();
-    return;
-  }
-  // Firebase login
   if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
   var attempts = 0;
   var tryFirebase = function() {
@@ -567,8 +557,8 @@ function doLogin() {
         if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
         if (errEl) errEl.textContent = 'Wrong email or password.';
       });
-    } else if (attempts++ < 15) {
-      setTimeout(tryFirebase, 400);
+    } else if (attempts++ < 20) {
+      setTimeout(tryFirebase, 300);
     } else {
       if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
       if (errEl) errEl.textContent = 'App not loaded — please refresh and try again.';
@@ -581,35 +571,34 @@ function doForgotPassword() {
   var email = document.getElementById('login-email').value.trim();
   var errEl = document.getElementById('login-error');
   if (!email) { if (errEl) errEl.textContent = 'Enter your email above first.'; return; }
-  fetch('https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({requestType: 'PASSWORD_RESET', email: email})
-  }).then(function(r) { return r.json(); }).then(function(d) {
-    if (errEl) { errEl.style.color = '#4ade80'; errEl.textContent = '✅ Reset email sent! Check your inbox (and spam).'; }
-  }).catch(function(e) {
-    if (errEl) errEl.textContent = 'Failed to send reset email.';
-  });
+  if (window._firebaseDoForgotPassword) {
+    window._firebaseDoForgotPassword(email);
+  } else {
+    fetch('https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({requestType: 'PASSWORD_RESET', email: email})
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      if (errEl) { errEl.style.color = '#4ade80'; errEl.textContent = '✅ Reset email sent! Check your inbox (and spam).'; }
+    }).catch(function(e) {
+      if (errEl) errEl.textContent = 'Failed to send reset email.';
+    });
+  }
 }
 
-// Global navTo wrapper so it works before module loads
+// Global navTo — delegates to module function once loaded
 function navTo(idx) {
   if (window._navTo) { window._navTo(idx); }
-  else { setTimeout(function(){ if(window._navTo) window._navTo(idx); }, 500); }
+  else { setTimeout(function(){ if(window._navTo) window._navTo(idx); }, 300); }
 }
 
 function doSignOut() {
-  localStorage.removeItem('bypass-auth');
   localStorage.removeItem('last-section');
-  window._bypassActive = false;
-  window._isAdmin = false;
-  // Show login screen
-  var ls = document.getElementById('login-screen');
-  if (ls) { ls.style.display = ''; ls.style.opacity = ''; ls.style.pointerEvents = ''; }
-  // Call module signOut if available
-  if (window._firebaseSignOut) window._firebaseSignOut();
-  // Hard reload to clean state
-  window.location.reload();
+  if (window._firebaseSignOut) {
+    window._firebaseSignOut().then(function(){ window.location.reload(); }).catch(function(){ window.location.reload(); });
+  } else {
+    window.location.reload();
+  }
 }
 </script>
 <div id="login-screen">
@@ -1356,14 +1345,14 @@ function doSignOut() {
   }
 
   // ── AUTH ──────────────────────────────────────────────────────────────────
-  onAuthStateChanged(auth, user => {
+  onAuthStateChanged(auth, async user => {
     if (user) {
       currentUser = user;
       const ls = document.getElementById('login-screen');
-      ls.classList.add('hidden');
-      setTimeout(() => ls.classList.add('gone'), 280);
+      ls.style.display = 'none';
+      ls.classList.add('hidden', 'gone');
       document.getElementById('topbar-user').style.display = 'flex';
-      const displayEmail = user.email || window._bypassEmail || 'nir@mamancontracting.com';
+      const displayEmail = user.email || 'nir@mamancontracting.com';
       const el = document.getElementById('user-email-display');
       if (el) el.textContent = displayEmail;
       const initials = displayEmail.split('@')[0].slice(0, 2).toUpperCase();
@@ -1383,12 +1372,12 @@ function doSignOut() {
       if (inviteBtn) inviteBtn.style.display = (user.email === ADMIN_EMAIL) ? 'inline-flex' : 'none';
       // Store admin status globally
       window._isAdmin = (user.email === ADMIN_EMAIL);
-      // Force hide login screen immediately
-      const ls2 = document.getElementById('login-screen');
-      if (ls2) { ls2.style.display = 'none'; }
       try { startListeners(); } catch(e) { console.error('startListeners error:', e); }
-      // Re-render users after auth so admin buttons show correctly
-      setTimeout(() => { if (allUsers.length) renderUsers(allUsers); }, 800);
+      // Restore last section after login/refresh
+      const _savedSection = parseInt(localStorage.getItem('last-section') || '0');
+      if (_savedSection > 0) {
+        setTimeout(() => { if (typeof window._navTo === 'function') window._navTo(_savedSection); }, 600);
+      }
       // Auto-create user doc in Firestore if it doesn't exist yet
       try {
         const userDocRef = doc(db, 'users', user.uid);
@@ -1407,20 +1396,16 @@ function doSignOut() {
         }
       } catch(e) { console.warn('Auto-create user doc failed:', e); }
     } else {
-      // If bypass login is active, don't log out
-      if (localStorage.getItem('bypass-auth') === 'true') {
-        return; // activateBypassLogin already called from bottom of script
-      }
       currentUser = null;
       const ls2 = document.getElementById('login-screen');
-      ls2.classList.remove('gone');
-      requestAnimationFrame(() => ls2.classList.remove('hidden'));
-      if (!localStorage.getItem('bypass-auth')) document.getElementById('topbar-user').style.display = 'none';
-      if (jobsUnsubscribe) jobsUnsubscribe();
-      if (activityUnsubscribe) activityUnsubscribe();
-      if (contactsUnsubscribe) contactsUnsubscribe();
-      if (usersUnsubscribe) usersUnsubscribe();
-      if (permitsUnsubscribe) permitsUnsubscribe();
+      ls2.style.display = '';
+      ls2.classList.remove('gone', 'hidden');
+      document.getElementById('topbar-user').style.display = 'none';
+      if (jobsUnsubscribe) { jobsUnsubscribe(); jobsUnsubscribe = null; }
+      if (activityUnsubscribe) { activityUnsubscribe(); activityUnsubscribe = null; }
+      if (contactsUnsubscribe) { contactsUnsubscribe(); contactsUnsubscribe = null; }
+      if (usersUnsubscribe) { usersUnsubscribe(); usersUnsubscribe = null; }
+      if (permitsUnsubscribe) { permitsUnsubscribe(); permitsUnsubscribe = null; }
     }
   });
 
@@ -1471,149 +1456,52 @@ function doSignOut() {
 
   // Expose Firebase functions for plain script
   window._firebaseSignIn = async function(email, pass) {
+    await setPersistence(auth, browserLocalPersistence);
     await signInWithEmailAndPassword(auth, email, pass);
   };
   window._firebaseSignOut = async function() {
     try { await signOut(auth); } catch(e) { console.log('signOut:', e); }
   };
-
-  window.doForgotPassword = async function() {
-    const email = document.getElementById('login-email').value.trim();
-    if (!email) { document.getElementById('login-error').textContent = 'Enter your email above first.'; return; }
+  window._firebaseDoForgotPassword = async function(email) {
+    const errEl = document.getElementById('login-error');
     try {
       await sendPasswordResetEmail(auth, email);
-      document.getElementById('login-error').style.color = '#4ade80';
-      document.getElementById('login-error').textContent = '✅ Reset email sent! Check your inbox (and spam).';
+      if (errEl) { errEl.style.color = '#4ade80'; errEl.textContent = '✅ Reset email sent! Check your inbox (and spam).'; }
     } catch(e) {
-      document.getElementById('login-error').style.color = '#f87171';
-      document.getElementById('login-error').textContent = e.code === 'auth/user-not-found' ? 'No account found. Ask admin to invite you first.' : e.message;
+      if (errEl) { errEl.style.color = '#f87171'; errEl.textContent = e.code === 'auth/user-not-found' ? 'No account found. Ask admin to invite you first.' : e.message; }
     }
   };
-
-  window.activateBypassLogin = function() {
-    try {
-      console.log('activateBypassLogin called, _bypassActive:', window._bypassActive);
-      if (window._bypassActive) return;
-      window._bypassActive = true;
-      const email = 'nir@mamancontracting.com';
-      currentUser = { email, uid: 'admin-local', isAnonymous: false };
-      window._isAdmin = true;
-      window._bypassEmail = email;
-      // Hide login screen
-      const ls = document.getElementById('login-screen');
-      if (ls) { ls.style.display = 'none'; ls.style.opacity = '0'; ls.style.pointerEvents = 'none'; }
-      // Show topbar
-      const tu = document.getElementById('topbar-user'); if (tu) tu.style.display = 'flex';
-      const dn = document.getElementById('drawer-user-name'); if (dn) dn.textContent = 'Nir Maman';
-      const de = document.getElementById('drawer-user-email'); if (de) de.textContent = email;
-      const da = document.getElementById('drawer-avatar'); if (da) da.textContent = 'NM';
-      const inviteBtn = document.getElementById('invite-user-btn'); if (inviteBtn) inviteBtn.style.display = 'inline-flex';
-      const avatarEl = document.getElementById('user-avatar-sm'); if (avatarEl) avatarEl.textContent = 'NM';
-      console.log('UI setup done, loading data...');
-      // Load data after short delay to ensure all functions are defined
-      setTimeout(() => {
-        loadAllDataREST().then(() => {
-          const lastSection = parseInt(localStorage.getItem('last-section') || '0');
-          if (lastSection > 0 && typeof navTo === 'function') navTo(lastSection);
-        }).catch(err => console.error('loadAllDataREST error:', err));
-      }, 500);
-    } catch(e) {
-      console.error('activateBypassLogin crashed:', e);
-      alert('Login error: ' + e.message);
-    }
-  };
-
-  // doSignOut is now in plain script above
 
   // ── LISTENERS ─────────────────────────────────────────────────────────────
-  // Firestore REST API helper (works without Firebase auth token)
-  const FS_REST = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
-  async function fsGet(col) {
-    const r = await fetch(`${FS_REST}/${col}?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c`);
-    if (!r.ok) return [];
-    const data = await r.json();
-    if (!data.documents) return [];
-    return data.documents.map(doc => {
-      const id = doc.name.split('/').pop();
-      const fields = {};
-      for (const [k, v] of Object.entries(doc.fields || {})) {
-        if (v.stringValue !== undefined) fields[k] = v.stringValue;
-        else if (v.integerValue !== undefined) fields[k] = parseInt(v.integerValue);
-        else if (v.doubleValue !== undefined) fields[k] = v.doubleValue;
-        else if (v.booleanValue !== undefined) fields[k] = v.booleanValue;
-        else if (v.timestampValue !== undefined) fields[k] = { seconds: Math.floor(new Date(v.timestampValue).getTime()/1000) };
-        else if (v.arrayValue !== undefined) fields[k] = (v.arrayValue.values||[]).map(av => av.mapValue ? Object.fromEntries(Object.entries(av.mapValue.fields||{}).map(([mk,mv])=>[mk,mv.stringValue||mv.integerValue||''])) : av.stringValue || '');
-        else fields[k] = null;
-      }
-      return { id, ...fields };
-    });
-  }
-
-  async function loadAllDataREST() {
-    try {
-      console.log('loadAllDataREST started');
-      const [jobs, contacts, users, permits, activity] = await Promise.all([
-        fsGet('jobs'), fsGet('contacts'), fsGet('users'), fsGet('permits'), fsGet('activity')
-      ]);
-      console.log('REST data loaded - jobs:', jobs.length, 'users:', users.length, 'contacts:', contacts.length);
-      allJobs = jobs.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
-      allContacts = contacts.sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
-      allUsers = users.sort((a,b)=>(b.invitedAt?.seconds||0)-(a.invitedAt?.seconds||0));
-      allStandalonePermits = permits.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
-      if (typeof renderJobsTable === 'function') { renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); renderSchedule(); checkPermitExpiry(); }
-      if (typeof renderContacts === 'function') renderContacts(allContacts);
-      if (typeof window.renderUsers === 'function') { console.log('Calling renderUsers with', allUsers.length, 'users'); window.renderUsers(allUsers); }
-      else { console.error('renderUsers not defined!'); document.getElementById('users-list').innerHTML = '<div style="padding:20px;color:#f87171;">renderUsers missing</div>'; }
-      if (typeof renderPermitsCards === 'function') renderPermitsCards(allStandalonePermits);
-      const acts = activity.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0)).slice(0,10);
-      renderActivityLog(acts);
-      // Poll every 15 seconds for updates
-      setTimeout(loadAllDataREST, 15000);
-    } catch(e) {
-      console.error('REST load error:', e);
-      // Show error in users list so we know what happened
-      const ul = document.getElementById('users-list');
-      if (ul) ul.innerHTML = '<div style="color:#f87171;padding:20px;text-align:center;">Error loading users: ' + e.message + '</div>';
-    }
-  }
-
   function startListeners() {
-    // Try SDK listeners first; fall back to REST if they fail
-    let sdkWorking = false;
-    const testUnsub = onSnapshot(collection(db, 'users'), snap => {
-      sdkWorking = true;
+    // Attach all onSnapshot listeners using the authenticated SDK
+    usersUnsubscribe = onSnapshot(collection(db, 'users'), snap => {
       allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((a,b) => (b.invitedAt?.seconds||0) - (a.invitedAt?.seconds||0));
       renderUsers(allUsers);
-    }, err => {
-      console.warn('SDK auth failed, falling back to REST:', err);
-      loadAllDataREST();
-    });
+    }, err => console.error('users listener error:', err));
 
-    // If SDK works, attach full listeners
-    setTimeout(() => {
-      if (!sdkWorking) return; // REST fallback already running
-      jobsUnsubscribe = onSnapshot(collection(db, 'jobs'), snap => {
-        allJobs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-          .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
-        renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); renderSchedule(); checkPermitExpiry();
-        if (allContacts.length) renderContacts(allContacts);
-      }, err => console.error('jobs:', err));
-      activityUnsubscribe = onSnapshot(collection(db, 'activity'), snap => {
-        const items = snap.docs.map(d => d.data()).sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0)).slice(0,10);
-        renderActivityLog(items);
-        document.getElementById('notif-count').textContent = items.length;
-      }, err => console.error('activity:', err));
-      contactsUnsubscribe = onSnapshot(collection(db, 'contacts'), snap => {
-        allContacts = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
-        renderContacts(allContacts);
-      }, err => console.error('contacts:', err));
-      usersUnsubscribe = testUnsub; // already attached
-      permitsUnsubscribe = onSnapshot(collection(db, 'permits'), snap => {
-        allStandalonePermits = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
-        renderPermitsCards(allStandalonePermits);
-      }, err => console.error('permits:', err));
-    }, 3000);
+    jobsUnsubscribe = onSnapshot(collection(db, 'jobs'), snap => {
+      allJobs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+      renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); renderSchedule(); checkPermitExpiry();
+    }, err => console.error('jobs listener error:', err));
+
+    activityUnsubscribe = onSnapshot(collection(db, 'activity'), snap => {
+      const items = snap.docs.map(d => d.data()).sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0)).slice(0,10);
+      renderActivityLog(items);
+      document.getElementById('notif-count').textContent = items.length;
+    }, err => console.error('activity listener error:', err));
+
+    contactsUnsubscribe = onSnapshot(collection(db, 'contacts'), snap => {
+      allContacts = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
+      renderContacts(allContacts);
+    }, err => console.error('contacts listener error:', err));
+
+    permitsUnsubscribe = onSnapshot(collection(db, 'permits'), snap => {
+      allStandalonePermits = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+      renderPermitsCards(allStandalonePermits);
+    }, err => console.error('permits listener error:', err));
   }
 
   // ── STATS ─────────────────────────────────────────────────────────────────
@@ -3278,18 +3166,6 @@ function doSignOut() {
     document.body.classList.add('light');
   }
   syncThemeBtn();
-
-  // ── BYPASS AUTO-LOGIN ON REFRESH ──────────────────────────────────────────
-  // Runs after all functions are defined
-  if (localStorage.getItem('bypass-auth') === 'true') {
-    localStorage.removeItem('bypass-ready');
-    window.activateBypassLogin();
-    // Restore last section after data loads
-    const _savedSection = parseInt(localStorage.getItem('last-section') || '0');
-    if (_savedSection > 0) {
-      setTimeout(() => { if (typeof navTo === 'function') navTo(_savedSection); }, 1200);
-    }
-  }
 
   // ── RIPPLE TAP EFFECT ─────────────────────────────────────────────────────
   // Fires on any tappable row or card with an onclick that opens a job

@@ -1,0 +1,21 @@
+{"users": [
+{
+  "localId": "RisKuwHaBFPl1JzJBow9YDdInPi1",
+  "email": "sales@mamancontracting.com",
+  "emailVerified": true,
+  "passwordHash": "9CsQrSkgX1NURRw9ZOFsbrbtgQRsYI+BvaQZpercrcQyZ59U79u3uXqrFQpfI6rglGgoaJY2Jq/24hFcOl+ZNw==",
+  "salt": "DbEjwY6v3LDoSw==",
+  "lastSignedInAt": "1773403340936",
+  "createdAt": "1773401931487",
+  "providerUserInfo": []
+},
+{
+  "localId": "wXUlBJ46JYQMY9RstR1R4uMOTNi1",
+  "email": "nir@mamancontracting.com",
+  "emailVerified": false,
+  "passwordHash": "gBFc57dhwXW8E3bqvv9AllpBUxAmFxYxNg+ZzS8JfJk8PQSO1GgVQTkO83OnEBT0a9SHQA3cs9Hn+HVfF+olMw==",
+  "salt": "ofM3Bacp1IYnLA==",
+  "lastSignedInAt": "1773400813323",
+  "createdAt": "1773374243582",
+  "providerUserInfo": []
+}]}
