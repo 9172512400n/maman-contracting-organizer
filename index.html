@@ -592,6 +592,13 @@ function navTo(idx) {
   else { setTimeout(function(){ if(window._navTo) window._navTo(idx); }, 300); }
 }
 
+function enterApp() {
+  var ls = document.getElementById('login-screen');
+  if (ls) { ls.style.display = 'none'; ls.style.opacity = '0'; ls.style.pointerEvents = 'none'; }
+  // Trigger the rest of app init if not done yet
+  if (window._enterAppCallback) window._enterAppCallback();
+}
+
 function doSignOut() {
   localStorage.removeItem('last-section');
   if (window._firebaseSignOut) {
@@ -606,6 +613,20 @@ function doSignOut() {
     <img src="logo.jpg" class="login-logo" alt="Maman Contracting"/>
     <div class="login-title">Maman Contracting</div>
     <div class="login-sub">Organizer — Sign in to continue</div>
+
+    <!-- Welcome back screen (shown when already logged in) -->
+    <div id="welcome-back-wrap" style="display:none;text-align:center;">
+      <div style="font-size:48px;margin-bottom:12px;">👋</div>
+      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:6px;">Welcome back, <span id="welcome-back-name"></span>!</div>
+      <div style="font-size:13px;color:#666;margin-bottom:28px;">Tap to enter your workspace</div>
+      <button class="login-btn" onclick="enterApp()" style="font-size:16px;">Enter App →</button>
+      <div style="margin-top:16px;">
+        <button type="button" onclick="doSignOut()" style="background:none;border:none;color:#666;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;">Sign out &amp; switch account</button>
+      </div>
+    </div>
+
+    <!-- Normal login fields -->
+    <div id="login-fields-wrap">
     <div class="login-field">
       <label>Email</label>
       <input type="email" id="login-email" placeholder="you@mamancontracting.com" autocomplete="email"/>
@@ -630,6 +651,7 @@ function doSignOut() {
     <div style="text-align:center;margin-top:14px;">
       <button type="button" onclick="doForgotPassword()" style="background:none;border:none;color:#e53e3e;font-size:13px;cursor:pointer;text-decoration:underline;font-family:'Inter',sans-serif;padding:8px 0;">Forgot password?</button>
     </div>
+    </div><!-- end login-fields-wrap -->
   </div>
 </div>
 
@@ -1349,8 +1371,18 @@ function doSignOut() {
     if (user) {
       currentUser = user;
       const ls = document.getElementById('login-screen');
-      ls.style.display = 'none';
-      ls.classList.add('hidden', 'gone');
+      // Show welcome-back screen instead of jumping straight in
+      const loginFields = document.getElementById('login-fields-wrap');
+      const welcomeBack = document.getElementById('welcome-back-wrap');
+      if (loginFields && welcomeBack) {
+        loginFields.style.display = 'none';
+        welcomeBack.style.display = 'block';
+        const wname = document.getElementById('welcome-back-name');
+        if (wname) wname.textContent = user.displayName || user.email.split('@')[0] || 'back';
+      } else {
+        ls.style.display = 'none';
+        ls.classList.add('hidden', 'gone');
+      }
       document.getElementById('topbar-user').style.display = 'flex';
       const displayEmail = user.email || 'nir@mamancontracting.com';
       const el = document.getElementById('user-email-display');
@@ -1372,12 +1404,14 @@ function doSignOut() {
       if (inviteBtn) inviteBtn.style.display = (user.email === ADMIN_EMAIL) ? 'inline-flex' : 'none';
       // Store admin status globally
       window._isAdmin = (user.email === ADMIN_EMAIL);
-      try { startListeners(); } catch(e) { console.error('startListeners error:', e); }
-      // Restore last section after login/refresh
-      const _savedSection = parseInt(localStorage.getItem('last-section') || '0');
-      if (_savedSection > 0) {
-        setTimeout(() => { if (typeof window._navTo === 'function') window._navTo(_savedSection); }, 600);
-      }
+      // Set callback for when user taps "Enter App"
+      window._enterAppCallback = function() {
+        try { startListeners(); } catch(e) { console.error('startListeners error:', e); }
+        const _savedSection = parseInt(localStorage.getItem('last-section') || '0');
+        if (_savedSection > 0) {
+          setTimeout(() => { if (typeof window._navTo === 'function') window._navTo(_savedSection); }, 600);
+        }
+      };
       // Auto-create user doc in Firestore if it doesn't exist yet
       try {
         const userDocRef = doc(db, 'users', user.uid);
