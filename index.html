@@ -598,6 +598,20 @@ function doForgotPassword() {
     if (errEl) errEl.textContent = 'Failed to send reset email.';
   });
 }
+
+function doSignOut() {
+  localStorage.removeItem('bypass-auth');
+  localStorage.removeItem('last-section');
+  window._bypassActive = false;
+  window._isAdmin = false;
+  // Show login screen
+  var ls = document.getElementById('login-screen');
+  if (ls) { ls.style.display = ''; ls.style.opacity = ''; ls.style.pointerEvents = ''; }
+  // Call module signOut if available
+  if (window._firebaseSignOut) window._firebaseSignOut();
+  // Hard reload to clean state
+  window.location.reload();
+}
 </script>
 <div id="login-screen">
   <div class="login-box">
@@ -1456,9 +1470,12 @@ function doForgotPassword() {
     }
   };
 
-  // Expose Firebase sign-in for plain script doLogin()
+  // Expose Firebase functions for plain script
   window._firebaseSignIn = async function(email, pass) {
     await signInWithEmailAndPassword(auth, email, pass);
+  };
+  window._firebaseSignOut = async function() {
+    try { await signOut(auth); } catch(e) { console.log('signOut:', e); }
   };
 
   window.doForgotPassword = async function() {
@@ -1508,12 +1525,7 @@ function doForgotPassword() {
     }
   };
 
-  window.doSignOut = async function() {
-    localStorage.removeItem('bypass-auth');
-    localStorage.removeItem('last-section');
-    window._bypassActive = false;
-    await signOut(auth);
-  };
+  // doSignOut is now in plain script above
 
   // ── LISTENERS ─────────────────────────────────────────────────────────────
   // Firestore REST API helper (works without Firebase auth token)
