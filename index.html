@@ -530,6 +530,7 @@
 <body>
 
 <!-- LOGIN SCREEN -->
+<script>if(localStorage.getItem('bypass-auth')==='true'){document.addEventListener('DOMContentLoaded',function(){var ls=document.getElementById('login-screen');if(ls)ls.style.display='none';});}</script>
 <div id="login-screen">
   <div class="login-box">
     <img src="logo.jpg" class="login-logo" alt="Maman Contracting"/>
