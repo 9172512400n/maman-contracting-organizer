@@ -1,0 +1,3028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Maman Contracting Organizer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #111; color: #f0f0f0; display: flex; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+
+    /* LOGIN SCREEN */
+    #login-screen {
+      position: fixed; inset: 0; background: #111; z-index: 9999;
+      display: flex; align-items: center; justify-content: center; flex-direction: column;
+      transition: opacity 0.25s ease;
+    }
+    #login-screen.hidden { opacity: 0; pointer-events: none; }
+    #login-screen.gone { display: none; }
+    .login-box {
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px;
+      padding: 40px 36px; width: 100%; max-width: 420px; text-align: center;
+    }
+    .login-logo { width: 72px; height: 72px; object-fit: cover; border-radius: 12px; margin-bottom: 16px; }
+    .login-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+    .login-sub { font-size: 13px; color: #666; margin-bottom: 28px; }
+    .login-field { margin-bottom: 14px; text-align: left; }
+    .login-field label { display: block; font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .login-field input { width: 100%; padding: 12px 14px; background: #111; border: 1.5px solid #2a2a2a; border-radius: 8px; color: #fff; font-size: 14px; font-family: 'Inter', sans-serif; }
+    .login-field input:focus { outline: none; border-color: #e53e3e; }
+    .login-btn { width: 100%; padding: 13px; background: #e53e3e; border: none; border-radius: 8px; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 6px; font-family: 'Inter', sans-serif; transition: background 0.2s; }
+    .login-btn:hover { background: #c53030; }
+    .login-btn:disabled { background: #7f1d1d; cursor: not-allowed; }
+    .login-error { color: #f87171; font-size: 13px; margin-top: 12px; min-height: 18px; }
+
+    /* LIGHT MODE */
+    body.light { background: #f4f6f9; color: #1a1a1a; }
+    body.light .sidebar { background: #1a1a1a; border-right-color: #ddd; }
+    body.light .main { background: #f4f6f9; }
+    body.light .topbar { background: #fff; border-bottom-color: #e2e8f0; }
+    body.light #bottom-nav { background: #ffffff; border-top-color: #d1d5db; box-shadow: 0 -2px 10px rgba(0,0,0,0.08); }
+    body.light .bnav-item { color: rgba(0,0,0,0.3); }
+    body.light .bnav-item.active { color: #111 !important; font-weight: 800; }
+    body.light .bnav-item.active .bnav-label { color: #111 !important; font-weight: 800; }
+    body.light .bnav-item::before { background: #e5e7eb !important; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15) !important; }
+    body.light .topbar h1 { color: #1a1a1a; }
+    body.light .btn-outline { border-color: #cbd5e1; color: #475569; background: #fff; }
+    body.light .card { background: #fff; border-color: #e2e8f0; }
+    body.light .card-value { color: #1a1a1a; }
+    body.light .card-sub { color: #64748b; }
+    body.light .panel { background: #fff; border-color: #e2e8f0; }
+    body.light .panel-title { color: #1a1a1a; }
+    body.light th { color: #94a3b8; border-bottom-color: #e2e8f0; }
+    body.light td { color: #374151; border-bottom-color: #f1f5f9; }
+    body.light tr:hover td { background: #f8fafc; }
+    body.light .notif-sub { color: #64748b; }
+    body.light .notif-title { color: #1a1a1a; }
+    body.light .filter-select, body.light .search-input { background: #fff; border-color: #e2e8f0; color: #374151; }
+    body.light .crew-day-card { background: #fff; border-color: #e2e8f0; }
+    body.light .crew-job-card { background: #fff7f7; }
+    body.light .crew-day-header { border-bottom-color: #e2e8f0; }
+    body.light .user-card { background: #fff; border-color: #e2e8f0; }
+    body.light .user-name { color: #1a1a1a; }
+    body.light .section-header h2 { color: #1a1a1a; }
+    body.light .week-label { color: #1a1a1a; }
+    body.light .badge-gray { background: #f1f5f9; color: #475569; }
+    body.light .contact-card { background: #fff; border-color: #e2e8f0; }
+    body.light .contact-name { color: #1a1a1a; }
+    body.light .contact-modal-box { background: #fff; border-color: #e2e8f0; }
+    body.light .person-row { background: #f4f6f9; border-color: #e2e8f0; }
+    body.light .person-row input { background: #fff; border-color: #e2e8f0; color: #1a1a1a; }
+
+    /* THEME TOGGLE — icon-only button */
+    #theme-toggle-btn {
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,0.06); cursor: pointer; font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; flex-shrink: 0;
+    }
+    #theme-toggle-btn:hover { background: rgba(255,255,255,0.12); }
+
+    /* SWIPE NAV */
+    .sections-wrapper {
+      display: flex; flex-direction: row; width: 600%; /* 6 sections */
+      transition: transform 0.22s ease-out;
+      will-change: transform;
+    }
+    .sections-wrapper .section {
+      flex: 0 0 16.6667%; width: 16.6667%; min-height: 100%;
+      display: block !important; /* always rendered for swipe */
+      padding: 24px;
+      overflow-x: hidden;
+    }
+    .sections-outer {
+      overflow: hidden; flex: 1;
+    }
+
+    /* ── DRAWER (hamburger slide-out) ───────────────────────────────────── */
+    #drawer-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      z-index: 300; backdrop-filter: blur(2px);
+    }
+    #drawer-overlay.open { display: block; }
+
+    #drawer {
+      position: fixed; top: 0; left: 0; height: 100vh; width: 280px;
+      background: #161616; z-index: 400; display: flex; flex-direction: column;
+      transform: translateX(-100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+      overflow-y: auto; border-right: 1px solid #242424;
+    }
+    #drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      padding: 24px 20px 20px; border-bottom: 1px solid #242424;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .drawer-avatar {
+      width: 44px; height: 44px; border-radius: 50%; background: #e53e3e;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .drawer-user-info { flex: 1; min-width: 0; }
+    .drawer-user-name { font-size: 14px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .drawer-user-email { font-size: 11px; color: #555; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .drawer-nav { padding: 10px 0; flex: 1; }
+    .drawer-item {
+      display: flex; align-items: center; gap: 14px; padding: 14px 22px;
+      cursor: pointer; font-size: 14px; font-weight: 500;
+      color: rgba(255,255,255,0.55); transition: all 0.18s;
+      border-left: 3px solid transparent; user-select: none;
+    }
+    .drawer-item:hover { background: rgba(255,255,255,0.04); color: #fff; }
+    .drawer-item.active { background: rgba(229,62,62,0.1); color: #e53e3e; border-left-color: #e53e3e; }
+    .drawer-item .di { font-size: 20px; width: 24px; text-align: center; }
+
+    .drawer-divider { height: 1px; background: #242424; margin: 8px 0; }
+    .drawer-footer { padding: 10px 0 20px; }
+
+    /* ── BOTTOM NAV ─────────────────────────────────────────────────────── */
+    #bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: 58px;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      background: #141414; border-top: 1px solid #2a2a2a;
+      display: grid; grid-template-columns: repeat(6, 1fr);
+      align-items: center; z-index: 200; overflow: hidden;
+    }
+    .bnav-item {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 2px; cursor: pointer;
+      padding: 4px 2px; width: 100%; height: 58px;
+      color: rgba(255,255,255,0.4); transition: color 0.18s, opacity 0.18s;
+      user-select: none; border: none; background: transparent;
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .bnav-item.active { color: #fff; }
+    .bnav-icon { font-size: 18px; line-height: 1; display: block; } body.light .bnav-item:not(.active) .bnav-icon { filter: grayscale(1) brightness(0.3); }
+    .bnav-label { font-size: 8.5px; font-weight: 600; letter-spacing: 0px;
+      text-transform: uppercase; white-space: nowrap;
+      display: block; line-height: 1.2; }
+    .bnav-item:active { transform: scale(0.92); }
+    .bnav-item.active { color: #fff; } .bnav-item:not(.active) .tri-svg { opacity: 0.7; } .bnav-item.active .tri-svg { opacity: 1; filter: drop-shadow(0 0 4px rgba(229,62,62,0.8)); } .bnav-item:not(.active) .jobs-label { display: none; } .bnav-item.active .jobs-label { display: block; }
+    .bnav-item.active::before {
+      content: '';
+      position: absolute;
+      inset: 4px 8px;
+      border-radius: 10px;
+      background: #1a1a1a;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.7), inset 0 1px 2px rgba(0,0,0,0.5);
+    }
+    .bnav-icon { font-size: 20px; line-height: 1; position: relative; z-index: 1; }
+    .bnav-label { font-size: 9.5px; font-weight: 600; letter-spacing: 0.2px; text-transform: uppercase; position: relative; z-index: 1; }
+
+    /* ── MAIN ───────────────────────────────────────────────────────────── */
+    .main { flex: 1; margin-left: 0; display: flex; flex-direction: column; min-height: 100vh; overflow: hidden; }
+
+    /* TOPBAR */
+    .topbar {
+      background: #141414; padding: 0 12px; height: 56px;
+      display: flex; align-items: center;
+      border-bottom: 1px solid #242424; position: sticky; top: 0; z-index: 50;
+      backdrop-filter: blur(8px); gap: 0;
+    }
+    .topbar-left { display: flex; align-items: center; flex-shrink: 0; }
+    .topbar-center {
+      display: flex; align-items: center; gap: 8px;
+      flex: 1; justify-content: center; overflow: hidden;
+      padding: 0 8px;
+    }
+    .topbar-center img { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; flex-shrink: 0; }
+    .topbar-center h1 { font-size: 14px; font-weight: 700; color: #e8e8e8; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar-actions { display: flex; gap: 4px; align-items: center; flex-shrink: 0; justify-content: flex-end; max-width: 55%; }
+    .btn-hamburger {
+      width: 40px; height: 40px; border-radius: 8px; border: none;
+      background: rgba(255,255,255,0.08); cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 5px; flex-shrink: 0; transition: background 0.2s; padding: 8px;
+    }
+    .btn-hamburger:hover { background: rgba(255,255,255,0.15); }
+    .btn-hamburger span {
+      display: block; width: 22px; height: 2.5px; background: #fff;
+      border-radius: 2px; transition: all 0.2s;
+    }
+    body.light .btn-hamburger span { background: #111; }
+    body.light .btn-hamburger { background: rgba(0,0,0,0.06); }
+    body.light .btn-hamburger:hover { background: rgba(0,0,0,0.12); }
+    .btn { padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+    .btn-primary { background: #e53e3e; color: #fff; }
+    .btn-primary:hover { background: #c53030; }
+    .btn-outline { background: transparent; border: 1.5px solid #333; color: #aaa; }
+    .btn-outline:hover { background: #222; color: #fff; }
+    .notif-bell { position: relative; cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: #1e1e1e; border: 1px solid #333; transition: background 0.2s; flex-shrink: 0; }
+    .notif-bell:hover { background: #2a2a2a; }
+    .notif-badge { position: absolute; top: 3px; right: 3px; background: #e53e3e; color: #fff; border-radius: 50%; width: 12px; height: 12px; font-size: 7px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1.5px solid #141414; }
+
+    /* USER INFO */
+    .topbar-user { display: flex; align-items: center; gap: 10px; }
+    .topbar-user .user-avatar-sm {
+      width: 24px; height: 24px; border-radius: 50%; background: #444; border: 1px solid #666;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; color: #eee; flex-shrink: 0;
+      cursor: default; letter-spacing: 0.3px;
+    }
+    body.light .topbar-user .user-avatar-sm { background: #555; border-color: #777; }
+    .btn-signout {
+      background: transparent; border: none; color: #555;
+      padding: 0; font-size: 12px; font-weight: 500; cursor: pointer;
+      font-family: 'Inter', sans-serif; letter-spacing: 0.2px;
+      transition: color 0.2s;
+    }
+    .btn-signout:hover { color: #aaa; }
+
+    /* CONTENT */
+    .content { flex: 1; overflow-x: hidden; }
+    .sections-wrapper .section { padding-bottom: 80px; } /* clear bottom nav */
+
+    /* PERMIT EXPIRY BANNER */
+    .permit-alert-banner {
+      background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
+      border: 1px solid #dc2626; border-radius: 12px; padding: 16px 20px;
+      margin-bottom: 20px; display: none;
+    }
+    .permit-alert-banner.show { display: block; }
+    .permit-alert-title { font-size: 14px; font-weight: 800; color: #fca5a5; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .permit-alert-item { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .permit-alert-item:last-child { margin-bottom: 0; }
+    .permit-alert-info { font-size: 13px; color: #fca5a5; font-weight: 600; }
+    .permit-alert-meta { font-size: 12px; color: #f87171; }
+    .permit-alert-days { background: #dc2626; color: #fff; border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+
+    /* SUMMARY CARDS */
+    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .card { background: #1a1a1a; border-radius: 12px; padding: 20px; border: 1px solid #2a2a2a; border-top: 3px solid #e53e3e; cursor: default; }
+    .card.clickable { cursor: pointer; }
+    .card.clickable:hover { border-color: #444; }
+    .card.blue { border-top-color: #3b82f6; }
+    .card.red { border-top-color: #e53e3e; }
+    .card.green { border-top-color: #22c55e; }
+    .card.yellow { border-top-color: #f59e0b; }
+    .card-label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .card-value { font-size: 34px; font-weight: 800; color: #fff; }
+    .card-sub { font-size: 12px; color: #555; margin-top: 4px; }
+
+    /* PANELS */
+    .panels { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+    .panel { background: #1a1a1a; border-radius: 12px; padding: 20px; border: 1px solid #2a2a2a; overflow-x: auto; }
+    .panel-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .panel-title a { font-size: 12px; color: #e53e3e; text-decoration: none; cursor: pointer; font-weight: 500; }
+
+    /* TABLE */
+    table { width: 100%; border-collapse: collapse; min-width: 400px; }
+    th { font-size: 11px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; border-bottom: 1px solid #2a2a2a; white-space: nowrap; }
+    td { padding: 12px; font-size: 13px; color: #ccc; border-bottom: 1px solid #1f1f1f; vertical-align: middle; }
+    tr:hover td { background: #222; }
+
+    /* BADGES */
+    .badge { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap; }
+    .badge-green { background: #14532d; color: #4ade80; }
+    .badge-yellow { background: #422006; color: #fbbf24; }
+    .badge-red { background: #450a0a; color: #f87171; }
+    .badge-gray { background: #1f1f1f; color: #6b7280; }
+    .badge-blue { background: #172554; color: #60a5fa; }
+    .badge-orange { background: #431407; color: #fb923c; }
+    .badge-asphalt { background: #431407; color: #fb923c; }
+    .badge-concrete { background: #172554; color: #60a5fa; }
+
+    /* NOTIFICATIONS */
+    .notif-item { padding: 12px 0; border-bottom: 1px solid #222; }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-title { font-size: 13px; font-weight: 600; color: #fff; }
+    .notif-sub { font-size: 12px; color: #555; margin-top: 3px; }
+    .notif-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+    .dot-red { background: #e53e3e; }
+    .dot-orange { background: #f59e0b; }
+    .dot-blue { background: #3b82f6; }
+    .dot-green { background: #22c55e; }
+
+    /* FILTERS + SEARCH */
+    .filters { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .filter-select { padding: 9px 12px; border: 1.5px solid #2a2a2a; border-radius: 8px; font-size: 13px; color: #ccc; background: #1a1a1a; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .search-input { padding: 9px 14px; border: 1.5px solid #2a2a2a; border-radius: 8px; font-size: 13px; color: #ccc; background: #1a1a1a; font-family: 'Inter', sans-serif; }
+    .search-input::placeholder { color: #555; }
+    .search-input-lg { width: 100%; padding: 11px 16px; border: 1.5px solid #2a2a2a; border-radius: 10px; font-size: 14px; color: #ccc; background: #1a1a1a; font-family: 'Inter', sans-serif; margin-bottom: 12px; }
+    .search-input-lg::placeholder { color: #555; }
+    .search-input-lg:focus, .search-input:focus, .filter-select:focus { outline: none; border-color: #e53e3e; }
+    body.light .search-input-lg { background: #fff; border-color: #e2e8f0; color: #374151; }
+
+    /* FILTER PILLS */
+    .filter-pills { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filter-pill {
+      padding: 7px 16px; border-radius: 999px; font-size: 12px; font-weight: 700;
+      cursor: pointer; border: 1.5px solid #2a2a2a; background: transparent;
+      color: #888; font-family: 'Inter', sans-serif; transition: all 0.18s;
+    }
+    .filter-pill:hover { border-color: #555; color: #fff; }
+    .filter-pill.active { background: #e53e3e; border-color: #e53e3e; color: #fff; }
+    .filter-pill.green.active { background: #16a34a; border-color: #16a34a; }
+    .filter-pill.yellow.active { background: #d97706; border-color: #d97706; }
+
+    /* CREW FILTER PILLS */
+    .crew-pill { padding: 7px 16px; border-radius: 999px; font-size: 12px; font-weight: 700; cursor: pointer; border: 1.5px solid #2a2a2a; background: transparent; color: #888; font-family: 'Inter', sans-serif; transition: all 0.18s; }
+    .crew-pill:hover { border-color: #555; color: #fff; }
+    .crew-pill.active { background: #e53e3e; border-color: #e53e3e; color: #fff; }
+
+    /* SCHEDULE */
+    .crew-day-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+    .crew-day-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #2a2a2a; }
+    .crew-day-title { font-size: 13px; font-weight: 800; color: #e53e3e; text-transform: uppercase; letter-spacing: 1px; }
+    .crew-day-count { font-size: 11px; color: #555; }
+    .crew-jobs-container { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .crew-job-card { background: #111; border-radius: 10px; padding: 14px; border-left: 4px solid #e53e3e; }
+    .crew-job-card.asphalt { border-left-color: #fb923c; }
+    .crew-job-card.concrete { border-left-color: #60a5fa; }
+    .crew-job-name { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .crew-job-row { font-size: 12px; color: #aaa; margin-top: 4px; display: flex; align-items: flex-start; gap: 6px; }
+    .crew-job-row span.label { color: #666; min-width: 16px; }
+    .crew-empty-day { padding: 16px; text-align: center; font-size: 12px; color: #444; }
+    .crew-no-jobs { text-align: center; padding: 40px; color: #555; font-size: 14px; }
+
+    /* USERS */
+    .user-list { display: flex; flex-direction: column; gap: 10px; }
+    .user-card { background: #1a1a1a; border-radius: 10px; padding: 16px; display: flex; align-items: center; gap: 14px; border: 1px solid #2a2a2a; }
+    .avatar { width: 44px; height: 44px; border-radius: 50%; background: #e53e3e; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-info { flex: 1; }
+    .user-name { font-size: 14px; font-weight: 600; color: #fff; }
+    .user-role-line { font-size: 12px; color: #666; margin-top: 2px; }
+    .user-contact { font-size: 12px; color: #555; margin-top: 2px; }
+
+    /* CONTACTS */
+    .contact-card {
+      background: #1a1a1a; border-radius: 12px; border: 1px solid #2a2a2a;
+      margin-bottom: 10px; overflow: hidden; transition: border-color 0.2s;
+    }
+    .contact-card:hover { border-color: #444; }
+    .contact-card-header { display: flex; align-items: center; gap: 14px; padding: 16px; cursor: pointer; }
+    .contact-avatar { width: 44px; height: 44px; border-radius: 50%; background: #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .contact-info { flex: 1; min-width: 0; }
+    .contact-name { font-size: 15px; font-weight: 800; color: #fff; }
+    .contact-meta { font-size: 12px; color: #666; margin-top: 3px; }
+    .contact-jobs-badge { background: #172554; color: #60a5fa; border-radius: 999px; padding: 4px 12px; font-size: 11px; font-weight: 700; white-space: nowrap; cursor: pointer; flex-shrink: 0; }
+    .contact-jobs-badge:hover { background: #1e3a8a; }
+    .contact-expand-body { display: none; border-top: 1px solid #2a2a2a; padding: 16px; }
+    .contact-expand-body.open { display: block; }
+    .contact-person-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #222; }
+    .contact-person-row:last-child { border-bottom: none; }
+    .contact-person-name { font-size: 13px; font-weight: 600; color: #e8e8e8; }
+    .contact-person-meta { font-size: 12px; color: #888; margin-top: 2px; }
+    .contact-person-phone { font-size: 13px; color: #60a5fa; font-weight: 600; text-decoration: none; }
+    .contact-person-phone:hover { text-decoration: underline; }
+    .contact-person-role { display: inline-block; background: #1f2937; color: #9ca3af; border-radius: 4px; padding: 1px 7px; font-size: 10px; font-weight: 600; margin-left: 6px; }
+    .contact-detail-row { font-size: 12px; color: #888; margin-top: 6px; display: flex; align-items: flex-start; gap: 6px; }
+    .contact-detail-row a { color: #60a5fa; text-decoration: none; }
+    .contact-detail-row a:hover { text-decoration: underline; }
+    .contact-expand-actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #2a2a2a; }
+    .contact-job-item { padding: 6px 0; border-bottom: 1px solid #222; font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .contact-job-item:hover { color: #e53e3e; }
+    .contact-job-item:last-child { border-bottom: none; }
+    .contact-empty { text-align: center; padding: 40px; color: #555; font-size: 14px; }
+
+    /* CONTACT MODAL */
+    #contact-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto; padding: 20px; }
+    #contact-modal.show { display: block; }
+    .contact-modal-box { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px; max-width: 600px; margin: auto; padding: 28px; position: relative; }
+    .contact-modal-title { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+    .contact-modal-sub { font-size: 12px; color: #666; margin-bottom: 22px; }
+    .contact-form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .contact-form-field label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .contact-form-field input, .contact-form-field textarea { padding: 10px 12px; background: #111; border: 1.5px solid #2a2a2a; border-radius: 8px; color: #fff; font-size: 13px; font-family: 'Inter', sans-serif; }
+    .contact-form-field input:focus, .contact-form-field textarea:focus { outline: none; border-color: #e53e3e; }
+    .contact-form-field textarea { resize: vertical; min-height: 70px; }
+    .persons-section { border: 1px solid #2a2a2a; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+    .persons-section-title { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .person-row { display: flex; gap: 8px; align-items: center; background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+    .person-row:last-of-type { margin-bottom: 0; }
+    .person-row input { padding: 7px 10px; background: #1a1a1a; border: 1.5px solid #2a2a2a; border-radius: 6px; color: #fff; font-size: 12px; font-family: 'Inter', sans-serif; }
+    .person-row input:focus { outline: none; border-color: #e53e3e; }
+    .person-name-input { flex: 2; min-width: 0; }
+    .person-phone-input { flex: 2; min-width: 0; }
+    .person-role-input { flex: 1.5; min-width: 0; }
+    .btn-remove-person { background: #2a2a2a; border: none; color: #888; width: 28px; height: 28px; border-radius: 6px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
+    .btn-remove-person:hover { background: #450a0a; color: #f87171; }
+    .btn-add-person { background: transparent; border: 1.5px dashed #444; border-radius: 8px; color: #aaa; font-size: 12px; font-weight: 700; cursor: pointer; padding: 8px 14px; font-family: 'Inter', sans-serif; transition: all 0.18s; width: 100%; margin-top: 10px; }
+    .btn-add-person:hover { border-color: #e53e3e; color: #e53e3e; }
+
+    /* FORMS */
+    .form-card { background: #1a1a1a; border-radius: 12px; padding: 24px; border: 1px solid #2a2a2a; max-width: 700px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    input, select, textarea { padding: 10px 12px; border: 1.5px solid #2a2a2a; border-radius: 8px; font-size: 13px; color: #fff; font-family: 'Inter', sans-serif; background: #111; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #e53e3e; }
+    textarea { resize: vertical; min-height: 80px; }
+    .form-actions { margin-top: 20px; display: flex; gap: 10px; }
+    select option { background: #1a1a1a; }
+
+    /* SECTION HEADER */
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .section-header h2 { font-size: 15px; font-weight: 700; color: #fff; }
+
+    /* TOAST */
+    #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #22c55e; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; z-index: 99999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+    #toast.show { opacity: 1; }
+
+    /* DELETE CONFIRM MODAL */
+    #delete-confirm-modal {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+      z-index: 10000; align-items: center; justify-content: center;
+    }
+    #delete-confirm-modal.show { display: flex; }
+    .delete-confirm-box {
+      background: #1a1a1a; border: 1px solid #450a0a; border-radius: 16px;
+      padding: 32px; max-width: 380px; width: 90%; text-align: center;
+    }
+    .delete-confirm-icon { font-size: 40px; margin-bottom: 12px; }
+    .delete-confirm-title { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    .delete-confirm-sub { font-size: 13px; color: #888; margin-bottom: 24px; }
+    .delete-confirm-btns { display: flex; gap: 12px; }
+    .delete-confirm-btns button { flex: 1; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; border: none; }
+    .btn-cancel-del { background: #2a2a2a; color: #aaa; }
+    .btn-cancel-del:hover { background: #333; }
+    .btn-confirm-del { background: #e53e3e; color: #fff; }
+    .btn-confirm-del:hover { background: #c53030; }
+
+    /* INVITE MODAL */
+    #invite-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; }
+    #invite-modal.show { display: flex; }
+    .invite-box { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px; padding: 32px; max-width: 400px; width: 90%; }
+    .invite-title { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .invite-sub { font-size: 13px; color: #666; margin-bottom: 20px; }
+
+    /* SHARE POPUP */
+    #share-popup { position: fixed; z-index: 9000; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; padding: 8px; box-shadow: 0 8px 40px rgba(0,0,0,0.7); min-width: 200px; display: none; flex-direction: column; gap: 2px; }
+    #share-popup.show { display: flex; }
+    .share-opt { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; color: #ccc; cursor: pointer; border: none; background: transparent; font-family: 'Inter', sans-serif; text-align: left; width: 100%; transition: background 0.15s; }
+    .share-opt:hover { background: #2a2a2a; color: #fff; }
+
+    /* SWIPE TO DELETE (table row) */
+    tr.clickable-row { cursor: pointer; }
+    tr.clickable-row:hover td { background: #1e1414 !important; }
+    tr.clickable-row:hover td:first-child { border-left: 3px solid rgba(229,62,62,0.5); padding-left: 9px; }
+    tr.clickable-row:active td { background: #2a1515 !important; }
+    tr.swiped td { opacity: 0.6; }
+
+    /* ── TAPPABLE ROWS & CARDS — ripple tap feedback ────────────────────── */
+    tr.clickable-row { position: relative; overflow: hidden; }
+    tr.clickable-row:active td { background: #2a1a1a !important; }
+
+    /* Ripple effect for table rows */
+    .tap-ripple {
+      position: absolute; border-radius: 50%;
+      background: rgba(229, 62, 62, 0.25);
+      transform: scale(0); animation: ripple-out 0.5s ease-out forwards;
+      pointer-events: none; z-index: 10;
+    }
+    @keyframes ripple-out {
+      to { transform: scale(4); opacity: 0; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Schedule job cards — tappable */
+    .crew-job-card[onclick] {
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+      position: relative; overflow: hidden;
+    }
+    .crew-job-card[onclick]:active {
+      background: #1a0a0a !important;
+      transform: scale(0.975);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
+    }
+    .crew-job-card[onclick]:hover { border-left-width: 5px; }
+
+    /* Permit table rows & dashboard rows */
+    tr[onclick] { cursor: pointer; position: relative; overflow: hidden; }
+    tr[onclick]:hover td { background: #1f1515 !important; }
+    tr[onclick]:active td { background: #2a1a1a !important; }
+    /* Subtle pencil hint on last cell of tappable rows */
+    tr[onclick] td:last-child::after,
+    tr.clickable-row td:last-child::after {
+      content: none; /* already handled via delete button in jobs table */
+    }
+    tr[onclick]:not(.clickable-row) td:last-child {
+      color: #555; font-size: 12px;
+    }
+
+    /* Visual "tap to edit" hint on job cards in schedule */
+    .crew-job-card[onclick]::after {
+      content: '✏️';
+      position: absolute; top: 10px; right: 12px;
+      font-size: 12px; opacity: 0.3;
+      pointer-events: none;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 600px) {
+      .sections-wrapper .section { padding: 14px 12px 80px; }
+      .cards { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+      .card { padding: 16px; }
+      .card-value { font-size: 28px; }
+      .panels { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .btn-outline { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <img src="logo.jpg" class="login-logo" alt="Maman Contracting"/>
+    <div class="login-title">Maman Contracting</div>
+    <div class="login-sub">Organizer — Sign in to continue</div>
+    <div class="login-field">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="you@mamancontracting.com" autocomplete="email"/>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <div style="position:relative;">
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') doLogin()"
+          style="width:100%;padding:12px 40px 12px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;"/>
+        <button type="button" onclick="togglePasswordVisibility()" 
+          style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#666;font-size:16px;padding:0;line-height:1;"
+          id="pw-toggle">👁️</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin:12px 0 4px;">
+      <input type="checkbox" id="remember-me" checked style="width:16px;height:16px;accent-color:#e53e3e;cursor:pointer;"/>
+      <label for="remember-me" style="font-size:13px;color:#aaa;cursor:pointer;font-weight:500;">Remember me</label>
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div id="delete-confirm-modal">
+  <div class="delete-confirm-box">
+    <div class="delete-confirm-icon">🗑️</div>
+    <div class="delete-confirm-title">Delete this job?</div>
+    <div class="delete-confirm-sub">This action can be undone within 30 seconds.</div>
+    <div class="delete-confirm-btns">
+      <button class="btn-cancel-del" onclick="closeDeleteConfirm()">Cancel</button>
+      <button class="btn-confirm-del" onclick="confirmDeleteJob()">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVITE MODAL -->
+<div id="invite-modal">
+  <div class="invite-box">
+    <div class="invite-title">✉️ Invite User</div>
+    <div class="invite-sub">They'll receive an email to set their password.</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
+      <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Email Address</label>
+      <input type="email" id="invite-email" placeholder="user@mamancontracting.com"
+        style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
+        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+    </div>
+    <div id="invite-error" style="color:#f87171;font-size:12px;margin-bottom:12px;min-height:16px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeInviteModal()" style="flex:1;padding:11px;background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
+      <button id="invite-send-btn" onclick="sendInvite()" style="flex:2;padding:11px;background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📨 Send Invite</button>
+    </div>
+  </div>
+</div>
+
+<!-- PERMIT MODAL -->
+<div id="permit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;overflow-y:auto;padding:20px 20px 100px;">
+  <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;max-width:600px;margin:auto;padding:28px;position:relative;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div>
+        <div style="font-size:18px;font-weight:800;color:#fff;" id="permit-modal-title">📋 Add Permit</div>
+        <div style="font-size:12px;color:#666;margin-top:2px;">Scan or enter permit details</div>
+      </div>
+      <button onclick="closePermitModal()" style="background:#2a2a2a;border:none;color:#aaa;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+    </div>
+
+    <!-- OCR SCAN ZONE -->
+    <div style="background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:16px;margin-bottom:20px;">
+      <div style="font-size:12px;font-weight:700;color:#e53e3e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">📸 Scan Permit (OCR)</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <input type="file" id="ocr-camera-input" accept="image/*" capture="environment" style="display:none" onchange="handleOCRFile(this)"/>
+        <input type="file" id="ocr-library-input" accept="image/*" style="display:none" onchange="handleOCRFile(this)"/>
+        <input type="file" id="ocr-file-input" accept=".pdf,image/*" style="display:none" onchange="handleOCRFile(this)"/>
+        <button onclick="document.getElementById('ocr-camera-input').click()" style="flex:1;min-width:100px;padding:10px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;color:#ccc;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#e53e3e'" onmouseout="this.style.borderColor='#2a2a2a'">📷 Camera</button>
+        <button onclick="document.getElementById('ocr-library-input').click()" style="flex:1;min-width:100px;padding:10px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;color:#ccc;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#e53e3e'" onmouseout="this.style.borderColor='#2a2a2a'">🖼️ Photo Library</button>
+        <button onclick="document.getElementById('ocr-file-input').click()" style="flex:1;min-width:100px;padding:10px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;color:#ccc;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.2s;" onmouseover="this.style.borderColor='#e53e3e'" onmouseout="this.style.borderColor='#2a2a2a'">📁 File Upload</button>
+      </div>
+      <div id="ocr-status" style="font-size:13px;color:#aaa;min-height:20px;"></div>
+      <div id="ocr-preview-img" style="margin-top:8px;display:none;"><img id="ocr-thumb" style="max-height:100px;border-radius:8px;border:1px solid #2a2a2a;" /></div>
+    </div>
+
+    <!-- PERMIT FORM -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Permit Number</label>
+        <input type="text" id="pm-permitNumber" placeholder="e.g. 2024-089" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Permit Type Code</label>
+        <input type="text" id="pm-permitTypeCode" placeholder="e.g. 115" inputmode="numeric" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Valid From</label>
+        <input type="date" id="pm-validFrom" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Expiration Date</label>
+        <input type="date" id="pm-expirationDate" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Permit Holder</label>
+        <input type="text" id="pm-permitHolder" placeholder="e.g. Maman Contracting Inc." style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Job Address</label>
+        <input type="text" id="pm-jobAddress" placeholder="e.g. 145 Main St" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Status</label>
+        <select id="pm-status" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
+          <option>Pending</option>
+          <option>Approved</option>
+          <option>Expired</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Notes</label>
+        <textarea id="pm-notes" placeholder="Any notes…" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;min-height:70px;resize:vertical;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:20px;">
+      <button onclick="closePermitModal()" style="flex:1;padding:12px;background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
+      <button id="save-permit-btn" onclick="savePermit()" style="flex:2;padding:12px;background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">💾 Save Permit</button>
+    </div>
+  </div>
+</div>
+
+<!-- DRAWER OVERLAY -->
+<div id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- SLIDE-OUT DRAWER -->
+<div id="drawer">
+  <div class="drawer-header">
+    <img src="logo.jpg" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;" alt="Maman Contracting"/>
+    <div class="drawer-user-info">
+      <div class="drawer-user-name" id="drawer-user-name">Maman Contracting</div>
+      <div class="drawer-user-email" id="drawer-user-email">—</div>
+    </div>
+  </div>
+  <nav class="drawer-nav">
+    <div class="drawer-item active" data-section="0" onclick="navTo(0)"><span class="di">🏠</span><span>Dashboard</span></div>
+    <div class="drawer-item" data-section="1" onclick="navTo(1)"><span class="di" style="display:flex;align-items:center;justify-content:center;"><svg width="22" height="20" viewBox="0 0 22 20" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="11,1 21,19 1,19" stroke="#e53e3e" stroke-width="2.5" fill="white" stroke-linejoin="round"/><rect x="10" y="8" width="2" height="5" fill="#e53e3e" rx="1"/><circle cx="11" cy="16" r="1" fill="#e53e3e"/></svg></span><span>Jobs</span></div>
+    <div class="drawer-item" data-section="2" onclick="navTo(2)"><span class="di">📋</span><span>Permits</span></div>
+    <div class="drawer-item" data-section="3" onclick="navTo(3)"><span class="di">📅</span><span>Schedule</span></div>
+    <div class="drawer-item" data-section="4" onclick="navTo(4)"><span class="di">👥</span><span>Contacts</span></div>
+    <div class="drawer-item" data-section="5" onclick="navTo(5)"><span class="di">👥</span><span>Users</span></div>
+  </nav>
+  <div class="drawer-divider"></div>
+  <div class="drawer-footer">
+    <div style="height:1px;background:#2a2a2a;margin:4px 16px;"></div>
+    <div class="drawer-item" onclick="toggleTheme(); closeDrawer();" id="theme-drawer-item" style="color:rgba(255,255,255,0.6);"><span class="di" style="font-size:18px;">🌙</span><span id="theme-drawer-label">Night / Day Mode</span></div>
+    <div class="drawer-item" onclick="doSignOut()" style="color:#f87171;"><span class="di">🚪</span><span>Sign Out</span></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav id="bottom-nav">
+  <button class="bnav-item active" data-section="0" onclick="navTo(0)">
+    <span class="bnav-icon">🏠</span><span class="bnav-label">Home</span>
+  </button>
+  <button class="bnav-item" data-section="1" onclick="navTo(1)">
+    <span class="bnav-icon" style="display:flex;align-items:center;justify-content:center;"><svg class="tri-svg" width="22" height="20" viewBox="0 0 22 20" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="11,1 21,19 1,19" stroke="#e53e3e" stroke-width="2.5" fill="white" stroke-linejoin="round"/><rect x="10" y="8" width="2" height="5" fill="#e53e3e" rx="1"/><circle cx="11" cy="16" r="1" fill="#e53e3e"/></svg></span><span class="bnav-label jobs-label">Jobs</span>
+  </button>
+  <button class="bnav-item" data-section="2" onclick="navTo(2)">
+    <span class="bnav-icon">📋</span><span class="bnav-label">Permits</span>
+  </button>
+  <button class="bnav-item" data-section="3" onclick="navTo(3)">
+    <span class="bnav-icon">📅</span><span class="bnav-label">Schedule</span>
+  </button>
+  <button class="bnav-item" data-section="4" onclick="navTo(4)">
+    <span class="bnav-icon">👥</span><span class="bnav-label">Contacts</span>
+  </button>
+  <button class="bnav-item" data-section="5" onclick="navTo(5)">
+    <span class="bnav-icon">👥</span><span class="bnav-label">Users</span>
+  </button>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="btn-hamburger" onclick="openDrawer()" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="topbar-center">
+      <img src="logo.jpg" alt="Maman Contracting"/>
+      <h1>Maman Contracting</h1>
+    </div>
+    <div class="topbar-actions">
+      <button id="undo-btn" onclick="undoDelete()" title="Undo"
+        style="display:none;background:#422006;border:1px solid #f59e0b;color:#fbbf24;width:30px;height:30px;border-radius:50%;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;align-items:center;justify-content:center;">↩</button>
+
+      <button id="theme-toggle-btn" onclick="toggleTheme()" title="Day / Night"
+        style="background:#1e1e1e;border:1px solid #333;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.2s;">🌙</button>
+      <div class="notif-bell">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <span class="notif-badge" id="notif-count" style="display:none;">0</span>
+      </div>
+      <div class="topbar-user" id="topbar-user" style="display:none;">
+        <div id="user-avatar-sm" class="topbar-user" style="width:24px;height:24px;border-radius:50%;background:#333;border:1px solid #555;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#eee;flex-shrink:0;cursor:default;letter-spacing:0.3px;"></div>
+        <button id="signout-topbar-btn" onclick="doSignOut()" title="Sign Out"
+          style="background:#1e1e1e;border:1px solid #333;font-size:11px;cursor:pointer;padding:4px 10px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;transition:all 0.2s;flex-shrink:0;font-weight:600;font-family:'Inter',sans-serif;letter-spacing:0.3px;"
+          onmouseover="this.style.color='#fff';this.style.background='#2a2a2a'" onmouseout="this.style.color='#aaa';this.style.background='#1e1e1e'">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="sections-outer" id="sections-outer">
+      <div class="sections-wrapper" id="sections-wrapper">
+
+        <!-- SECTION 0: DASHBOARD -->
+        <div class="section" id="sec-dashboard">
+          <!-- Permit Expiry Alert Banner -->
+          <div class="permit-alert-banner" id="permit-alert-banner">
+            <div class="permit-alert-title">⚠️ PERMIT EXPIRING SOON</div>
+            <div id="permit-alert-items"></div>
+          </div>
+
+          <div class="cards">
+            <div class="card blue">
+              <div class="card-label">Total Jobs</div>
+              <div class="card-value" id="stat-total">0</div>
+              <div class="card-sub">All time</div>
+            </div>
+            <div class="card red">
+              <div class="card-label">Open Jobs</div>
+              <div class="card-value" id="stat-open">0</div>
+              <div class="card-sub">Pending or in progress</div>
+            </div>
+            <div class="card green clickable" onclick="jumpToCompleted()" title="View completed jobs">
+              <div class="card-label">Completed ↗</div>
+              <div class="card-value" id="stat-completed">0</div>
+              <div class="card-sub">Click to view all</div>
+            </div>
+            <div class="card yellow">
+              <div class="card-label">Blocked</div>
+              <div class="card-value" id="stat-blocked">0</div>
+              <div class="card-sub">Needs attention</div>
+            </div>
+          </div>
+
+          <div class="panels">
+            <div class="panel">
+              <div class="panel-title">
+                Recent Jobs
+                <a onclick="showSection(1,document.querySelector('[data-section=\'1\']'))">View All →</a>
+              </div>
+              <!-- Mini search for dashboard recent jobs -->
+              <input class="search-input" type="text" id="dash-search"
+                placeholder="🔍 Quick search…" oninput="filterDashRecent()"
+                style="width:100%;margin-bottom:12px;"/>
+              <table>
+                <thead><tr><th>Address</th><th>Task Type</th><th>Crew</th><th>Status</th><th>Schedule</th></tr></thead>
+                <tbody id="dashboard-recent-tbody">
+                  <tr><td colspan="5" style="text-align:center;color:#555;padding:20px;">Loading…</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="panel">
+              <div class="panel-title">🔔 Activity &amp; Alerts</div>
+              <div id="activity-log-panel">
+                <div class="notif-item"><div class="notif-title" style="color:#555;">Loading…</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION 1: JOBS -->
+        <div class="section" id="sec-jobs">
+          <div class="section-header">
+            <h2>Job Management</h2>
+            <button class="btn btn-primary" onclick="openJobModal()">+ New Job</button>
+          </div>
+          <!-- Prominent search -->
+          <input class="search-input-lg" type="text" id="job-search"
+            placeholder="🔍  Search by address, customer, permit #, task type…" oninput="filterJobs()"/>
+          <!-- Filter pills -->
+          <div class="filter-pills">
+            <button class="filter-pill active" data-filter="" onclick="setJobFilter('',this)">All</button>
+            <button class="filter-pill" data-filter="open" onclick="setJobFilter('open',this)">Open</button>
+            <button class="filter-pill" data-filter="In Progress" onclick="setJobFilter('In Progress',this)">In Progress</button>
+            <button class="filter-pill green" data-filter="Completed" onclick="setJobFilter('Completed',this)">✅ Completed</button>
+            <button class="filter-pill" data-filter="blocked" onclick="setJobFilter('blocked',this)">🚫 Blocked</button>
+            <button class="filter-pill" data-filter="On Hold" onclick="setJobFilter('On Hold',this)">On Hold</button>
+          </div>
+          <div class="panel" style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Job Address</th>
+                  <th>Customer</th>
+                  <th>Task Type</th>
+                  <th>Alt. Parking</th>
+                  <th>Project Size</th>
+                  <th>Crew</th>
+                  <th>Schedule Day</th>
+                  <th>Completion Day</th>
+                  <th>Status</th>
+                  <th>Permit #</th>
+                  <th>Permit Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="jobs-tbody">
+                <tr><td colspan="12" style="text-align:center;color:#555;padding:20px;">Loading jobs…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SECTION 2: PERMITS -->
+        <div class="section" id="sec-permits">
+          <div class="section-header">
+            <h2>Permits Management</h2>
+            <button class="btn btn-primary" onclick="openPermitModal()">+ Add Permit</button>
+          </div>
+          <div class="filters">
+            <input class="search-input" type="text" id="permit-search" placeholder="🔍  Search permits…" oninput="filterPermitsDirect()" style="flex:1;min-width:200px;"/>
+            <select class="filter-select" id="permit-status-filter" onchange="filterPermitsDirect()">
+              <option value="">All Statuses</option>
+              <option>Pending</option>
+              <option>Approved</option>
+              <option>Expired</option>
+            </select>
+          </div>
+          <div id="permits-cards-container">
+            <div style="text-align:center;color:#555;padding:40px;">Loading permits…</div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: SCHEDULE -->
+        <div class="section" id="sec-schedules">
+          <div class="section-header">
+            <h2>Schedule</h2>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button id="sched-add-job-btn" class="btn btn-primary" onclick="openJobModalWithCrew()" style="padding:8px 14px;font-size:13px;display:none;">+ Add Job</button>
+              <button onclick="smartShare(event,'sched-share-btn')" id="sched-share-btn"
+                style="background:rgba(255,255,255,0.08);border:none;border-radius:8px;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"
+                title="Share Schedule">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="8 6 12 2 16 6"/>
+                  <line x1="12" y1="2" x2="12" y2="15"/>
+                  <path d="M20 14v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+            <button class="crew-pill active" data-crew="all" onclick="setCrewFilter('all',this)">All Crews</button>
+            <button class="crew-pill" data-crew="asphalt" onclick="setCrewFilter('asphalt',this)">🟠 Asphalt</button>
+            <button class="crew-pill" data-crew="concrete" onclick="setCrewFilter('concrete',this)">🔵 Concrete</button>
+          </div>
+          <div id="sched-tbd-section" style="margin-bottom:24px;">
+            <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📌 Date TBD</div>
+            <div id="sched-tbd-container"></div>
+          </div>
+          <div id="sched-dated-section">
+            <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📅 Scheduled Jobs</div>
+            <div id="sched-dated-container"></div>
+          </div>
+        </div>
+
+        <!-- SECTION 4: CONTACTS -->
+        <div class="section" id="sec-contacts">
+          <div class="section-header">
+            <h2>Contacts</h2>
+            <button class="btn btn-primary" onclick="openContactModal()" style="font-size:13px;font-weight:800;">➕ Add Contact</button>
+          </div>
+          <input class="search-input-lg" type="text" id="contact-search"
+            placeholder="🔍  Search by company, name, or phone…" oninput="filterContacts()"/>
+          <div class="filter-pills" style="margin-bottom:14px;">
+            <button class="filter-pill active" data-cfilter="all" onclick="setContactFilter('all',this)">All</button>
+            <button class="filter-pill" data-cfilter="companies" onclick="setContactFilter('companies',this)">🏢 Companies</button>
+            <button class="filter-pill" data-cfilter="individuals" onclick="setContactFilter('individuals',this)">👤 Individuals</button>
+          </div>
+          <div id="contacts-list">
+            <div class="contact-empty">No contacts yet. Contacts are auto-created when jobs are saved with a phone number, or add manually.</div>
+          </div>
+        </div>
+
+        <!-- SECTION 5: USERS -->
+        <div class="section" id="sec-users">
+          <div class="section-header">
+            <h2>User Management</h2>
+            <button id="invite-user-btn" class="btn btn-primary" onclick="openInviteModal()" style="display:none;padding:8px 14px;font-size:13px;">✉️ Invite User</button>
+          </div>
+          <div class="user-list" id="users-list">
+            <div style="text-align:center;color:#555;padding:40px;">Loading users…</div>
+          </div>
+        </div>
+
+      </div><!-- end sections-wrapper -->
+    </div><!-- end sections-outer -->
+  </div><!-- end content -->
+</div><!-- end main -->
+
+<!-- SHARE POPUP -->
+<div id="share-popup" role="menu">
+  <button class="share-opt" onclick="shareAction('native')">📤 Share…</button>
+  <button class="share-opt" onclick="shareAction('copy')">📋 Copy to Clipboard</button>
+  <button class="share-opt" onclick="shareAction('email')">📧 Email</button>
+  <button class="share-opt" onclick="shareAction('print')">🖨️ Print</button>
+</div>
+
+<!-- CONTACT MODAL -->
+<div id="contact-modal">
+  <div class="contact-modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+      <div>
+        <div class="contact-modal-title" id="contact-modal-title">➕ Add Contact</div>
+        <div class="contact-modal-sub">Fill in contact details</div>
+      </div>
+      <button onclick="closeContactModal()" style="background:#2a2a2a;border:none;color:#aaa;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>
+    </div>
+
+    <div class="contact-form-field">
+      <label>Company / Customer Name *</label>
+      <input type="text" id="cf-companyName" placeholder="e.g. Smith Family or ABC Corp" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+    </div>
+    <div class="contact-form-field">
+      <label>Email</label>
+      <input type="email" id="cf-email" placeholder="e.g. contact@company.com" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+    </div>
+    <div class="contact-form-field">
+      <label>Address</label>
+      <input type="text" id="cf-address" placeholder="e.g. 145 Main St, Brooklyn, NY" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+    </div>
+    <div class="contact-form-field">
+      <label>Notes</label>
+      <textarea id="cf-notes" placeholder="Any notes about this contact…" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
+    </div>
+
+    <!-- PEOPLE SECTION -->
+    <div class="persons-section">
+      <div class="persons-section-title">
+        <span>👤 People</span>
+        <span style="font-size:10px;color:#555;">at least 1 required</span>
+      </div>
+      <div id="persons-list"></div>
+      <button class="btn-add-person" onclick="addPersonRow()">➕ Add Person</button>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:4px;">
+      <button onclick="closeContactModal()" style="flex:1;padding:12px;background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
+      <button id="save-contact-btn" onclick="saveContact()" style="flex:2;padding:12px;background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">💾 Save Contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW JOB MODAL -->
+<div id="job-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;overflow-y:auto;padding:20px 20px 100px;">
+  <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;max-width:640px;margin:auto;padding:28px;position:relative;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <div>
+        <div style="font-size:18px;font-weight:800;color:#fff;" id="modal-title">+ New Job</div>
+        <div style="font-size:12px;color:#666;margin-top:2px;" id="modal-subtitle">Fill in all the job details below</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button id="modal-delete-btn" onclick="requestDeleteFromModal()" style="display:none;background:#450a0a;border:1px solid #7f1d1d;color:#f87171;font-size:13px;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;">🗑️ Delete</button>
+        <button onclick="closeJobModal()" style="background:#2a2a2a;border:none;color:#aaa;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Customer Name</label>
+        <input type="text" id="f-customerName" placeholder="e.g. John Smith" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Phone Number</label>
+        <input type="tel" id="f-phone" placeholder="e.g. (718) 555-0100" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Email</label>
+        <input type="email" id="f-email" placeholder="e.g. customer@email.com" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Invoice / Estimate #</label>
+        <input type="text" id="f-invoiceNumber" placeholder="e.g. INV-2025" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Job Address</label>
+        <input type="text" id="f-address" placeholder="e.g. 145 Main St, Brooklyn, NY" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Task Type</label>
+        <select id="f-taskType" onchange="handleTaskTypeChange()" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
+          <option value="">Select task type…</option>
+          <option value="BPP">BPP</option>
+          <option value="Parking Lot">Parking Lot</option>
+          <option value="Sidewalk">Sidewalk</option>
+          <option value="Custom">Custom</option>
+        </select>
+      </div>
+      <div id="f-customTaskWrap" style="display:none;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Custom Task Type</label>
+        <input type="text" id="f-customTask" placeholder="e.g. Driveway, Roof Repair…" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Project Size</label>
+        <input type="text" id="f-projectSize" placeholder="e.g. 44.66' × 22'" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Job Type (Crew)</label>
+        <select id="f-jobType" onchange="handleJobTypeChange()" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
+          <option value="">Select job type…</option>
+          <option value="asphalt">Asphalt</option>
+          <option value="concrete">Concrete</option>
+        </select>
+      </div>
+      <div id="f-concreteSubWrap" style="display:none;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Concrete Sub Name</label>
+        <input type="text" id="f-concreteSub" placeholder="e.g. Central Concrete" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Alternate Side Parking Days</label>
+        <input type="text" id="f-altParkingDays" placeholder="e.g. Mon &amp; Thu" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Parking Time</label>
+        <input type="text" id="f-altParkingTime" placeholder="e.g. 8:00am – 9:30am" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Job Blocked?</label>
+        <select id="f-blocked" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Job Status</label>
+        <select id="f-status" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
+          <option>Pending</option>
+          <option>In Progress</option>
+          <option>Completed</option>
+          <option>On Hold</option>
+          <option>Cancelled</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Schedule Day</label>
+        <input type="date" id="f-scheduleDay" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Completion Day</label>
+        <input type="date" id="f-completionDay" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Permit Code</label>
+        <input type="text" id="f-permitCode" placeholder="e.g. BKN-2026" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Permit Number</label>
+        <input type="text" id="f-permitNumber" placeholder="e.g. 2024-089" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Permit Expiry Date</label>
+        <input type="date" id="f-permitExpiry" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Notes</label>
+        <textarea id="f-notes" placeholder="Add any notes or special instructions…" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;min-height:80px;resize:vertical;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
+      </div>
+
+      <!-- PERMIT UPLOAD -->
+      <div style="grid-column:1/-1;background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:16px;">
+        <div style="font-size:12px;font-weight:700;color:#e53e3e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">📋 Permit Document</div>
+        <input type="file" accept=".pdf,.jpg,.png" id="permit-upload" style="display:none" onchange="handleFile(this,'permit-preview')"/>
+        <div onclick="document.getElementById('permit-upload').click()" style="border:2px dashed #2a2a2a;border-radius:8px;padding:18px;text-align:center;cursor:pointer;color:#555;font-size:13px;" onmouseover="this.style.borderColor='#e53e3e'" onmouseout="this.style.borderColor='#2a2a2a'">📄 Click to upload permit (PDF or image)</div>
+        <div id="permit-preview" style="margin-top:8px;font-size:12px;color:#4ade80;display:none;"></div>
+      </div>
+
+      <!-- JOB PHOTOS -->
+      <div style="grid-column:1/-1;background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:16px;">
+        <div style="font-size:12px;font-weight:700;color:#e53e3e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">📸 Job Completion Photos</div>
+        <input type="file" accept="image/*" multiple id="photos-upload" style="display:none" onchange="handleFiles(this,'photos-preview')"/>
+        <div onclick="document.getElementById('photos-upload').click()" style="border:2px dashed #2a2a2a;border-radius:8px;padding:18px;text-align:center;cursor:pointer;color:#555;font-size:13px;" onmouseover="this.style.borderColor='#e53e3e'" onmouseout="this.style.borderColor='#2a2a2a'">🖼️ Click to upload photos (multiple allowed)</div>
+        <div id="photos-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
+      </div>
+
+      <!-- RECEIPTS -->
+      <div style="grid-column:1/-1;background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:16px;">
+        <div style="font-size:12px;font-weight:700;color:#e53e3e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">🧾 Material Receipts</div>
+        <input type="file" accept=".pdf,image/*" multiple id="receipts-upload" style="display:none" onchange="handleFiles(this,'receipts-preview')"/>
+        <div onclick="document.getElementById('receipts-upload').click()" style="border:2px dashed #2a2a2a;border-radius:8px;padding:18px;text-align:center;cursor:pointer;color:#555;font-size:13px;" onmouseover="this.style.borderColor='#e53e3e'" onmouseout="this.style.borderColor='#2a2a2a'">🧾 Click to upload receipts (multiple allowed)</div>
+        <div id="receipts-preview" style="margin-top:8px;font-size:12px;color:#4ade80;display:none;"></div>
+      </div>
+
+      <!-- CUSTOM FIELDS -->
+      <div style="grid-column:1/-1;border-top:1px solid #2a2a2a;padding-top:20px;margin-top:4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <span style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Custom Fields</span>
+          <button type="button" onclick="addCustomField()"
+            style="display:flex;align-items:center;gap:6px;padding:7px 14px;background:transparent;border:1.5px dashed #444;border-radius:8px;color:#aaa;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.18s;"
+            onmouseover="this.style.borderColor='#e53e3e';this.style.color='#e53e3e'"
+            onmouseout="this.style.borderColor='#444';this.style.color='#aaa'">
+            ＋ Add Custom Field
+          </button>
+        </div>
+        <div id="custom-fields-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:24px;">
+      <button onclick="closeJobModal()" style="flex:1;padding:12px;background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
+      <button id="save-job-btn" onclick="saveJob()" style="flex:2;padding:12px;background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">💾 Save Job</button>
+    </div>
+  </div>
+</div>
+<!-- FIREBASE + MAIN SCRIPT -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence }
+    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc, onSnapshot, orderBy, query, limit, serverTimestamp, arrayUnion }
+    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c",
+    authDomain: "maman-contracting-app.firebaseapp.com",
+    projectId: "maman-contracting-app",
+    storageBucket: "maman-contracting-app.firebasestorage.app",
+    messagingSenderId: "498283734366",
+    appId: "1:498283734366:web:0d4704ae3212923a385bcf"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const ADMIN_EMAIL = 'nir@mamancontracting.com';
+
+  let currentUser = null;
+  let allJobs = [];
+  let allContacts = [];
+  let allUsers = [];
+  let jobsUnsubscribe = null;
+  let activityUnsubscribe = null;
+  let contactsUnsubscribe = null;
+  let usersUnsubscribe = null;
+  let editingJobId = null;
+  let pendingDeleteJobId = null;
+  let deletedJobData = null;
+  let undoTimer = null;
+
+  // ── HELPERS ──────────────────────────────────────────────────────────────
+  window.showToast = function(msg, color, duration) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = color || '#22c55e';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration || 3500);
+  };
+
+  function statusBadge(status) {
+    const map = {
+      'Completed': 'badge-green',
+      'In Progress': 'badge-yellow',
+      'Blocked': 'badge-red',
+      'Pending': 'badge-blue',
+      'On Hold': 'badge-gray',
+      'Cancelled': 'badge-orange'
+    };
+    const cls = map[status] || 'badge-gray';
+    const icon = status === 'Completed' ? '✅ ' : '';
+    return `<span class="badge ${cls}">${icon}${status || '—'}</span>`;
+  }
+
+  function fmtDate(val) {
+    if (!val) return '—';
+    if (val && val.toDate) return val.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const d = new Date(val + 'T00:00:00');
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    return val;
+  }
+
+  function crewLabel(j) {
+    if (j.jobType === 'asphalt') return 'Asphalt Crew';
+    if (j.jobType === 'concrete') return j.concreteSub ? j.concreteSub : 'Concrete';
+    if (j.crew) return j.crew;
+    return '—';
+  }
+
+  function crewBadge(j) {
+    if (j.jobType === 'asphalt') return '<span class="badge badge-asphalt">🟠 Asphalt Crew</span>';
+    if (j.jobType === 'concrete') {
+      const name = j.concreteSub || 'Concrete';
+      return `<span class="badge badge-concrete">🔵 ${name}</span>`;
+    }
+    if (j.crew) {
+      return j.crew.toLowerCase().includes('asphalt')
+        ? '<span class="badge badge-asphalt">🟠 Asphalt Crew</span>'
+        : `<span class="badge badge-concrete">🔵 ${j.crew}</span>`;
+    }
+    return '<span class="badge badge-gray">—</span>';
+  }
+
+  function permitStatusBadge(j) {
+    if (!j.permitNumber && !j.permitCode) return '<span class="badge badge-gray">None</span>';
+    if (j.permitExpiry) {
+      const exp = new Date(j.permitExpiry);
+      const now = new Date();
+      const diff = (exp - now) / (1000 * 60 * 60 * 24);
+      if (diff < 0) return '<span class="badge badge-red">Expired</span>';
+      if (diff < 30) return '<span class="badge badge-orange">Expiring Soon</span>';
+      return '<span class="badge badge-green">Valid</span>';
+    }
+    return '<span class="badge badge-blue">On File</span>';
+  }
+
+  function daysUntil(dateStr) {
+    if (!dateStr) return null;
+    const exp = new Date(dateStr + 'T00:00:00');
+    const now = new Date(); now.setHours(0,0,0,0);
+    return Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+  }
+
+  function normalizePhone(phone) {
+    return (phone || '').replace(/\D/g, '');
+  }
+
+  // ── AUTH ──────────────────────────────────────────────────────────────────
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      currentUser = user;
+      const ls = document.getElementById('login-screen');
+      ls.classList.add('hidden');
+      setTimeout(() => ls.classList.add('gone'), 280);
+      document.getElementById('topbar-user').style.display = 'flex';
+      const el = document.getElementById('user-email-display');
+      if (el) el.textContent = user.email;
+      const initials = user.email.split('@')[0].slice(0, 2).toUpperCase();
+      const avatarEl = document.getElementById('user-avatar-sm');
+      if (avatarEl) avatarEl.textContent = initials;
+      const usernameEl = document.getElementById('topbar-username');
+      if (usernameEl) usernameEl.textContent = user.email.split('@')[0];
+      // Drawer header
+      const da = document.getElementById('drawer-avatar');
+      const dn = document.getElementById('drawer-user-name');
+      const de = document.getElementById('drawer-user-email');
+      if (da) da.textContent = initials;
+      if (dn) dn.textContent = user.displayName || user.email.split('@')[0];
+      if (de) de.textContent = user.email;
+      // Show invite button for admin only
+      const inviteBtn = document.getElementById('invite-user-btn');
+      if (inviteBtn) inviteBtn.style.display = (user.email === ADMIN_EMAIL) ? 'inline-flex' : 'none';
+      // Store admin status globally
+      window._isAdmin = (user.email === ADMIN_EMAIL);
+      startListeners();
+    } else {
+      currentUser = null;
+      const ls2 = document.getElementById('login-screen');
+      ls2.classList.remove('gone');
+      requestAnimationFrame(() => ls2.classList.remove('hidden'));
+      document.getElementById('topbar-user').style.display = 'none';
+      if (jobsUnsubscribe) jobsUnsubscribe();
+      if (activityUnsubscribe) activityUnsubscribe();
+      if (contactsUnsubscribe) contactsUnsubscribe();
+      if (usersUnsubscribe) usersUnsubscribe();
+      if (permitsUnsubscribe) permitsUnsubscribe();
+    }
+  });
+
+  window.openJobModalWithCrew = function() {
+    openJobModal();
+    const crew = window._schedCrewFilter;
+    if (crew && crew !== 'all') {
+      setTimeout(() => {
+        const jobTypeEl = document.getElementById('field-jobType');
+        if (jobTypeEl) {
+          jobTypeEl.value = crew;
+          jobTypeEl.dispatchEvent(new Event('change'));
+        }
+      }, 100);
+    }
+  };
+
+  window.addJobToSchedule = function(jobId) {
+    const job = allJobs.find(j => j.id === jobId);
+    if (!job) return;
+    // Navigate to Schedule tab
+    navTo(3);
+    // Open edit modal for this job pre-focused on scheduleDay field
+    setTimeout(() => {
+      openEditJob(jobId);
+      // Scroll to scheduleDay field
+      const sd = document.getElementById('field-scheduleDay');
+      if (sd) {
+        sd.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        sd.focus();
+        sd.style.borderColor = '#22c55e';
+        setTimeout(() => sd.style.borderColor = '', 2000);
+      }
+    }, 300);
+  };
+
+  window.togglePasswordVisibility = function() {
+    const input = document.getElementById('login-password');
+    const btn = document.getElementById('pw-toggle');
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      btn.textContent = '👁️';
+    }
+  };
+
+  window.doLogin = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass  = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+    const btn   = document.getElementById('login-btn');
+    errEl.textContent = '';
+    if (!email || !pass) { errEl.textContent = 'Please enter email and password.'; return; }
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    try {
+      const rememberMe = document.getElementById('remember-me')?.checked !== false;
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch(e) {
+      errEl.textContent = e.code === 'auth/invalid-credential' ? 'Invalid email or password.' : e.message;
+      btn.disabled = false; btn.textContent = 'Sign In';
+    }
+  };
+
+  window.doSignOut = async function() { await signOut(auth); };
+
+  // ── LISTENERS ─────────────────────────────────────────────────────────────
+  function startListeners() {
+    const jobsQ = query(collection(db, 'jobs'), orderBy('createdAt', 'desc'));
+    jobsUnsubscribe = onSnapshot(jobsQ, snap => {
+      allJobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderJobsTable(allJobs);
+      renderDashboardRecent(allJobs);
+      updateStats(allJobs);
+      renderSchedule();
+      checkPermitExpiry();
+      // Re-render contacts so job counts stay fresh
+      if (allContacts.length) renderContacts(allContacts);
+    });
+
+    const actQ = query(collection(db, 'activity'), orderBy('timestamp', 'desc'), limit(10));
+    activityUnsubscribe = onSnapshot(actQ, snap => {
+      const items = snap.docs.map(d => d.data());
+      renderActivityLog(items);
+      document.getElementById('notif-count').textContent = items.length;
+    });
+
+    const contactsQ = query(collection(db, 'contacts'), orderBy('updatedAt', 'desc'));
+    contactsUnsubscribe = onSnapshot(contactsQ, snap => {
+      allContacts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderContacts(allContacts);
+    });
+
+
+    const usersQ = query(collection(db, 'users'), orderBy('invitedAt', 'desc'));
+    usersUnsubscribe = onSnapshot(usersQ, snap => {
+      allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderUsers(allUsers);
+    });
+
+    const permitsColQ = query(collection(db, 'permits'), orderBy('createdAt', 'desc'));
+    permitsUnsubscribe = onSnapshot(permitsColQ, snap => {
+      allStandalonePermits = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderPermitsCards(allStandalonePermits);
+    });
+  }
+
+  // ── STATS ─────────────────────────────────────────────────────────────────
+  function updateStats(jobs) {
+    document.getElementById('stat-total').textContent = jobs.length;
+    document.getElementById('stat-open').textContent =
+      jobs.filter(j => j.status === 'Pending' || j.status === 'In Progress').length;
+    document.getElementById('stat-completed').textContent =
+      jobs.filter(j => j.status === 'Completed').length;
+    document.getElementById('stat-blocked').textContent =
+      jobs.filter(j => j.blocked === 'yes').length;
+  }
+
+  // ── PERMIT EXPIRY CHECK ───────────────────────────────────────────────────
+  function checkPermitExpiry() {
+    const banner = document.getElementById('permit-alert-banner');
+    const itemsEl = document.getElementById('permit-alert-items');
+    const actLog = document.getElementById('activity-log-panel');
+
+    const expiring = allJobs.filter(j => {
+      if (!j.permitExpiry) return false;
+      if (j.status === 'Completed' || j.status === 'Cancelled') return false;
+      const days = daysUntil(j.permitExpiry);
+      return days !== null && days >= 0 && days <= 4;
+    });
+
+    if (expiring.length === 0) {
+      banner.classList.remove('show');
+      return;
+    }
+
+    banner.classList.add('show');
+    itemsEl.innerHTML = expiring.map(j => {
+      const days = daysUntil(j.permitExpiry);
+      const daysLabel = days === 0 ? 'TODAY!' : days === 1 ? '1 day left' : `${days} days left`;
+      const permitNum = j.permitNumber || j.permitCode || 'N/A';
+      return `<div class="permit-alert-item">
+        <div>
+          <div class="permit-alert-info">📋 ${permitNum} · ${j.address || '—'}</div>
+          <div class="permit-alert-meta">Expires: ${fmtDate(j.permitExpiry)}</div>
+        </div>
+        <span class="permit-alert-days">⚠️ ${daysLabel}</span>
+      </div>`;
+    }).join('');
+
+    // Also inject into activity log panel at top
+    if (actLog) {
+      const alertHtml = expiring.map(j => {
+        const days = daysUntil(j.permitExpiry);
+        const daysLabel = days === 0 ? 'Expires TODAY' : `${days} day${days !== 1 ? 's' : ''} left`;
+        return `<div class="notif-item" style="border-left:3px solid #e53e3e;padding-left:10px;">
+          <div class="notif-title"><span class="notif-dot dot-red"></span>⚠️ Permit Expiring</div>
+          <div class="notif-sub">${j.address || '—'} · ${j.permitNumber || j.permitCode || ''}</div>
+          <div class="notif-sub" style="color:#e53e3e;font-weight:600;">${daysLabel}</div>
+        </div>`;
+      }).join('');
+      // Prepend to existing content
+      actLog.insertAdjacentHTML('afterbegin', alertHtml);
+    }
+  }
+
+  // ── JOBS TABLE ─────────────────────────────────────────────────────────────
+  window._jobFilter = '';
+  window._jobSearch = '';
+
+  window.setJobFilter = function(filter, btnEl) {
+    window._jobFilter = filter;
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+    filterJobs();
+  };
+
+  window.filterJobs = function() {
+    const search = (document.getElementById('job-search').value || '').toLowerCase();
+    window._jobSearch = search;
+    const filter = window._jobFilter;
+
+    const filtered = allJobs.filter(j => {
+      const matchSearch = !search ||
+        (j.customerName || '').toLowerCase().includes(search) ||
+        (j.address || '').toLowerCase().includes(search) ||
+        (j.invoiceNumber || '').toLowerCase().includes(search) ||
+        (j.taskType || '').toLowerCase().includes(search) ||
+        (j.status || '').toLowerCase().includes(search) ||
+        (j.permitNumber || '').toLowerCase().includes(search) ||
+        (j.permitCode || '').toLowerCase().includes(search) ||
+        (crewLabel(j) || '').toLowerCase().includes(search);
+
+      let matchFilter = true;
+      if (filter === 'open') matchFilter = j.status === 'Pending' || j.status === 'In Progress';
+      else if (filter === 'blocked') matchFilter = j.blocked === 'yes';
+      else if (filter) matchFilter = j.status === filter;
+
+      return matchSearch && matchFilter;
+    });
+    renderJobsTable(filtered);
+  };
+
+  function renderJobsTable(jobs) {
+    const tbody = document.getElementById('jobs-tbody');
+    if (!jobs.length) {
+      tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#555;padding:24px;">No jobs found.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = jobs.map(j => {
+      const parking = j.altParkingDays
+        ? j.altParkingDays + (j.altParkingTime ? ' · ' + j.altParkingTime : '')
+        : '—';
+      const permitNum = j.permitNumber || j.permitCode || '—';
+      const completedMark = j.status === 'Completed' ? '✅ ' : '';
+      return `<tr class="clickable-row" onclick="openEditJob('${j.id}')">
+        <td>${completedMark}${j.address || '—'}</td>
+        <td>${j.customerName || '—'}</td>
+        <td>${j.taskType ? `<span class="badge badge-gray">${j.taskType}</span>` : '—'}</td>
+        <td>${parking}</td>
+        <td>${j.projectSize || '—'}</td>
+        <td>${crewBadge(j)}</td>
+        <td>${fmtDate(j.scheduleDay)}</td>
+        <td>${j.status === 'Completed' ? fmtDate(j.completionDay) : '—'}</td>
+        <td>${statusBadge(j.status)}</td>
+        <td>${permitNum}</td>
+        <td>${permitStatusBadge(j)}</td>
+        <td style="white-space:nowrap;">
+          <button onclick="event.stopPropagation();addJobToSchedule('${j.id}')"
+            title="Add to Schedule"
+            style="background:#1a3a2a;border:1px solid #22c55e;color:#4ade80;padding:5px 8px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-right:4px;">
+            📅
+          </button>
+          <button onclick="event.stopPropagation();showDeleteConfirm('${j.id}')"
+            style="background:#450a0a;border:1px solid #7f1d1d;color:#f87171;padding:5px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
+            🗑️
+          </button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    attachSwipeHandlers();
+  }
+
+  // ── SWIPE TO DELETE ────────────────────────────────────────────────────────
+  function attachSwipeHandlers() {
+    const rows = document.querySelectorAll('#jobs-tbody tr.clickable-row');
+    rows.forEach(row => {
+      let startX = 0;
+      row.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+      row.addEventListener('touchmove', e => {
+        const diff = startX - e.touches[0].clientX;
+        if (diff > 40) {
+          document.querySelectorAll('#jobs-tbody tr.swiped').forEach(r => { if (r !== row) r.classList.remove('swiped'); });
+          row.classList.add('swiped');
+        } else if (diff < -20) {
+          row.classList.remove('swiped');
+        }
+      }, { passive: true });
+    });
+  }
+
+  // ── DELETE CONFIRM ─────────────────────────────────────────────────────────
+  window.showDeleteConfirm = function(jobId) {
+    pendingDeleteJobId = jobId;
+    document.getElementById('delete-confirm-modal').classList.add('show');
+  };
+
+  window.closeDeleteConfirm = function() {
+    pendingDeleteJobId = null;
+    document.getElementById('delete-confirm-modal').classList.remove('show');
+  };
+
+  window.confirmDeleteJob = async function() {
+    if (!pendingDeleteJobId) return;
+    const jobId = pendingDeleteJobId;
+    document.getElementById('delete-confirm-modal').classList.remove('show');
+    pendingDeleteJobId = null;
+    await deleteJobById(jobId);
+  };
+
+  window.requestDeleteFromModal = function() {
+    if (!editingJobId) return;
+    const jobId = editingJobId;
+    closeJobModal();
+    showDeleteConfirm(jobId);
+  };
+
+  window.deleteJobById = async function(jobId) {
+    const j = allJobs.find(x => x.id === jobId);
+    if (!j) return;
+    deletedJobData = { ...j };
+    try {
+      await deleteDoc(doc(db, 'jobs', jobId));
+      await addDoc(collection(db, 'activity'), {
+        action: 'Deleted job', jobAddress: j.address || '(no address)',
+        doneBy: currentUser ? currentUser.email : 'unknown', timestamp: serverTimestamp()
+      });
+      const undoBtn = document.getElementById('undo-btn');
+      undoBtn.style.display = 'inline-block';
+      window.showToast('🗑️ Job deleted. Tap ↩️ to undo (30s)', '#374151', 5000);
+      if (undoTimer) clearTimeout(undoTimer);
+      undoTimer = setTimeout(() => {
+        deletedJobData = null;
+        undoBtn.style.display = 'none';
+      }, 30000);
+    } catch(e) {
+      window.showToast('Error deleting job: ' + e.message, '#e53e3e');
+    }
+  };
+
+  window.undoDelete = async function() {
+    if (!deletedJobData) return;
+    const jobToRestore = { ...deletedJobData };
+    delete jobToRestore.id;
+    jobToRestore.createdAt = serverTimestamp();
+    try {
+      await addDoc(collection(db, 'jobs'), jobToRestore);
+      await addDoc(collection(db, 'activity'), {
+        action: 'Restored job (undo)', jobAddress: jobToRestore.address || '',
+        doneBy: currentUser ? currentUser.email : 'unknown', timestamp: serverTimestamp()
+      });
+      window.showToast('✅ Job restored!');
+      deletedJobData = null;
+      if (undoTimer) clearTimeout(undoTimer);
+      document.getElementById('undo-btn').style.display = 'none';
+    } catch(e) {
+      window.showToast('Error restoring: ' + e.message, '#e53e3e');
+    }
+  };
+
+  // ── DASHBOARD RECENT ──────────────────────────────────────────────────────
+  function renderDashboardRecent(jobs) {
+    const tbody = document.getElementById('dashboard-recent-tbody');
+    const search = (document.getElementById('dash-search') ? document.getElementById('dash-search').value : '').toLowerCase();
+    const filtered = search ? jobs.filter(j =>
+      (j.address||'').toLowerCase().includes(search) ||
+      (j.customerName||'').toLowerCase().includes(search)
+    ) : jobs;
+    const recent = filtered.slice(0, 8);
+    if (!recent.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#555;padding:20px;">No jobs.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = recent.map(j => `
+      <tr style="cursor:pointer;" onclick="openEditJob('${j.id}')">
+        <td>${j.address || '—'}</td>
+        <td>${j.taskType ? `<span class="badge badge-gray">${j.taskType}</span>` : '—'}</td>
+        <td>${crewBadge(j)}</td>
+        <td>${statusBadge(j.status)}</td>
+        <td>${fmtDate(j.scheduleDay)}</td>
+      </tr>`).join('');
+  }
+
+  window.filterDashRecent = function() { renderDashboardRecent(allJobs); };
+
+  // ── PERMITS TABLE ──────────────────────────────────────────────────────────
+  function renderPermitsTable(jobs) {
+    const search = (document.getElementById('permit-search') ? document.getElementById('permit-search').value : '').toLowerCase();
+    const statusFilter = document.getElementById('permit-status-filter') ? document.getElementById('permit-status-filter').value : '';
+
+    const withPermits = jobs.filter(j => j.permitNumber || j.permitCode);
+    const tbody = document.getElementById('permits-tbody');
+    if (!tbody) return;
+
+    let filtered = withPermits.filter(j => {
+      const permitNum = (j.permitNumber || j.permitCode || '').toLowerCase();
+      const matchSearch = !search ||
+        permitNum.includes(search) ||
+        (j.address||'').toLowerCase().includes(search) ||
+        (j.customerName||'').toLowerCase().includes(search);
+
+      let pStatus = 'None';
+      if (j.permitExpiry) {
+        const days = daysUntil(j.permitExpiry);
+        if (days < 0) pStatus = 'Expired';
+        else if (days < 30) pStatus = 'Expiring Soon';
+        else pStatus = 'Approved';
+      } else if (j.permitNumber || j.permitCode) {
+        pStatus = 'On File';
+      }
+
+      const matchStatus = !statusFilter || pStatus === statusFilter || pStatus.includes(statusFilter);
+      return matchSearch && matchStatus;
+    });
+
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#555;padding:20px;">No permits found.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(j => {
+      const permitNum = j.permitNumber || j.permitCode || '—';
+      const days = j.permitExpiry ? daysUntil(j.permitExpiry) : null;
+      let daysCell = '—';
+      let psBadge = '<span class="badge badge-gray">On File</span>';
+      if (days !== null) {
+        if (days < 0) { daysCell = `<span style="color:#f87171;font-weight:700;">Expired</span>`; psBadge = '<span class="badge badge-red">Expired</span>'; }
+        else if (days <= 4) { daysCell = `<span style="color:#e53e3e;font-weight:800;">⚠️ ${days}d</span>`; psBadge = '<span class="badge badge-red">Expiring Soon</span>'; }
+        else if (days < 30) { daysCell = `<span style="color:#f59e0b;font-weight:700;">${days}d</span>`; psBadge = '<span class="badge badge-orange">Expiring Soon</span>'; }
+        else { daysCell = `<span style="color:#4ade80;">${days}d</span>`; psBadge = '<span class="badge badge-green">Valid</span>'; }
+      }
+      return `<tr style="cursor:pointer;" onclick="openEditJob('${j.id}')">
+        <td>${permitNum}</td>
+        <td>${j.taskType || '—'}</td>
+        <td>${j.address || '—'}</td>
+        <td>${j.customerName || '—'}</td>
+        <td>${psBadge}</td>
+        <td>${fmtDate(j.permitExpiry)}</td>
+        <td>${daysCell}</td>
+        <td>${j.notes ? j.notes.slice(0,40)+'…' : '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  window.filterPermits = function() { renderPermitsCards(allStandalonePermits); };
+
+  // ── ACTIVITY LOG ───────────────────────────────────────────────────────────
+  function renderActivityLog(items) {
+    const el = document.getElementById('activity-log-panel');
+    if (!items.length) {
+      el.innerHTML = '<div class="notif-item"><div class="notif-title" style="color:#555;">No notifications.</div></div>';
+      return;
+    }
+    el.innerHTML = items.slice(0, 8).map(a => {
+      const ts = a.timestamp && a.timestamp.toDate
+        ? a.timestamp.toDate().toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })
+        : '';
+      return `<div class="notif-item">
+        <div class="notif-title"><span class="notif-dot dot-green"></span>${a.action || 'Action'}</div>
+        <div class="notif-sub">${a.jobAddress || ''} · ${a.doneBy || ''}</div>
+        <div class="notif-sub" style="font-size:11px;color:#444;">${ts}</div>
+      </div>`;
+    }).join('');
+    // Re-inject expiry alerts on top
+    checkPermitExpiry();
+  }
+
+  // ── CONTACTS ───────────────────────────────────────────────────────────────
+  let editingContactId = null;
+  let _contactFilter = 'all';
+
+  window.setContactFilter = function(filter, btnEl) {
+    _contactFilter = filter;
+    document.querySelectorAll('[data-cfilter]').forEach(b => b.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+    renderContacts(allContacts);
+  };
+
+  function getContactJobCount(c) {
+    // Count jobs from allJobs that match this contact by phone or companyName
+    const phones = (c.persons || []).map(p => normalizePhone(p.phone)).filter(Boolean);
+    const name = (c.companyName || c.name || '').toLowerCase();
+    return allJobs.filter(j => {
+      const jPhone = normalizePhone(j.phone);
+      if (phones.length && phones.includes(jPhone)) return true;
+      if (name && (j.customerName || '').toLowerCase() === name) return true;
+      return false;
+    }).length;
+  }
+
+  function getContactJobs(c) {
+    const phones = (c.persons || []).map(p => normalizePhone(p.phone)).filter(Boolean);
+    const name = (c.companyName || c.name || '').toLowerCase();
+    return allJobs.filter(j => {
+      const jPhone = normalizePhone(j.phone);
+      if (phones.length && phones.includes(jPhone)) return true;
+      if (name && (j.customerName || '').toLowerCase() === name) return true;
+      return false;
+    });
+  }
+
+  function renderContacts(contacts) {
+    const listEl = document.getElementById('contacts-list');
+    const search = (document.getElementById('contact-search') ? document.getElementById('contact-search').value : '').toLowerCase();
+
+    let filtered = contacts.filter(c => {
+      if (!search) return true;
+      const companyName = (c.companyName || c.name || '').toLowerCase();
+      const persons = c.persons || (c.phone ? [{ name: c.name, phone: c.phone }] : []);
+      return companyName.includes(search) ||
+        persons.some(p => (p.name||'').toLowerCase().includes(search) || (p.phone||'').includes(search)) ||
+        (c.email||'').toLowerCase().includes(search);
+    });
+
+    // Apply category filter
+    if (_contactFilter === 'companies') {
+      filtered = filtered.filter(c => c.companyName && c.companyName.trim());
+    } else if (_contactFilter === 'individuals') {
+      filtered = filtered.filter(c => {
+        const persons = c.persons || [];
+        return !c.companyName || persons.length <= 1;
+      });
+    }
+
+    if (!filtered.length) {
+      listEl.innerHTML = `<div class="contact-empty">${search ? 'No contacts match your search.' : 'No contacts yet. Add contacts manually or save a job with a phone number.'}</div>`;
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(c => {
+      // Support both new schema (companyName + persons[]) and old schema (name + phone)
+      const companyName = c.companyName || c.name || '—';
+      const persons = c.persons && c.persons.length
+        ? c.persons
+        : (c.phone ? [{ name: c.name || '', phone: c.phone, role: '' }] : []);
+      const initials = companyName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const jobCount = getContactJobCount(c);
+      const linkedJobs = getContactJobs(c);
+
+      // Persons list (preview in header: first person's phone)
+      const firstPerson = persons[0] || {};
+      const personsPillsHtml = persons.map(p =>
+        `<div class="contact-person-row" style="padding:6px 0;">
+          <div style="flex:1;">
+            <span class="contact-person-name">${p.name || '—'}</span>
+            ${p.role ? `<span class="contact-person-role">${p.role}</span>` : ''}
+            <div class="contact-person-meta">
+              ${p.phone ? `<a href="tel:${p.phone}" class="contact-person-phone" onclick="event.stopPropagation()">📞 ${p.phone}</a>` : ''}
+            </div>
+          </div>
+        </div>`
+      ).join('');
+
+      const jobsHtml = linkedJobs.length
+        ? linkedJobs.map(j =>
+            `<div class="contact-job-item" onclick="event.stopPropagation();jumpToJob('${j.id}')">
+              📍 ${j.address || '—'} <span class="badge badge-gray" style="font-size:10px;margin-left:6px;">${j.status||''}</span>
+            </div>`
+          ).join('')
+        : '<div style="font-size:12px;color:#555;padding:4px 0;">No jobs linked.</div>';
+
+      return `<div class="contact-card" id="contact-${c.id}">
+        <div class="contact-card-header" onclick="toggleContact('${c.id}')">
+          <div class="contact-avatar" style="background:${avatarColor(companyName)}">${initials}</div>
+          <div class="contact-info">
+            <div class="contact-name">${companyName}</div>
+            <div class="contact-meta">
+              ${persons.length > 0 ? `👤 ${persons.length} person${persons.length !== 1 ? 's' : ''}` : ''}
+              ${c.email ? ` &nbsp;·&nbsp; ✉️ ${c.email}` : ''}
+            </div>
+            ${firstPerson.phone ? `<div class="contact-meta"><a href="tel:${firstPerson.phone}" class="contact-person-phone" onclick="event.stopPropagation()">📞 ${firstPerson.phone}</a></div>` : ''}
+          </div>
+          <span class="contact-jobs-badge" onclick="event.stopPropagation();toggleContactJobs('${c.id}')" title="View linked jobs">${jobCount} job${jobCount !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="contact-expand-body" id="contact-expand-${c.id}">
+          <!-- Persons -->
+          <div style="margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">👤 People</div>
+            ${personsPillsHtml}
+          </div>
+          ${c.email ? `<div class="contact-detail-row">✉️ <a href="mailto:${c.email}">${c.email}</a></div>` : ''}
+          ${c.address ? `<div class="contact-detail-row">📍 ${c.address}</div>` : ''}
+          ${c.notes ? `<div class="contact-detail-row">📝 ${c.notes}</div>` : ''}
+          <!-- Linked jobs (toggle section) -->
+          <div id="contact-jobs-${c.id}" style="display:none;margin-top:12px;">
+            <div style="font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">🔗 Linked Jobs</div>
+            ${jobsHtml}
+          </div>
+          <div class="contact-expand-actions">
+            <button onclick="event.stopPropagation();openEditContact('${c.id}')" style="flex:1;padding:9px;background:#1e3a8a;border:none;border-radius:8px;color:#60a5fa;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit</button>
+            <button onclick="event.stopPropagation();confirmDeleteContact('${c.id}')" style="flex:1;padding:9px;background:#450a0a;border:none;border-radius:8px;color:#f87171;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Delete</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function avatarColor(name) {
+    const colors = ['#3b82f6','#8b5cf6','#ec4899','#10b981','#f59e0b','#6366f1','#14b8a6'];
+    let hash = 0;
+    for (let i = 0; i < (name||'').length; i++) hash = (name.charCodeAt(i) + hash * 31) | 0;
+    return colors[Math.abs(hash) % colors.length];
+  }
+
+  window.toggleContact = function(id) {
+    const el = document.getElementById('contact-expand-' + id);
+    if (el) el.classList.toggle('open');
+  };
+
+  window.toggleContactJobs = function(id) {
+    const expandEl = document.getElementById('contact-expand-' + id);
+    const jobsEl = document.getElementById('contact-jobs-' + id);
+    if (!expandEl) return;
+    if (!expandEl.classList.contains('open')) expandEl.classList.add('open');
+    if (jobsEl) jobsEl.style.display = jobsEl.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.jumpToJob = function(jobId) {
+    navTo(1);
+    setTimeout(() => {
+      if (typeof openEditJob === 'function') openEditJob(jobId);
+    }, 300);
+  };
+
+  window.filterContacts = function() { renderContacts(allContacts); };
+
+  // ── CONTACT MODAL ──────────────────────────────────────────────────────────
+  window.openContactModal = function() {
+    editingContactId = null;
+    document.getElementById('contact-modal-title').textContent = '➕ Add Contact';
+    document.getElementById('cf-companyName').value = '';
+    document.getElementById('cf-email').value = '';
+    document.getElementById('cf-address').value = '';
+    document.getElementById('cf-notes').value = '';
+    document.getElementById('persons-list').innerHTML = '';
+    addPersonRow(); // start with 1 person row
+    document.getElementById('contact-modal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.openEditContact = function(contactId) {
+    const c = allContacts.find(x => x.id === contactId);
+    if (!c) return;
+    editingContactId = contactId;
+    document.getElementById('contact-modal-title').textContent = '✏️ Edit Contact';
+    document.getElementById('cf-companyName').value = c.companyName || c.name || '';
+    document.getElementById('cf-email').value = c.email || '';
+    document.getElementById('cf-address').value = c.address || '';
+    document.getElementById('cf-notes').value = c.notes || '';
+    const personsList = document.getElementById('persons-list');
+    personsList.innerHTML = '';
+    const persons = c.persons && c.persons.length
+      ? c.persons
+      : (c.phone ? [{ name: c.name || '', phone: c.phone, role: '' }] : []);
+    if (persons.length === 0) {
+      addPersonRow();
+    } else {
+      persons.forEach(p => addPersonRow(p.name, p.phone, p.role));
+    }
+    document.getElementById('contact-modal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closeContactModal = function() {
+    document.getElementById('contact-modal').classList.remove('show');
+    document.body.style.overflow = '';
+    editingContactId = null;
+  };
+
+  window.addPersonRow = function(name, phone, role) {
+    const list = document.getElementById('persons-list');
+    const rowId = 'pr-' + Date.now() + '-' + Math.random().toString(36).slice(2,5);
+    const row = document.createElement('div');
+    row.className = 'person-row';
+    row.id = rowId;
+    const safeName = (name || '').replace(/"/g,'&quot;');
+    const safePhone = (phone || '').replace(/"/g,'&quot;');
+    const safeRole = (role || '').replace(/"/g,'&quot;');
+    row.innerHTML = `
+      <input type="text" class="person-name-input" placeholder="Name" value="${safeName}"
+        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <input type="tel" class="person-phone-input" placeholder="Phone" value="${safePhone}"
+        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <input type="text" class="person-role-input" placeholder="Role (optional)" value="${safeRole}"
+        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <button class="btn-remove-person" onclick="removePersonRow('${rowId}')" title="Remove person">×</button>`;
+    list.appendChild(row);
+  };
+
+  window.removePersonRow = function(rowId) {
+    const list = document.getElementById('persons-list');
+    if (list.querySelectorAll('.person-row').length <= 1) {
+      window.showToast('At least one person is required.', '#f59e0b');
+      return;
+    }
+    const row = document.getElementById(rowId);
+    if (row) row.remove();
+  };
+
+  window.saveContact = async function() {
+    if (!currentUser) { window.showToast('Not logged in!', '#e53e3e'); return; }
+    const companyName = document.getElementById('cf-companyName').value.trim();
+    if (!companyName) { window.showToast('Company/Customer name is required.', '#f59e0b'); return; }
+
+    // Collect persons
+    const personRows = document.querySelectorAll('#persons-list .person-row');
+    const persons = Array.from(personRows).map(row => ({
+      name: (row.querySelector('.person-name-input') || {}).value?.trim() || '',
+      phone: (row.querySelector('.person-phone-input') || {}).value?.trim() || '',
+      role: (row.querySelector('.person-role-input') || {}).value?.trim() || '',
+    })).filter(p => p.name || p.phone);
+
+    if (persons.length === 0) { window.showToast('At least one person is required.', '#f59e0b'); return; }
+
+    const btn = document.getElementById('save-contact-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    const contactData = {
+      companyName,
+      email: document.getElementById('cf-email').value.trim(),
+      address: document.getElementById('cf-address').value.trim(),
+      notes: document.getElementById('cf-notes').value.trim(),
+      persons,
+      updatedAt: serverTimestamp(),
+    };
+
+    try {
+      if (editingContactId) {
+        await updateDoc(doc(db, 'contacts', editingContactId), { ...contactData });
+        window.showToast('✅ Contact updated!');
+      } else {
+        contactData.createdBy = currentUser.email;
+        contactData.createdAt = serverTimestamp();
+        await addDoc(collection(db, 'contacts'), contactData);
+        window.showToast('✅ Contact saved!');
+      }
+      closeContactModal();
+    } catch(e) {
+      window.showToast('Error: ' + e.message, '#e53e3e');
+    } finally {
+      btn.disabled = false; btn.textContent = '💾 Save Contact';
+    }
+  };
+
+  window.confirmDeleteContact = async function(contactId) {
+    if (!confirm('Delete this contact? This cannot be undone.')) return;
+    try {
+      await deleteDoc(doc(db, 'contacts', contactId));
+      window.showToast('🗑️ Contact deleted.');
+    } catch(e) {
+      window.showToast('Error: ' + e.message, '#e53e3e');
+    }
+  };
+
+  // Save/update contact in Firestore (auto-populate from jobs)
+  async function upsertContact(jobData) {
+    if (!jobData.phone && !jobData.customerName) return;
+    const phoneKey = normalizePhone(jobData.phone);
+
+    try {
+      // Check if a contact already exists with matching phone (in persons array) or company name
+      const existingByPhone = phoneKey
+        ? allContacts.find(c =>
+            (c.persons || []).some(p => normalizePhone(p.phone) === phoneKey) ||
+            normalizePhone(c.phone) === phoneKey
+          )
+        : null;
+
+      const existingByName = jobData.customerName
+        ? allContacts.find(c =>
+            (c.companyName || c.name || '').toLowerCase() === jobData.customerName.toLowerCase()
+          )
+        : null;
+
+      const existing = existingByPhone || existingByName;
+
+      if (existing) {
+        // Just update the address/jobs link — don't overwrite manual edits
+        // Nothing to auto-update; jobs are linked dynamically by phone/name
+        return;
+      }
+
+      // Auto-create new contact
+      await addDoc(collection(db, 'contacts'), {
+        companyName: jobData.customerName || '',
+        email: jobData.email || '',
+        address: '',
+        notes: '',
+        persons: jobData.phone ? [{
+          name: jobData.customerName || '',
+          phone: jobData.phone,
+          role: 'Customer'
+        }] : [],
+        createdBy: currentUser ? currentUser.email : 'auto',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch(e) {
+      console.warn('Contact upsert failed:', e.message);
+    }
+  }
+
+  // ── USERS ──────────────────────────────────────────────────────────────────
+  function renderUsers(users) {
+    const list = document.getElementById('users-list');
+    const isAdmin = window._isAdmin || (currentUser && currentUser.email === ADMIN_EMAIL);
+
+    // Always show Nir at top
+    const nirCard = `<div class="user-card">
+      <div class="avatar" style="background:#333;border:1px solid #555;">NM</div>
+      <div class="user-info">
+        <div class="user-name">Nir Maman</div>
+        <div class="user-role-line"><span class="badge badge-red">Admin</span></div>
+        <div class="user-contact">📞 (917) 251-2400 &nbsp;·&nbsp; ✉️ nir@mamancontracting.com</div>
+      </div>
+      <span class="badge badge-green">Active</span>
+    </div>`;
+
+    if (!users || users.length === 0) {
+      list.innerHTML = nirCard + `<div style="text-align:center;color:#555;padding:24px;font-size:14px;">No users yet — invite someone!</div>`;
+      return;
+    }
+
+    const invitedCards = users.map(u => {
+      if (u.removed) return ''; // skip fully removed entries (UI only shows removed badge)
+      const initials = (u.name || u.email || '?').slice(0,2).toUpperCase();
+      const isCurrentUser = currentUser && currentUser.email === u.email;
+      let statusBadgeHtml = '<span class="badge badge-green">Active</span>';
+      if (u.status === 'invited') statusBadgeHtml = '<span class="badge badge-yellow">Invited</span>';
+      if (u.removed) statusBadgeHtml = '<span class="badge badge-gray">Removed</span>';
+
+      const removeBtn = isAdmin && !isCurrentUser
+        ? `<button onclick="removeUser('${u.id}','${(u.email||'').replace(/'/g,"\\'")}','${(u.name||u.email||'').replace(/'/g,"\\'")}')"
+            style="background:#450a0a;border:none;border-radius:6px;color:#f87171;padding:5px 8px;font-size:14px;cursor:pointer;flex-shrink:0;" title="Remove user">🗑️</button>`
+        : '';
+
+      return `<div class="user-card" style="${u.removed ? 'opacity:0.5;' : ''}">
+        <div class="avatar" style="background:#3b82f6;">${initials}</div>
+        <div class="user-info" style="flex:1;">
+          <div class="user-name">${u.name || u.email || '—'}</div>
+          <div class="user-role-line"><span class="badge badge-orange">${u.role || 'Worker'}</span></div>
+          <div class="user-contact">✉️ ${u.email || '—'}${u.phone ? ' &nbsp;·&nbsp; 📞 ' + u.phone : ''}</div>
+          <div class="user-contact" style="color:#444;">Invited by ${u.invitedBy || '—'}</div>
+        </div>
+        ${statusBadgeHtml}
+        ${removeBtn}
+      </div>`;
+    }).join('');
+
+    list.innerHTML = nirCard + invitedCards;
+  }
+
+  window.removeUser = async function(userId, email, name) {
+    if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+    if (!confirm(`Remove ${name || email} from the app?`)) return;
+    try {
+      await updateDoc(doc(db, 'users', userId), { removed: true, removedAt: serverTimestamp(), removedBy: currentUser.email });
+      window.showToast(`🗑️ ${name || email} removed from app.`, '#374151');
+    } catch(e) {
+      window.showToast('Error: ' + e.message, '#e53e3e');
+    }
+  };
+
+  // ── INVITE USER ────────────────────────────────────────────────────────────
+  window.openInviteModal = function() {
+    if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+    document.getElementById('invite-email').value = '';
+    document.getElementById('invite-error').textContent = '';
+    document.getElementById('invite-modal').classList.add('show');
+  };
+
+  window.closeInviteModal = function() {
+    document.getElementById('invite-modal').classList.remove('show');
+  };
+
+  window.sendInvite = async function() {
+    const email = document.getElementById('invite-email').value.trim();
+    const errEl = document.getElementById('invite-error');
+    const btn = document.getElementById('invite-send-btn');
+    if (!email) { errEl.textContent = 'Please enter an email address.'; return; }
+    errEl.textContent = '';
+    btn.disabled = true; btn.textContent = 'Sending…';
+
+    try {
+      // Create user with temp password
+      const tempPw = 'Welcome2024!';
+      await createUserWithEmailAndPassword(auth, email, tempPw);
+      // Send password reset so they set their own
+      await sendPasswordResetEmail(auth, email);
+      // Save to Firestore users collection
+      await setDoc(doc(collection(db, 'users')), {
+        email: email,
+        invitedBy: currentUser.email,
+        invitedAt: serverTimestamp(),
+        status: 'invited',
+        role: 'worker'
+      });
+      await addDoc(collection(db, 'activity'), {
+        action: 'Invited user: ' + email,
+        jobAddress: '',
+        doneBy: currentUser.email,
+        timestamp: serverTimestamp()
+      });
+      closeInviteModal();
+      window.showToast('✉️ Invite sent to ' + email + '!');
+    } catch(e) {
+      errEl.textContent = e.message;
+    } finally {
+      btn.disabled = false; btn.textContent = '📨 Send Invite';
+    }
+  };
+
+  // ── PERMIT MODAL (standalone permits collection) ────────────────────────────
+  let editingPermitId = null;
+  let allStandalonePermits = [];
+  let permitsUnsubscribe = null;
+
+  function renderPermitsCards(permits) {
+    const container = document.getElementById('permits-cards-container');
+    if (!container) return;
+
+    const search = (document.getElementById('permit-search') ? document.getElementById('permit-search').value : '').toLowerCase();
+    const statusFilter = document.getElementById('permit-status-filter') ? document.getElementById('permit-status-filter').value : '';
+
+    let filtered = permits.filter(p => {
+      const matchSearch = !search ||
+        (p.permitNumber||'').toLowerCase().includes(search) ||
+        (p.jobAddress||'').toLowerCase().includes(search) ||
+        (p.permitHolder||'').toLowerCase().includes(search);
+      const matchStatus = !statusFilter || (p.status||'') === statusFilter;
+      return matchSearch && matchStatus;
+    });
+
+    if (!filtered.length) {
+      container.innerHTML = '<div style="text-align:center;color:#555;padding:40px;">No permits found. Tap + Add Permit to get started.</div>';
+      return;
+    }
+
+    container.innerHTML = filtered.map(p => {
+      const days = p.expirationDate ? daysUntil(p.expirationDate) : null;
+      let expBadge = '';
+      let alertBadge = '';
+      if (days !== null) {
+        if (days < 0) expBadge = '<span class="badge badge-red">Expired</span>';
+        else if (days <= 4) { expBadge = '<span class="badge badge-red">Expiring Soon</span>'; alertBadge = '<span class="badge badge-red" style="margin-left:4px;">⚠️ ' + days + 'd</span>'; }
+        else if (days < 30) expBadge = '<span class="badge badge-orange">Expiring Soon</span>';
+        else expBadge = '<span class="badge badge-green">Valid</span>';
+      } else {
+        if (p.status === 'Approved') expBadge = '<span class="badge badge-green">Approved</span>';
+        else if (p.status === 'Expired') expBadge = '<span class="badge badge-red">Expired</span>';
+        else expBadge = '<span class="badge badge-yellow">Pending</span>';
+      }
+      return `<div class="crew-day-card" style="cursor:pointer;margin-bottom:10px;" onclick="openEditPermit('${p.id}')">
+        <div class="crew-day-header">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#fff;">#${p.permitNumber||'—'}</div>
+            <div style="font-size:12px;color:#888;margin-top:2px;">📍 ${p.jobAddress||'—'}</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">${expBadge}${alertBadge}</div>
+        </div>
+        <div class="crew-jobs-container" style="padding:12px 16px;">
+          ${p.permitHolder ? `<div class="crew-job-row"><span class="label">👤</span><span>${p.permitHolder}</span></div>` : ''}
+          ${p.permitTypeCode ? `<div class="crew-job-row"><span class="label">🏷️</span><span>Type Code: ${p.permitTypeCode}</span></div>` : ''}
+          ${p.validFrom ? `<div class="crew-job-row"><span class="label">📅</span><span>Valid: ${fmtDate(p.validFrom)} → ${fmtDate(p.expirationDate)||'?'}</span></div>` : ''}
+          ${p.notes ? `<div class="crew-job-row"><span class="label">📝</span><span>${p.notes}</span></div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  window.filterPermitsDirect = function() {
+    renderPermitsCards(allStandalonePermits);
+  };
+
+  window.openPermitModal = function() {
+    editingPermitId = null;
+    document.getElementById('permit-modal-title').textContent = '📋 Add Permit';
+    ['pm-permitNumber','pm-permitTypeCode','pm-permitHolder','pm-jobAddress','pm-notes'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('pm-validFrom').value = '';
+    document.getElementById('pm-expirationDate').value = '';
+    document.getElementById('pm-status').value = 'Pending';
+    document.getElementById('ocr-status').textContent = '';
+    document.getElementById('ocr-preview-img').style.display = 'none';
+    document.getElementById('permit-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.openEditPermit = function(permitId) {
+    const p = allStandalonePermits.find(x => x.id === permitId);
+    if (!p) return;
+    editingPermitId = permitId;
+    document.getElementById('permit-modal-title').textContent = '✏️ Edit Permit';
+    document.getElementById('pm-permitNumber').value = p.permitNumber || '';
+    document.getElementById('pm-permitTypeCode').value = p.permitTypeCode || '';
+    document.getElementById('pm-validFrom').value = p.validFrom || '';
+    document.getElementById('pm-expirationDate').value = p.expirationDate || '';
+    document.getElementById('pm-permitHolder').value = p.permitHolder || '';
+    document.getElementById('pm-jobAddress').value = p.jobAddress || '';
+    document.getElementById('pm-status').value = p.status || 'Pending';
+    document.getElementById('pm-notes').value = p.notes || '';
+    document.getElementById('ocr-status').textContent = '';
+    document.getElementById('ocr-preview-img').style.display = 'none';
+    document.getElementById('permit-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closePermitModal = function() {
+    document.getElementById('permit-modal').style.display = 'none';
+    document.body.style.overflow = '';
+    editingPermitId = null;
+  };
+
+  window.savePermit = async function() {
+    if (!currentUser) { window.showToast('Not logged in!', '#e53e3e'); return; }
+    const btn = document.getElementById('save-permit-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    const permitData = {
+      permitNumber: document.getElementById('pm-permitNumber').value.trim(),
+      permitTypeCode: document.getElementById('pm-permitTypeCode').value.trim(),
+      validFrom: document.getElementById('pm-validFrom').value,
+      expirationDate: document.getElementById('pm-expirationDate').value,
+      permitHolder: document.getElementById('pm-permitHolder').value.trim(),
+      jobAddress: document.getElementById('pm-jobAddress').value.trim(),
+      status: document.getElementById('pm-status').value,
+      notes: document.getElementById('pm-notes').value.trim(),
+    };
+
+    try {
+      if (editingPermitId) {
+        await updateDoc(doc(db, 'permits', editingPermitId), { ...permitData, updatedBy: currentUser.email, updatedAt: serverTimestamp() });
+        window.showToast('✅ Permit updated!');
+      } else {
+        await addDoc(collection(db, 'permits'), { ...permitData, createdBy: currentUser.email, createdAt: serverTimestamp() });
+        window.showToast('✅ Permit saved!');
+      }
+      closePermitModal();
+    } catch(e) {
+      window.showToast('Error: ' + e.message, '#e53e3e');
+    } finally {
+      btn.disabled = false; btn.textContent = '💾 Save Permit';
+    }
+  };
+
+  // ── OCR PERMIT SCANNING ────────────────────────────────────────────────────
+  const OPENAI_API_KEY = '';
+
+  window.handleOCRFile = async function(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const statusEl = document.getElementById('ocr-status');
+    const previewEl = document.getElementById('ocr-preview-img');
+    const thumbEl = document.getElementById('ocr-thumb');
+
+    statusEl.textContent = '⏳ Reading permit…';
+    statusEl.style.color = '#f59e0b';
+
+    // Show preview if image
+    if (file.type.startsWith('image/')) {
+      const previewUrl = URL.createObjectURL(file);
+      thumbEl.src = previewUrl;
+      previewEl.style.display = 'block';
+    }
+
+    try {
+      // Convert to base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const result = e.target.result;
+          // Strip data URL prefix to get pure base64
+          const b64 = result.split(',')[1];
+          resolve(b64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const mimeType = file.type || 'image/jpeg';
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + OPENAI_API_KEY
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [{
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'This is an NYC DOT permit document. Extract ONLY these fields as JSON: { "permitNumber": "", "validFrom": "", "expirationDate": "", "permitHolder": "", "permitTypeCode": "", "jobAddress": "" }. permitTypeCode = number only. jobAddress = house number + street name only (not mailing address). validFrom and expirationDate should be in YYYY-MM-DD format if possible. Return ONLY valid JSON, no markdown.'
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${base64}`,
+                  detail: 'high'
+                }
+              }
+            ]
+          }],
+          max_tokens: 500
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || 'API error ' + response.status);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || '';
+
+      // Parse JSON from response
+      let extracted = {};
+      try {
+        // Remove markdown code blocks if present
+        const cleaned = content.replace(/```json?\n?/gi, '').replace(/```/g, '').trim();
+        extracted = JSON.parse(cleaned);
+      } catch(parseErr) {
+        throw new Error('Could not parse OCR response. Try a clearer image.');
+      }
+
+      // Fill in form fields
+      if (extracted.permitNumber) document.getElementById('pm-permitNumber').value = extracted.permitNumber;
+      if (extracted.validFrom) document.getElementById('pm-validFrom').value = extracted.validFrom;
+      if (extracted.expirationDate) document.getElementById('pm-expirationDate').value = extracted.expirationDate;
+      if (extracted.permitHolder) document.getElementById('pm-permitHolder').value = extracted.permitHolder;
+      if (extracted.permitTypeCode) document.getElementById('pm-permitTypeCode').value = extracted.permitTypeCode;
+      if (extracted.jobAddress) document.getElementById('pm-jobAddress').value = extracted.jobAddress;
+
+      statusEl.textContent = '✅ Permit read successfully!';
+      statusEl.style.color = '#4ade80';
+
+    } catch(err) {
+      statusEl.textContent = '❌ ' + err.message;
+      statusEl.style.color = '#f87171';
+    }
+
+    // Reset input so same file can be re-selected
+    input.value = '';
+  };
+
+  // ── EDIT JOB ───────────────────────────────────────────────────────────────
+  window.openEditJob = function(jobId) {
+    const j = allJobs.find(x => x.id === jobId);
+    if (!j) return;
+    editingJobId = jobId;
+    document.getElementById('modal-title').textContent = '✏️ Edit Job';
+    document.getElementById('modal-subtitle').textContent = j.address || 'Update job details';
+    document.getElementById('save-job-btn').textContent = '💾 Update Job';
+    document.getElementById('modal-delete-btn').style.display = 'inline-flex';
+
+    document.getElementById('f-customerName').value = j.customerName || '';
+    document.getElementById('f-phone').value = j.phone || '';
+    document.getElementById('f-email').value = j.email || '';
+    document.getElementById('f-invoiceNumber').value = j.invoiceNumber || '';
+    document.getElementById('f-address').value = j.address || '';
+    document.getElementById('f-projectSize').value = j.projectSize || '';
+    document.getElementById('f-altParkingDays').value = j.altParkingDays || '';
+    document.getElementById('f-altParkingTime').value = j.altParkingTime || '';
+    document.getElementById('f-blocked').value = j.blocked || 'no';
+    document.getElementById('f-status').value = j.status || 'Pending';
+    document.getElementById('f-scheduleDay').value = j.scheduleDay || '';
+    document.getElementById('f-completionDay').value = j.completionDay || '';
+    document.getElementById('f-permitCode').value = j.permitCode || '';
+    document.getElementById('f-permitNumber').value = j.permitNumber || '';
+    document.getElementById('f-permitExpiry').value = j.permitExpiry || '';
+    document.getElementById('f-notes').value = j.notes || '';
+
+    const knownTypes = ['BPP', 'Parking Lot', 'Sidewalk', 'Custom', ''];
+    const ttSel = document.getElementById('f-taskType');
+    if (j.taskType && !knownTypes.includes(j.taskType)) {
+      ttSel.value = 'Custom';
+      document.getElementById('f-customTaskWrap').style.display = 'flex';
+      document.getElementById('f-customTask').value = j.taskType;
+    } else {
+      ttSel.value = j.taskType || '';
+      document.getElementById('f-customTaskWrap').style.display = 'none';
+      document.getElementById('f-customTask').value = '';
+    }
+
+    document.getElementById('f-jobType').value = j.jobType || '';
+    const conWrap = document.getElementById('f-concreteSubWrap');
+    if (j.jobType === 'concrete') {
+      conWrap.style.display = 'flex';
+      document.getElementById('f-concreteSub').value = j.concreteSub || '';
+    } else {
+      conWrap.style.display = 'none';
+      document.getElementById('f-concreteSub').value = '';
+    }
+
+    // Load custom fields
+    const cfList = document.getElementById('custom-fields-list');
+    cfList.innerHTML = '';
+    if (Array.isArray(j.customFields)) {
+      j.customFields.forEach(cf => addCustomField(cf.label, cf.value));
+    }
+
+    document.getElementById('job-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+  };
+
+  // ── SAVE JOB ───────────────────────────────────────────────────────────────
+  window.saveJob = async function() {
+    if (!currentUser) { window.showToast('Not logged in!', '#e53e3e'); return; }
+    const btn = document.getElementById('save-job-btn');
+    btn.disabled = true; btn.textContent = editingJobId ? 'Updating…' : 'Saving…';
+
+    const jobType = document.getElementById('f-jobType').value;
+    const concreteSub = jobType === 'concrete' ? document.getElementById('f-concreteSub').value.trim() : '';
+    let taskTypeVal = document.getElementById('f-taskType').value;
+    if (taskTypeVal === 'Custom') taskTypeVal = document.getElementById('f-customTask').value.trim() || 'Custom';
+
+    const jobData = {
+      customerName:   document.getElementById('f-customerName').value.trim(),
+      phone:          document.getElementById('f-phone').value.trim(),
+      email:          document.getElementById('f-email').value.trim(),
+      invoiceNumber:  document.getElementById('f-invoiceNumber').value.trim(),
+      address:        document.getElementById('f-address').value.trim(),
+      taskType:       taskTypeVal,
+      projectSize:    document.getElementById('f-projectSize').value.trim(),
+      jobType:        jobType,
+      concreteSub:    concreteSub,
+      altParkingDays: document.getElementById('f-altParkingDays').value.trim(),
+      altParkingTime: document.getElementById('f-altParkingTime').value.trim(),
+      blocked:        document.getElementById('f-blocked').value,
+      status:         document.getElementById('f-status').value,
+      scheduleDay:    document.getElementById('f-scheduleDay').value,
+      completionDay:  document.getElementById('f-completionDay').value,
+      permitCode:     document.getElementById('f-permitCode').value.trim(),
+      permitNumber:   document.getElementById('f-permitNumber').value.trim(),
+      permitExpiry:   document.getElementById('f-permitExpiry').value,
+      notes:          document.getElementById('f-notes').value.trim(),
+      customFields:   collectCustomFields(),
+    };
+
+    try {
+      if (editingJobId) {
+        await updateDoc(doc(db, 'jobs', editingJobId), { ...jobData, updatedBy: currentUser.email, updatedAt: serverTimestamp() });
+        await addDoc(collection(db, 'activity'), { action: 'Updated job', jobAddress: jobData.address || '', doneBy: currentUser.email, timestamp: serverTimestamp() });
+        window.showToast('✅ Job updated!');
+      } else {
+        await addDoc(collection(db, 'jobs'), { ...jobData, createdBy: currentUser.email, createdAt: serverTimestamp() });
+        await addDoc(collection(db, 'activity'), { action: 'Created job', jobAddress: jobData.address || '', doneBy: currentUser.email, timestamp: serverTimestamp() });
+        window.showToast('✅ Job saved!');
+      }
+      // Auto-save contact
+      await upsertContact(jobData);
+      closeJobModal();
+      window.clearJobForm();
+    } catch(e) {
+      window.showToast('Error: ' + e.message, '#e53e3e');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = editingJobId ? '💾 Update Job' : '💾 Save Job';
+    }
+  };
+
+  // ── SCHEDULE ───────────────────────────────────────────────────────────────
+  window._schedCrewFilter = 'all';
+
+  window.setCrewFilter = function(crew, btnEl) {
+    window._schedCrewFilter = crew;
+    document.querySelectorAll('.crew-pill').forEach(b => b.classList.remove('active'));
+    if (btnEl) btnEl.classList.add('active');
+    // Show/hide Add Job button based on crew selection
+    const addJobBtn = document.getElementById('sched-add-job-btn');
+    if (addJobBtn) {
+      if (crew === 'all') {
+        addJobBtn.style.display = 'none';
+      } else {
+        addJobBtn.style.display = 'inline-flex';
+        addJobBtn.textContent = '+ Add ' + (crew === 'asphalt' ? '🟠 Asphalt' : '🔵 Concrete') + ' Job';
+      }
+    }
+    renderSchedule();
+  };
+
+  function jobMatchesCrew(j, filter) {
+    if (filter === 'all') return true;
+    if (filter === 'asphalt') return j.jobType === 'asphalt' || (j.crew && j.crew.toLowerCase().includes('asphalt'));
+    if (filter === 'concrete') return j.jobType === 'concrete' || (j.crew && !j.crew.toLowerCase().includes('asphalt') && j.crew);
+    return true;
+  }
+
+  function buildJobCard(j) {
+    const isAsphalt = j.jobType === 'asphalt' || (j.crew && j.crew.toLowerCase().includes('asphalt'));
+    const cardClass = isAsphalt ? 'asphalt' : 'concrete';
+    const crewName = crewLabel(j);
+    const crewEmoji = isAsphalt ? '🟠' : '🔵';
+    const parking = j.altParkingDays ? `${j.altParkingDays}${j.altParkingTime ? ' · ' + j.altParkingTime : ''}` : null;
+    const permitStr = j.permitNumber ? (j.permitExpiry ? `${j.permitNumber} · exp ${fmtDate(j.permitExpiry)}` : j.permitNumber)
+                    : j.permitCode   ? j.permitCode : null;
+    // Custom fields rows
+    const customRows = Array.isArray(j.customFields)
+      ? j.customFields.filter(cf => cf.label || cf.value).map(cf =>
+          `<div class="crew-job-row"><span class="label" style="color:#888;min-width:auto;">${cf.label ? cf.label + ':' : '—'}</span><span>${cf.value || ''}</span></div>`
+        ).join('')
+      : '';
+    return `<div class="crew-job-card ${cardClass}" style="cursor:pointer;" onclick="openEditJob('${j.id}')">
+      ${j.customerName ? `<div class="crew-job-name">${j.customerName}</div>` : ''}
+      ${j.address ? `<div class="crew-job-row"><span class="label">📍</span><span>${j.address}</span></div>` : ''}
+      ${j.taskType ? `<div class="crew-job-row"><span class="label">🏗️</span><span>${j.taskType}</span></div>` : ''}
+      ${j.projectSize ? `<div class="crew-job-row"><span class="label">📐</span><span>${j.projectSize}</span></div>` : ''}
+      ${parking ? `<div class="crew-job-row"><span class="label">🚫</span><span style="color:#e53e3e;font-weight:600;">No Parking: ${parking}</span></div>` : ''}
+      ${crewName && crewName !== '—' ? `<div class="crew-job-row"><span class="label">${crewEmoji}</span><span style="font-weight:600;">${crewName}</span></div>` : ''}
+      ${permitStr ? `<div class="crew-job-row"><span class="label">📋</span><span style="color:#f59e0b;">${permitStr}</span></div>` : ''}
+      ${j.notes ? `<div class="crew-job-row"><span class="label">📝</span><span style="color:#aaa;">${j.notes}</span></div>` : ''}
+      ${customRows}
+      <div class="crew-job-row" style="margin-top:4px;"><span class="label">⚡</span><span>${statusBadge(j.status)}</span></div>
+    </div>`;
+  }
+
+  window.renderSchedule = function() {
+    const filter = window._schedCrewFilter || 'all';
+    const jobs = allJobs.filter(j => jobMatchesCrew(j, filter));
+    const tbdJobs = jobs.filter(j => !j.scheduleDay);
+    const datedJobs = jobs.filter(j => !!j.scheduleDay).sort((a,b) => a.scheduleDay.localeCompare(b.scheduleDay));
+
+    const tbdSection = document.getElementById('sched-tbd-section');
+    const tbdContainer = document.getElementById('sched-tbd-container');
+    if (tbdJobs.length === 0) {
+      tbdSection.style.display = 'none';
+    } else {
+      tbdSection.style.display = 'block';
+      tbdContainer.innerHTML = `<div class="crew-day-card">
+        <div class="crew-day-header">
+          <span class="crew-day-title">📌 Date TBD</span>
+          <span class="crew-day-count">${tbdJobs.length} job${tbdJobs.length!==1?'s':''}</span>
+        </div>
+        <div class="crew-jobs-container">${tbdJobs.map(buildJobCard).join('')}</div>
+      </div>`;
+    }
+
+    const datedSection = document.getElementById('sched-dated-section');
+    const datedContainer = document.getElementById('sched-dated-container');
+    if (datedJobs.length === 0) {
+      datedSection.style.display = tbdJobs.length > 0 ? 'none' : 'block';
+      datedContainer.innerHTML = tbdJobs.length > 0 ? '' : '<div class="crew-no-jobs">No scheduled jobs. Create a job and assign a schedule date.</div>';
+    } else {
+      datedSection.style.display = 'block';
+      const grouped = {};
+      datedJobs.forEach(j => {
+        if (!grouped[j.scheduleDay]) grouped[j.scheduleDay] = [];
+        grouped[j.scheduleDay].push(j);
+      });
+      datedContainer.innerHTML = Object.entries(grouped).map(([dateKey, dayJobs]) => {
+        const d = new Date(dateKey + 'T00:00:00');
+        const dateStr = d.toLocaleDateString('en-US', {weekday:'long',month:'short',day:'numeric',year:'numeric'});
+        return `<div class="crew-day-card">
+          <div class="crew-day-header">
+            <span class="crew-day-title">📅 ${dateStr}</span>
+            <span class="crew-day-count">${dayJobs.length} job${dayJobs.length!==1?'s':''}</span>
+          </div>
+          <div class="crew-jobs-container">${dayJobs.map(buildJobCard).join('')}</div>
+        </div>`;
+      }).join('');
+    }
+  };
+
+  // ── SCHEDULE TEXT (share) ─────────────────────────────────────────────────
+  window.buildScheduleText = function() {
+    const filter = window._schedCrewFilter || 'all';
+    const datedJobs = allJobs
+      .filter(j => !!j.scheduleDay && jobMatchesCrew(j, filter))
+      .sort((a,b) => a.scheduleDay.localeCompare(b.scheduleDay));
+    const tbdJobs = allJobs.filter(j => !j.scheduleDay && jobMatchesCrew(j, filter));
+
+    let text = `📋 MAMAN CONTRACTING — SCHEDULE REPORT\n\n`;
+
+    const formatJob = j => {
+      const isA = j.jobType==='asphalt'||(j.crew&&j.crew.toLowerCase().includes('asphalt'));
+      const crew = crewLabel(j);
+      const pNum = j.permitNumber || j.permitCode;
+      const lines = [];
+      // Main line
+      const main = [j.customerName, j.address].filter(Boolean).join(' — ');
+      if (main) lines.push(`• ${main}`);
+      // Details line
+      const details = [];
+      if (j.projectSize) details.push(`📐 ${j.projectSize}`);
+      if (j.altParkingDays) {
+        const pk = `🚫 No Parking: ${j.altParkingDays}${j.altParkingTime ? ' ' + j.altParkingTime : ''}`;
+        details.push(pk);
+      }
+      if (details.length) lines.push(`  ${details.join(' | ')}`);
+      // Crew/permit line
+      const crewPerm = [];
+      if (crew && crew !== '—') crewPerm.push(`👷 ${crew}`);
+      if (pNum) {
+        let p = `📋 Permit: ${pNum}`;
+        if (j.permitExpiry) p += ` (exp: ${fmtDate(j.permitExpiry)})`;
+        crewPerm.push(p);
+      }
+      if (crewPerm.length) lines.push(`  ${crewPerm.join(' | ')}`);
+      return lines.join('\n');
+    };
+
+    if (!datedJobs.length && !tbdJobs.length) {
+      text += 'No scheduled jobs.\n';
+    } else {
+      if (datedJobs.length) {
+        const grouped = {};
+        datedJobs.forEach(j => { if (!grouped[j.scheduleDay]) grouped[j.scheduleDay]=[]; grouped[j.scheduleDay].push(j); });
+        Object.entries(grouped).forEach(([dateKey, dayJobs]) => {
+          const d = new Date(dateKey + 'T00:00:00');
+          const dateStr = d.toLocaleDateString('en-US', {weekday:'long',month:'long',day:'numeric',year:'numeric'});
+          text += `${dateStr}\n${dayJobs.map(formatJob).join('\n')}\n\n`;
+        });
+      }
+      if (tbdJobs.length) {
+        text += `Date TBD\n${tbdJobs.map(formatJob).join('\n')}\n\n`;
+      }
+    }
+    return text.trim();
+  };
+
+  window.clearJobForm = function() {
+    ['f-customerName','f-phone','f-email','f-invoiceNumber','f-address',
+     'f-projectSize','f-concreteSub','f-altParkingDays','f-altParkingTime',
+     'f-permitCode','f-permitNumber','f-permitExpiry','f-notes',
+     'f-scheduleDay','f-completionDay','f-customTask'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('f-taskType').value = '';
+    document.getElementById('f-jobType').value = '';
+    document.getElementById('f-blocked').value = 'no';
+    document.getElementById('f-status').value = 'Pending';
+    document.getElementById('f-concreteSubWrap').style.display = 'none';
+    document.getElementById('f-customTaskWrap').style.display = 'none';
+    document.getElementById('permit-preview').style.display = 'none';
+    document.getElementById('photos-preview').innerHTML = '';
+    document.getElementById('receipts-preview').style.display = 'none';
+    document.getElementById('custom-fields-list').innerHTML = '';
+    editingJobId = null;
+    document.getElementById('modal-title').textContent = '+ New Job';
+    document.getElementById('modal-subtitle').textContent = 'Fill in all the job details below';
+    document.getElementById('save-job-btn').textContent = '💾 Save Job';
+    document.getElementById('modal-delete-btn').style.display = 'none';
+  };
+
+</script>
+<script>
+  // ── NAVIGATION ────────────────────────────────────────────────────────────
+  const sectionTitles = ['Dashboard','Job Management','Permits','Schedule','Contacts','Users'];
+  const SECTION_COUNT = 6;
+  let currentSection = 0;
+
+  function navTo(idx) {
+    currentSection = idx;
+    // Slide wrapper
+    const wrapper = document.getElementById('sections-wrapper');
+    wrapper.style.transition = 'transform 0.22s ease-out';
+    wrapper.style.transform = `translateX(-${idx * (100/SECTION_COUNT)}%)`;
+    // Bottom nav active state
+    document.querySelectorAll('#bottom-nav .bnav-item').forEach((b,i) => b.classList.toggle('active', i === idx));
+    // Drawer active state
+    document.querySelectorAll('#drawer .drawer-item[data-section]').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.section) === idx);
+    });
+    // Close drawer if open
+    closeDrawer();
+    // Side effects
+    if (idx === 3 && typeof renderSchedule === 'function') renderSchedule();
+  }
+
+  // Legacy alias used by other parts of code
+  window.showSection = function(idx, _el) { navTo(idx); };
+  window.navTo = navTo;
+
+  // ── DRAWER ────────────────────────────────────────────────────────────────
+  window.openDrawer = function() {
+    document.getElementById('drawer').classList.add('open');
+    document.getElementById('drawer-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  };
+  window.closeDrawer = function() {
+    document.getElementById('drawer').classList.remove('open');
+    document.getElementById('drawer-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  };
+
+  // ── SWIPE NAVIGATION — direction detect only, full page snap ─────────────
+  (function() {
+    const outer = document.getElementById('sections-outer');
+    let startX = 0, startY = 0, startTime = 0;
+    let locked = false; // true once we've determined horizontal intent
+
+    outer.addEventListener('touchstart', e => {
+      if (document.getElementById('drawer').classList.contains('open')) return;
+      if (e.target.closest('#job-modal,#delete-confirm-modal,#invite-modal,#permit-modal')) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startTime = Date.now();
+      locked = false;
+    }, { passive: true });
+
+    outer.addEventListener('touchmove', e => {
+      // Once we know it's a horizontal swipe, prevent vertical scroll bleed
+      if (locked) e.preventDefault();
+    }, { passive: false });
+
+    outer.addEventListener('touchend', e => {
+      if (document.getElementById('drawer').classList.contains('open')) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      const dt = Date.now() - startTime;
+      const absDx = Math.abs(dx), absDy = Math.abs(dy);
+
+      // Must be more horizontal than vertical
+      if (absDy > absDx) return;
+      // Minimum swipe: 40px OR fast flick ≥20px in <250ms
+      const isFlick = absDx >= 20 && dt < 250;
+      if (absDx < 40 && !isFlick) return;
+
+      if (dx < 0 && currentSection < SECTION_COUNT - 1) navTo(currentSection + 1);
+      else if (dx > 0 && currentSection > 0) navTo(currentSection - 1);
+    }, { passive: true });
+  })();
+
+  // Fix: sections-wrapper width must account for 6 sections
+  document.getElementById('sections-wrapper').style.width = (SECTION_COUNT * 100) + '%';
+  document.querySelectorAll('.sections-wrapper .section').forEach(s => {
+    s.style.width = (100 / SECTION_COUNT) + '%';
+  });
+
+  // ── JUMP TO COMPLETED ─────────────────────────────────────────────────────
+  window.jumpToCompleted = function() {
+    navTo(1);
+    // Set filter to Completed
+    window._jobFilter = 'Completed';
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+    const completedPill = document.querySelector('.filter-pill[data-filter="Completed"]');
+    if (completedPill) completedPill.classList.add('active');
+    if (typeof filterJobs === 'function') filterJobs();
+  };
+
+  // ── SMART SHARE ───────────────────────────────────────────────────────────
+  window._shareText = '';
+
+  window.smartShare = function(event, btnId) {
+    window._shareText = (typeof buildScheduleText === 'function') ? buildScheduleText() : '';
+    if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      navigator.share({ title: 'Maman Contracting — Schedule', text: window._shareText }).catch(()=>{});
+      return;
+    }
+    const popup = document.getElementById('share-popup');
+    const btn = document.getElementById(btnId) || event.target;
+    const rect = btn.getBoundingClientRect();
+    popup.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+    popup.style.left = Math.max(8, rect.right - 200 + window.scrollX) + 'px';
+    popup.classList.contains('show') ? popup.classList.remove('show') : popup.classList.add('show');
+  };
+
+  window.shareAction = function(type) {
+    const popup = document.getElementById('share-popup');
+    popup.classList.remove('show');
+    const text = window._shareText || (typeof buildScheduleText === 'function' ? buildScheduleText() : '');
+    if (type === 'native') {
+      if (navigator.share) navigator.share({ title: 'Schedule', text }).catch(()=>{});
+      else navigator.clipboard.writeText(text).then(() => window.showToast('📋 Copied!'));
+    } else if (type === 'copy') {
+      navigator.clipboard.writeText(text).then(() => window.showToast('📋 Copied!')).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta); window.showToast('📋 Copied!');
+      });
+    } else if (type === 'email') {
+      window.location.href = `mailto:?subject=${encodeURIComponent('Maman Contracting — Schedule')}&body=${encodeURIComponent(text)}`;
+    } else if (type === 'print') { window.print(); }
+  };
+
+  document.addEventListener('click', function(e) {
+    const popup = document.getElementById('share-popup');
+    if (popup && popup.classList.contains('show') && !popup.contains(e.target) && !e.target.closest('[onclick*="smartShare"]')) {
+      popup.classList.remove('show');
+    }
+  });
+
+  // ── FORM HELPERS ──────────────────────────────────────────────────────────
+  window.handleJobTypeChange = function() {
+    const jobType = document.getElementById('f-jobType').value;
+    document.getElementById('f-concreteSubWrap').style.display = jobType === 'concrete' ? 'flex' : 'none';
+  };
+  window.handleTaskTypeChange = function() {
+    const t = document.getElementById('f-taskType').value;
+    document.getElementById('f-customTaskWrap').style.display = t === 'Custom' ? 'flex' : 'none';
+  };
+
+  function handleFile(input, previewId) {
+    const preview = document.getElementById(previewId);
+    if (input.files.length > 0) { preview.style.display = 'block'; preview.textContent = '✅ ' + input.files[0].name; }
+  }
+
+  function handleFiles(input, previewId) {
+    const preview = document.getElementById(previewId);
+    preview.innerHTML = '';
+    Array.from(input.files).forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:8px;border:2px solid #2a2a2a;';
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const tag = document.createElement('div');
+        tag.style.cssText = 'background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;padding:6px 10px;font-size:11px;color:#4ade80;';
+        tag.textContent = '📄 ' + file.name;
+        preview.appendChild(tag);
+      }
+      preview.style.display = 'flex';
+    });
+  }
+
+  // ── CUSTOM FIELDS ─────────────────────────────────────────────────────────
+  window.addCustomField = function(label, value) {
+    const list = document.getElementById('custom-fields-list');
+    const id = 'cf-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+    const row = document.createElement('div');
+    row.id = id;
+    row.style.cssText = 'display:flex;gap:8px;align-items:center;';
+    const safeLabel = (label || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    const safeValue = (value || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    row.innerHTML = `
+      <input type="text" placeholder="Label…" value="${safeLabel}"
+        style="flex:1;min-width:0;padding:9px 11px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
+        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" data-cf="label"/>
+      <input type="text" placeholder="Value…" value="${safeValue}"
+        style="flex:2;min-width:0;padding:9px 11px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
+        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" data-cf="value"/>
+      <button type="button" onclick="document.getElementById('${id}').remove()"
+        style="width:32px;height:32px;flex-shrink:0;background:#2a2a2a;border:none;border-radius:8px;color:#888;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif;transition:all 0.15s;"
+        onmouseover="this.style.background='#450a0a';this.style.color='#f87171'"
+        onmouseout="this.style.background='#2a2a2a';this.style.color='#888'">×</button>`;
+    list.appendChild(row);
+    row.querySelector('[data-cf="label"]').focus();
+  };
+
+  window.collectCustomFields = function() {
+    const rows = document.querySelectorAll('#custom-fields-list > div');
+    const fields = [];
+    rows.forEach(row => {
+      const lbl = (row.querySelector('[data-cf="label"]') || {}).value || '';
+      const val = (row.querySelector('[data-cf="value"]') || {}).value || '';
+      if (lbl.trim() || val.trim()) fields.push({ label: lbl.trim(), value: val.trim() });
+    });
+    return fields;
+  };
+
+  // ── JOB MODAL ─────────────────────────────────────────────────────────────
+  function openJobModal(prefillDate) {
+    if (window.clearJobForm) window.clearJobForm();
+    const modal = document.getElementById('job-modal');
+    modal.style.display = 'block';
+    modal.scrollTop = 0;
+    // If a date was passed (e.g. from Schedule), prefill it
+    if (prefillDate) {
+      const sd = document.getElementById('field-scheduleDay');
+      if (sd) sd.value = prefillDate;
+    }
+  }
+  function closeJobModal() {
+    const modal = document.getElementById('job-modal');
+    modal.style.display = 'none';
+  }
+  document.getElementById('job-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeJobModal();
+  });
+
+  document.getElementById('contact-modal').addEventListener('click', function(e) {
+    if (e.target === this && typeof closeContactModal === 'function') closeContactModal();
+  });
+
+  document.getElementById('permit-modal').addEventListener('click', function(e) {
+    if (e.target === this && typeof closePermitModal === 'function') closePermitModal();
+  });
+
+  // ── THEME ─────────────────────────────────────────────────────────────────
+  function syncThemeBtn() {
+    const isLight = document.body.classList.contains('light');
+    const icon = document.querySelector('#theme-drawer-item .di');
+    const label = document.getElementById('theme-drawer-label');
+    if (icon) icon.textContent = isLight ? '☀️' : '🌙';
+    if (label) label.textContent = isLight ? 'Light Mode' : 'Dark Mode';
+    const topBtn = document.getElementById('theme-toggle-btn');
+    if (topBtn) topBtn.textContent = isLight ? '☀️' : '🌙';
+  }
+  function toggleTheme() {
+    document.body.classList.toggle('light');
+    localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+    syncThemeBtn();
+  }
+  if (localStorage.getItem('theme') === 'light') {
+    document.body.classList.add('light');
+  }
+  syncThemeBtn();
+
+  // ── RIPPLE TAP EFFECT ─────────────────────────────────────────────────────
+  // Fires on any tappable row or card with an onclick that opens a job
+  document.addEventListener('pointerdown', function(e) {
+    const row = e.target.closest('tr[onclick], .crew-job-card[onclick]');
+    if (!row) return;
+    // Ripple for table rows (inject into first td)
+    if (row.tagName === 'TR') {
+      const td = row.querySelector('td');
+      if (!td) return;
+      const ripple = document.createElement('span');
+      ripple.className = 'tap-ripple';
+      ripple.style.cssText = `width:60px;height:60px;left:${e.clientX - td.getBoundingClientRect().left - 30}px;top:-10px;`;
+      td.style.position = 'relative'; td.style.overflow = 'hidden';
+      td.appendChild(ripple);
+      ripple.addEventListener('animationend', () => ripple.remove());
+    }
+  }, { passive: true });
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  // Set initial swipe wrapper position
+  document.getElementById('sections-wrapper').style.transform = 'translateX(0%)';
+</script>
+
+<style>
+  @media print {
+    #drawer, #drawer-overlay, #bottom-nav, .topbar, .section-header, .filters, .filter-pills,
+    .crew-pill, #share-popup, #undo-btn { display: none !important; }
+    .main { margin-left: 0 !important; }
+    body { background: #fff !important; color: #000 !important; }
+    .crew-day-card { background: #fff !important; border: 1px solid #ccc !important; page-break-inside: avoid; }
+    .crew-job-card { background: #f9f9f9 !important; }
+    .sections-wrapper { transform: none !important; width: 100% !important; flex-direction: column !important; }
+    .sections-wrapper .section { width: 100% !important; }
+    #sec-schedules { display: block !important; }
+  }
+</style>
+</body>
+</html>
