@@ -752,6 +752,8 @@
           style="background:#1e1e1e;border:1px solid #333;font-size:11px;cursor:pointer;padding:4px 10px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;transition:all 0.2s;flex-shrink:0;font-weight:600;font-family:'Inter',sans-serif;letter-spacing:0.3px;"
           onmouseover="this.style.color='#fff';this.style.background='#2a2a2a'" onmouseout="this.style.color='#aaa';this.style.background='#1e1e1e'">Logout</button>
       </div>
+      <!-- Always-visible logout for bypass login -->
+      <button id="bypass-logout-btn" onclick="doSignOut()" style="display:none;background:#1e1e1e;border:1px solid #333;font-size:11px;cursor:pointer;padding:4px 10px;border-radius:6px;color:#aaa;font-weight:600;font-family:'Inter',sans-serif;">Logout</button>
     </div>
   </div>
 
@@ -1427,6 +1429,7 @@
     const da = document.getElementById('drawer-avatar'); if (da) da.textContent = 'NM';
     const inviteBtn = document.getElementById('invite-user-btn'); if (inviteBtn) inviteBtn.style.display = 'inline-flex';
     const avatarEl = document.getElementById('user-avatar-sm'); if (avatarEl) avatarEl.textContent = 'NM';
+    const bypassLogout = document.getElementById('bypass-logout-btn'); if (bypassLogout) bypassLogout.style.display = 'flex';
     // Load all data via REST (works without Firebase auth token)
     loadAllDataREST().then(() => {
       // Restore last visited section after data loads
