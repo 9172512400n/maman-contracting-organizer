@@ -1100,17 +1100,13 @@
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Completion Day</label>
         <input type="date" id="f-completionDay" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Permit Code</label>
-        <input type="text" id="f-permitCode" placeholder="e.g. BKN-2026" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Permit Number</label>
-        <input type="text" id="f-permitNumber" placeholder="e.g. 2024-089" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
-        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Permit Expiry Date</label>
-        <input type="date" id="f-permitExpiry" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <!-- MULTI-PERMIT SECTION -->
+      <div style="grid-column:1/-1;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">📋 Permits</label>
+          <button type="button" onclick="addPermitRow()" style="background:#1e3a5f;border:none;border-radius:6px;color:#60a5fa;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">+ Add Permit</button>
+        </div>
+        <div id="job-permits-list" style="display:flex;flex-direction:column;gap:8px;"></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Notes</label>
@@ -2060,6 +2056,29 @@
     document.body.style.overflow = 'hidden';
   };
 
+  // ── MULTI-PERMIT ROWS ──────────────────────────────────────────────────────
+  window.addPermitRow = function(code, number, expiry) {
+    const list = document.getElementById('job-permits-list');
+    const row = document.createElement('div');
+    row.className = 'permit-row';
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:6px;align-items:center;background:#111;border:1px solid #2a2a2a;border-radius:8px;padding:8px;';
+    row.innerHTML = `
+      <input type="text" class="pr-code" placeholder="Code e.g. BKN" value="${code||''}" style="padding:8px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <input type="text" class="pr-number" placeholder="Permit #" value="${number||''}" style="padding:8px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <input type="date" class="pr-expiry" value="${expiry||''}" style="padding:8px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <button type="button" onclick="this.closest('.permit-row').remove()" style="background:#450a0a;border:none;border-radius:6px;color:#f87171;padding:6px 8px;cursor:pointer;font-size:14px;">🗑️</button>
+    `;
+    list.appendChild(row);
+  };
+
+  window.getPermitRows = function() {
+    return Array.from(document.querySelectorAll('#job-permits-list .permit-row')).map(row => ({
+      code: row.querySelector('.pr-code').value.trim(),
+      number: row.querySelector('.pr-number').value.trim(),
+      expiry: row.querySelector('.pr-expiry').value,
+    })).filter(p => p.code || p.number);
+  };
+
   window.closeContactModal = function() {
     document.getElementById('contact-modal').classList.remove('show');
     document.body.style.overflow = '';
@@ -2625,9 +2644,12 @@
     document.getElementById('f-status').value = j.status || 'Pending';
     document.getElementById('f-scheduleDay').value = j.scheduleDay || '';
     document.getElementById('f-completionDay').value = j.completionDay || '';
-    document.getElementById('f-permitCode').value = j.permitCode || '';
-    document.getElementById('f-permitNumber').value = j.permitNumber || '';
-    document.getElementById('f-permitExpiry').value = j.permitExpiry || '';
+    // Load permits array (or legacy single permit)
+    document.getElementById('job-permits-list').innerHTML = '';
+    const permits = j.permits && j.permits.length ? j.permits
+      : (j.permitCode || j.permitNumber ? [{ code: j.permitCode||'', number: j.permitNumber||'', expiry: j.permitExpiry||'' }] : []);
+    if (permits.length === 0) addPermitRow();
+    else permits.forEach(p => addPermitRow(p.code, p.number, p.expiry));
     document.getElementById('f-notes').value = j.notes || '';
 
     const knownTypes = ['BPP', 'Parking Lot', 'Sidewalk', 'Custom', ''];
@@ -2690,9 +2712,10 @@
       status:         document.getElementById('f-status').value,
       scheduleDay:    document.getElementById('f-scheduleDay').value,
       completionDay:  document.getElementById('f-completionDay').value,
-      permitCode:     document.getElementById('f-permitCode').value.trim(),
-      permitNumber:   document.getElementById('f-permitNumber').value.trim(),
-      permitExpiry:   document.getElementById('f-permitExpiry').value,
+      permits:        getPermitRows(),
+      permitCode:     getPermitRows()[0]?.code || '',
+      permitNumber:   getPermitRows()[0]?.number || '',
+      permitExpiry:   getPermitRows()[0]?.expiry || '',
       notes:          document.getElementById('f-notes').value.trim(),
       customFields:   collectCustomFields(),
     };
@@ -2881,7 +2904,7 @@
   window.clearJobForm = function() {
     ['f-customerName','f-phone','f-email','f-invoiceNumber','f-address',
      'f-projectSize','f-concreteSub','f-altParkingDays','f-altParkingTime',
-     'f-permitCode','f-permitNumber','f-permitExpiry','f-notes',
+     'f-notes',
      'f-scheduleDay','f-completionDay','f-customTask'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
@@ -2895,6 +2918,9 @@
     document.getElementById('photos-preview').innerHTML = '';
     document.getElementById('receipts-preview').style.display = 'none';
     document.getElementById('custom-fields-list').innerHTML = '';
+    // Reset permits list with one empty row
+    document.getElementById('job-permits-list').innerHTML = '';
+    addPermitRow();
     editingJobId = null;
     document.getElementById('modal-title').textContent = '+ New Job';
     document.getElementById('modal-subtitle').textContent = 'Fill in all the job details below';
