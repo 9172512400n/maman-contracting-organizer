@@ -556,6 +556,9 @@
     </div>
     <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
     <div class="login-error" id="login-error"></div>
+    <div style="text-align:center;margin-top:14px;">
+      <a onclick="doForgotPassword()" style="color:#e53e3e;font-size:13px;cursor:pointer;text-decoration:underline;">Forgot password?</a>
+    </div>
   </div>
 </div>
 
@@ -1372,6 +1375,19 @@
     } catch(e) {
       errEl.textContent = e.code === 'auth/invalid-credential' ? 'Invalid email or password.' : e.message;
       btn.disabled = false; btn.textContent = 'Sign In';
+    }
+  };
+
+  window.doForgotPassword = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    if (!email) { document.getElementById('login-error').textContent = 'Enter your email above first.'; return; }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      document.getElementById('login-error').style.color = '#4ade80';
+      document.getElementById('login-error').textContent = '✅ Reset email sent! Check your inbox (and spam).';
+    } catch(e) {
+      document.getElementById('login-error').style.color = '#f87171';
+      document.getElementById('login-error').textContent = e.code === 'auth/user-not-found' ? 'No account found. Ask admin to invite you first.' : e.message;
     }
   };
 
