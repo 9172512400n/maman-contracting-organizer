@@ -532,13 +532,64 @@
 <!-- LOGIN SCREEN -->
 <script>
 if(localStorage.getItem('bypass-auth')==='true'){document.addEventListener('DOMContentLoaded',function(){var ls=document.getElementById('login-screen');if(ls)ls.style.display='none';});}
-// Eye toggle — must be in plain script (not module) so onclick works on iPhone/Safari
+
 function togglePasswordVisibility() {
   var input = document.getElementById('login-password');
   var btn = document.getElementById('pw-toggle');
   if (!input || !btn) return;
   if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
   else { input.type = 'password'; btn.textContent = '👁️'; }
+}
+
+function doLogin() {
+  var email = document.getElementById('login-email').value.trim().toLowerCase();
+  var pass = document.getElementById('login-password').value;
+  var errEl = document.getElementById('login-error');
+  var btn = document.getElementById('login-btn');
+  if (errEl) { errEl.style.color = '#f87171'; errEl.textContent = ''; }
+  if (!email || !pass) { if (errEl) errEl.textContent = 'Please enter email and password.'; return; }
+  // Bypass check first
+  if (email === 'nir@mamancontracting.com' && (pass === 'Maman2024!' || pass === 'Nirmaman1')) {
+    localStorage.setItem('bypass-auth', 'true');
+    if (window.activateBypassLogin) { window.activateBypassLogin(); }
+    else { document.addEventListener('DOMContentLoaded', function(){ if(window.activateBypassLogin) window.activateBypassLogin(); }); }
+    return;
+  }
+  // Firebase login
+  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
+  if (window._firebaseSignIn) {
+    window._firebaseSignIn(email, pass).catch(function(e) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+      if (errEl) errEl.textContent = 'Error: ' + (e.code || e.message);
+    });
+  } else {
+    setTimeout(function() {
+      if (window._firebaseSignIn) {
+        window._firebaseSignIn(email, pass).catch(function(e) {
+          if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+          if (errEl) errEl.textContent = 'Error: ' + (e.code || e.message);
+        });
+      } else {
+        if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+        if (errEl) errEl.textContent = 'App not loaded yet — please refresh and try again.';
+      }
+    }, 2000);
+  }
+}
+
+function doForgotPassword() {
+  var email = document.getElementById('login-email').value.trim();
+  var errEl = document.getElementById('login-error');
+  if (!email) { if (errEl) errEl.textContent = 'Enter your email above first.'; return; }
+  fetch('https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({requestType: 'PASSWORD_RESET', email: email})
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (errEl) { errEl.style.color = '#4ade80'; errEl.textContent = '✅ Reset email sent! Check your inbox (and spam).'; }
+  }).catch(function(e) {
+    if (errEl) errEl.textContent = 'Failed to send reset email.';
+  });
 }
 </script>
 <div id="login-screen">
@@ -1398,35 +1449,9 @@ function togglePasswordVisibility() {
     }
   };
 
-  window.doLogin = async function() {
-    const email = document.getElementById('login-email').value.trim().toLowerCase();
-    const pass  = document.getElementById('login-password').value;
-    const errEl = document.getElementById('login-error');
-    const btn   = document.getElementById('login-btn');
-    errEl.style.color = '#f87171';
-    errEl.textContent = '';
-    if (!email || !pass) { errEl.textContent = 'Please enter email and password.'; return; }
-    // Check bypass FIRST — no waiting for Firebase
-    if (email === 'nir@mamancontracting.com' && (pass === 'Maman2024!' || pass === 'Nirmaman1')) {
-      console.log('Bypass login triggered');
-      localStorage.setItem('bypass-auth', 'true');
-      window.activateBypassLogin();
-      return;
-    }
-    console.log('Attempting Firebase login for:', email);
-    btn.disabled = true; btn.textContent = 'Signing in…';
-    const timeout = setTimeout(() => {
-      btn.disabled = false; btn.textContent = 'Sign In';
-      errEl.textContent = 'Timed out — check your connection.';
-    }, 12000);
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
-      clearTimeout(timeout);
-    } catch(e) {
-      clearTimeout(timeout);
-      btn.disabled = false; btn.textContent = 'Sign In';
-      errEl.textContent = 'Error: ' + (e.code || e.message);
-    }
+  // Expose Firebase sign-in for plain script doLogin()
+  window._firebaseSignIn = async function(email, pass) {
+    await signInWithEmailAndPassword(auth, email, pass);
   };
 
   window.doForgotPassword = async function() {
