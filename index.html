@@ -969,6 +969,10 @@
       <input type="text" id="cf-companyName" placeholder="e.g. Smith Family or ABC Corp" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
     </div>
     <div class="contact-form-field">
+      <label>Phone</label>
+      <input type="tel" id="cf-phone" placeholder="e.g. (917) 555-1234" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+    </div>
+    <div class="contact-form-field">
       <label>Email</label>
       <input type="email" id="cf-email" placeholder="e.g. contact@company.com" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
     </div>
@@ -1915,7 +1919,7 @@
               ${persons.length > 0 ? `👤 ${persons.length} person${persons.length !== 1 ? 's' : ''}` : ''}
               ${c.email ? ` &nbsp;·&nbsp; ✉️ ${c.email}` : ''}
             </div>
-            ${firstPerson.phone ? `<div class="contact-meta"><a href="tel:${firstPerson.phone}" class="contact-person-phone" onclick="event.stopPropagation()">📞 ${firstPerson.phone}</a></div>` : ''}
+            ${c.phone ? `<div class="contact-meta"><a href="tel:${c.phone}" class="contact-person-phone" onclick="event.stopPropagation()">📞 ${c.phone}</a></div>` : (firstPerson.phone ? `<div class="contact-meta"><a href="tel:${firstPerson.phone}" class="contact-person-phone" onclick="event.stopPropagation()">📞 ${firstPerson.phone}</a></div>` : '')}
           </div>
           <span class="contact-jobs-badge" onclick="event.stopPropagation();toggleContactJobs('${c.id}')" title="View linked jobs">${jobCount} job${jobCount !== 1 ? 's' : ''}</span>
         </div>
@@ -1976,6 +1980,7 @@
     editingContactId = null;
     document.getElementById('contact-modal-title').textContent = '➕ Add Contact';
     document.getElementById('cf-companyName').value = '';
+    document.getElementById('cf-phone').value = '';
     document.getElementById('cf-email').value = '';
     document.getElementById('cf-address').value = '';
     document.getElementById('cf-notes').value = '';
@@ -1991,6 +1996,7 @@
     editingContactId = contactId;
     document.getElementById('contact-modal-title').textContent = '✏️ Edit Contact';
     document.getElementById('cf-companyName').value = c.companyName || c.name || '';
+    document.getElementById('cf-phone').value = c.phone || '';
     document.getElementById('cf-email').value = c.email || '';
     document.getElementById('cf-address').value = c.address || '';
     document.getElementById('cf-notes').value = c.notes || '';
@@ -2068,6 +2074,7 @@
 
     const contactData = {
       companyName,
+      phone: document.getElementById('cf-phone').value.trim(),
       email: document.getElementById('cf-email').value.trim(),
       address: document.getElementById('cf-address').value.trim(),
       notes: document.getElementById('cf-notes').value.trim(),
@@ -2081,7 +2088,7 @@
         // Immediately update local cache (exclude serverTimestamp sentinel)
         const idx = allContacts.findIndex(c => c.id === editingContactId);
         if (idx !== -1) {
-          allContacts[idx] = { ...allContacts[idx], companyName, email: contactData.email, address: contactData.address, notes: contactData.notes, persons };
+          allContacts[idx] = { ...allContacts[idx], companyName, phone: contactData.phone, email: contactData.email, address: contactData.address, notes: contactData.notes, persons };
           renderContacts(allContacts);
         }
         window.showToast('✅ Contact updated!');
