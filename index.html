@@ -592,6 +592,12 @@ function doForgotPassword() {
   });
 }
 
+// Global navTo wrapper so it works before module loads
+function navTo(idx) {
+  if (window._navTo) { window._navTo(idx); }
+  else { setTimeout(function(){ if(window._navTo) window._navTo(idx); }, 500); }
+}
+
 function doSignOut() {
   localStorage.removeItem('bypass-auth');
   localStorage.removeItem('last-section');
@@ -3040,6 +3046,7 @@ function doSignOut() {
   // Legacy alias used by other parts of code
   window.showSection = function(idx, _el) { navTo(idx); };
   window.navTo = navTo;
+  window._navTo = navTo;
 
   // ── DRAWER ────────────────────────────────────────────────────────────────
   window.openDrawer = function() {
