@@ -1504,21 +1504,13 @@ function doSignOut() {
       const inviteBtn = document.getElementById('invite-user-btn'); if (inviteBtn) inviteBtn.style.display = 'inline-flex';
       const avatarEl = document.getElementById('user-avatar-sm'); if (avatarEl) avatarEl.textContent = 'NM';
       console.log('UI setup done, loading data...');
-      // Load data — wait for renderUsers to be defined first
-      const waitAndLoad = (attempts) => {
-        if (typeof window.renderUsers === 'function') {
-          loadAllDataREST().then(() => {
-            console.log('Data loaded successfully');
-            try {
-              const lastSection = parseInt(localStorage.getItem('last-section') || '0');
-              if (lastSection > 0 && typeof navTo === 'function') navTo(lastSection);
-            } catch(ex) { console.error('navTo error:', ex); }
-          }).catch(err => console.error('loadAllDataREST error:', err));
-        } else if (attempts < 30) {
-          setTimeout(() => waitAndLoad(attempts + 1), 200);
-        }
-      };
-      waitAndLoad(0);
+      // Load data after short delay to ensure all functions are defined
+      setTimeout(() => {
+        loadAllDataREST().then(() => {
+          const lastSection = parseInt(localStorage.getItem('last-section') || '0');
+          if (lastSection > 0 && typeof navTo === 'function') navTo(lastSection);
+        }).catch(err => console.error('loadAllDataREST error:', err));
+      }, 500);
     } catch(e) {
       console.error('activateBypassLogin crashed:', e);
       alert('Login error: ' + e.message);
@@ -3285,6 +3277,11 @@ function doSignOut() {
   if (localStorage.getItem('bypass-auth') === 'true') {
     localStorage.removeItem('bypass-ready');
     window.activateBypassLogin();
+    // Restore last section after data loads
+    const _savedSection = parseInt(localStorage.getItem('last-section') || '0');
+    if (_savedSection > 0) {
+      setTimeout(() => { if (typeof navTo === 'function') navTo(_savedSection); }, 1200);
+    }
   }
 
   // ── RIPPLE TAP EFFECT ─────────────────────────────────────────────────────
