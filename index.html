@@ -1371,25 +1371,7 @@ function doSignOut() {
   onAuthStateChanged(auth, async user => {
     if (user) {
       currentUser = user;
-      const ls = document.getElementById('login-screen');
-      // If already entered app (refresh), skip welcome screen and go straight in
-      if (localStorage.getItem('entered-app') === 'true') {
-        const ls2 = document.getElementById('login-screen');
-        if (ls2) { ls2.style.display = 'none'; }
-        window._enterAppCallback && window._enterAppCallback();
-        return;
-      }
-      // First visit — show welcome screen
-      const emailEl = document.getElementById('login-email');
-      if (emailEl && !emailEl.value) emailEl.value = user.email || '';
-      const loginFields = document.getElementById('login-fields-wrap');
-      const welcomeBack = document.getElementById('welcome-back-wrap');
-      if (loginFields && welcomeBack) {
-        loginFields.style.display = 'none';
-        welcomeBack.style.display = 'block';
-        const wname = document.getElementById('welcome-back-name');
-        if (wname) wname.textContent = user.displayName || user.email.split('@')[0] || 'back';
-      }
+      // Setup UI regardless of entry state
       document.getElementById('topbar-user').style.display = 'flex';
       const displayEmail = user.email || 'nir@mamancontracting.com';
       const el = document.getElementById('user-email-display');
@@ -1411,14 +1393,36 @@ function doSignOut() {
       if (inviteBtn) inviteBtn.style.display = (user.email === ADMIN_EMAIL) ? 'inline-flex' : 'none';
       // Store admin status globally
       window._isAdmin = (user.email === ADMIN_EMAIL);
-      // Set callback for when user taps "Enter App"
-      window._enterAppCallback = function() {
+
+      const doEnterApp = function() {
+        const ls = document.getElementById('login-screen');
+        if (ls) { ls.style.display = 'none'; ls.style.opacity = '0'; ls.style.pointerEvents = 'none'; }
         try { startListeners(); } catch(e) { console.error('startListeners error:', e); }
         const _savedSection = parseInt(localStorage.getItem('last-section') || '0');
         if (_savedSection > 0) {
           setTimeout(() => { if (typeof window._navTo === 'function') window._navTo(_savedSection); }, 600);
         }
       };
+
+      window._enterAppCallback = doEnterApp;
+
+      // If already entered before (refresh) — go straight in
+      if (localStorage.getItem('entered-app') === 'true') {
+        doEnterApp();
+        return;
+      }
+
+      // First visit — show welcome screen
+      const emailEl = document.getElementById('login-email');
+      if (emailEl && !emailEl.value) emailEl.value = user.email || '';
+      const loginFields = document.getElementById('login-fields-wrap');
+      const welcomeBack = document.getElementById('welcome-back-wrap');
+      if (loginFields && welcomeBack) {
+        loginFields.style.display = 'none';
+        welcomeBack.style.display = 'block';
+        const wname = document.getElementById('welcome-back-name');
+        if (wname) wname.textContent = user.displayName || user.email.split('@')[0] || 'back';
+      }
       // Auto-create user doc in Firestore if it doesn't exist yet
       try {
         const userDocRef = doc(db, 'users', user.uid);
