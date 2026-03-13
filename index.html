@@ -1429,12 +1429,13 @@
     const inviteBtn = document.getElementById('invite-user-btn'); if (inviteBtn) inviteBtn.style.display = 'inline-flex';
     const avatarEl = document.getElementById('user-avatar-sm'); if (avatarEl) avatarEl.textContent = 'NM';
     try { startListeners(); } catch(ex) { console.error('startListeners:', ex); }
+    // Always load via REST for bypass login (guaranteed to work without auth token)
+    loadAllDataREST();
     // Restore last visited section
     const lastSection = parseInt(localStorage.getItem('last-section') || '0');
     setTimeout(() => {
       if (lastSection > 0) navTo(lastSection);
-      if (allUsers.length) renderUsers(allUsers);
-    }, 300);
+    }, 500);
   };
 
   window.doSignOut = async function() {
