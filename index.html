@@ -2008,6 +2008,9 @@
     try {
       if (editingContactId) {
         await updateDoc(doc(db, 'contacts', editingContactId), { ...contactData });
+        // Immediately update local cache so UI refreshes without waiting for Firestore snapshot
+        const idx = allContacts.findIndex(c => c.id === editingContactId);
+        if (idx !== -1) { allContacts[idx] = { ...allContacts[idx], ...contactData }; renderContacts(allContacts); }
         window.showToast('✅ Contact updated!');
       } else {
         contactData.createdBy = currentUser.email;
