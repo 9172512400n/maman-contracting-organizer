@@ -2122,6 +2122,11 @@
             style="background:#1e3a5f;border:none;border-radius:6px;color:#60a5fa;padding:5px 8px;font-size:14px;cursor:pointer;flex-shrink:0;" title="Edit user">✏️</button>`
         : '';
 
+      const resendBtn = isAdmin
+        ? `<button onclick="openInviteEmail('${(u.email||'').replace(/'/g,"\\'")}')"
+            style="background:#1a2e1a;border:none;border-radius:6px;color:#4ade80;padding:5px 8px;font-size:14px;cursor:pointer;flex-shrink:0;" title="Resend invite email">📨</button>`
+        : '';
+
       const removeBtn = isAdmin && !isCurrentUser
         ? `<button onclick="removeUser('${u.id}','${(u.email||'').replace(/'/g,"\\'")}','${(u.name||u.email||'').replace(/'/g,"\\'")}')"
             style="background:#450a0a;border:none;border-radius:6px;color:#f87171;padding:5px 8px;font-size:14px;cursor:pointer;flex-shrink:0;" title="Remove user">🗑️</button>`
@@ -2136,7 +2141,7 @@
           ${u.invitedBy && u.invitedBy !== u.email ? `<div class="user-contact" style="color:#444;">Invited by ${u.invitedBy}</div>` : ''}
         </div>
         ${statusBadgeHtml}
-        <div style="display:flex;gap:6px;flex-shrink:0;">${editBtn}${removeBtn}</div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">${resendBtn}${editBtn}${removeBtn}</div>
       </div>`;
     }).join('');
 
@@ -2189,6 +2194,18 @@
     document.getElementById('invite-modal').classList.remove('show');
   };
 
+  window.openInviteEmail = function(email) {
+    const subject = encodeURIComponent("You're invited to Maman Contracting Organizer");
+    const body = encodeURIComponent(
+      'Hi,\n\nYou\'ve been invited to join the Maman Contracting Organizer app.\n\n' +
+      '1. Go to: https://maman-contracting-organizer.vercel.app\n' +
+      '2. Tap "Forgot Password" and enter your email: ' + email + '\n' +
+      '3. Check your email and set your password\n' +
+      '4. Log in and you\'re all set!\n\nWelcome to the team!'
+    );
+    window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
+  };
+
   window.sendInvite = async function() {
     const email = document.getElementById('invite-email').value.trim();
     const errEl = document.getElementById('invite-error');
@@ -2215,18 +2232,9 @@
         timestamp: serverTimestamp()
       });
       closeInviteModal();
-      // Open email client with pre-filled invite message
-      const subject = encodeURIComponent('You\'re invited to Maman Contracting Organizer');
-      const body = encodeURIComponent(
-        'Hi,\n\nYou\'ve been invited to join the Maman Contracting Organizer app.\n\n' +
-        '1. Go to: https://maman-contracting-organizer.vercel.app\n' +
-        '2. Click "Forgot Password" and enter your email: ' + email + '\n' +
-        '3. Check your email and set your password\n' +
-        '4. Log in and you\'re all set!\n\n' +
-        'Welcome to the team!'
-      );
-      window.open('mailto:' + email + '?subject=' + subject + '&body=' + body);
-      window.showToast('✅ User added! Email opened for you to send.');
+      window.showToast('✅ User added!');
+      // Use location.href for mailto (works on iPhone Safari, unlike window.open after await)
+      setTimeout(() => { window.openInviteEmail(email); }, 400);
     } catch(e) {
       errEl.textContent = e.message;
     } finally {
