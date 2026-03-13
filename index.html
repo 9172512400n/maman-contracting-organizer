@@ -2009,9 +2009,12 @@
     try {
       if (editingContactId) {
         await updateDoc(doc(db, 'contacts', editingContactId), { ...contactData });
-        // Immediately update local cache so UI refreshes without waiting for Firestore snapshot
+        // Immediately update local cache (exclude serverTimestamp sentinel)
         const idx = allContacts.findIndex(c => c.id === editingContactId);
-        if (idx !== -1) { allContacts[idx] = { ...allContacts[idx], ...contactData }; renderContacts(allContacts); }
+        if (idx !== -1) {
+          allContacts[idx] = { ...allContacts[idx], companyName, email: contactData.email, address: contactData.address, notes: contactData.notes, persons };
+          renderContacts(allContacts);
+        }
         window.showToast('✅ Contact updated!');
       } else {
         contactData.createdBy = currentUser.email;
