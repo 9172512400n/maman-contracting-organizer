@@ -579,7 +579,7 @@
 <div id="invite-modal">
   <div class="invite-box">
     <div class="invite-title">✉️ Invite User</div>
-    <div class="invite-sub">They'll receive an email to set their password.</div>
+    <div class="invite-sub">Add them to the app — your email will open to send the invite link.</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
       <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Email Address</label>
       <input type="email" id="invite-email" placeholder="user@mamancontracting.com"
@@ -2198,18 +2198,15 @@
     btn.disabled = true; btn.textContent = 'Sending…';
 
     try {
-      // Create user with temp password
-      const tempPw = 'Welcome2024!';
-      await createUserWithEmailAndPassword(auth, email, tempPw);
-      // Send password reset so they set their own
-      await sendPasswordResetEmail(auth, email);
-      // Save to Firestore users collection
-      await setDoc(doc(collection(db, 'users')), {
+      // Save user to Firestore
+      await addDoc(collection(db, 'users'), {
         email: email,
+        name: '',
+        role: 'Worker',
+        phone: '',
         invitedBy: currentUser.email,
         invitedAt: serverTimestamp(),
-        status: 'invited',
-        role: 'worker'
+        status: 'invited'
       });
       await addDoc(collection(db, 'activity'), {
         action: 'Invited user: ' + email,
@@ -2218,7 +2215,18 @@
         timestamp: serverTimestamp()
       });
       closeInviteModal();
-      window.showToast('✉️ Invite sent to ' + email + '!');
+      // Open email client with pre-filled invite message
+      const subject = encodeURIComponent('You\'re invited to Maman Contracting Organizer');
+      const body = encodeURIComponent(
+        'Hi,\n\nYou\'ve been invited to join the Maman Contracting Organizer app.\n\n' +
+        '1. Go to: https://maman-contracting-organizer.vercel.app\n' +
+        '2. Click "Forgot Password" and enter your email: ' + email + '\n' +
+        '3. Check your email and set your password\n' +
+        '4. Log in and you\'re all set!\n\n' +
+        'Welcome to the team!'
+      );
+      window.open('mailto:' + email + '?subject=' + subject + '&body=' + body);
+      window.showToast('✅ User added! Email opened for you to send.');
     } catch(e) {
       errEl.textContent = e.message;
     } finally {
