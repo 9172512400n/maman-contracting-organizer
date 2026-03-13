@@ -1994,7 +1994,11 @@
       role: (row.querySelector('.person-role-input') || {}).value?.trim() || '',
     })).filter(p => p.name || p.phone);
 
-    if (persons.length === 0) { window.showToast('At least one person is required.', '#f59e0b'); return; }
+    // Allow saving even without persons (just warn if truly empty)
+    if (persons.length === 0) {
+      const ok = confirm('No people added — save contact without a person?');
+      if (!ok) return;
+    }
 
     const btn = document.getElementById('save-contact-btn');
     btn.disabled = true; btn.textContent = 'Saving…';
@@ -2026,7 +2030,8 @@
       }
       closeContactModal();
     } catch(e) {
-      window.showToast('Error: ' + e.message, '#e53e3e');
+      console.error('saveContact error:', e);
+      alert('Save failed: ' + e.message);
     } finally {
       btn.disabled = false; btn.textContent = '💾 Save Contact';
     }
