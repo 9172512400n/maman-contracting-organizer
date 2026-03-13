@@ -2113,6 +2113,11 @@
       if (u.status === 'invited') statusBadgeHtml = '<span class="badge badge-yellow">Invited</span>';
       if (u.removed) statusBadgeHtml = '<span class="badge badge-gray">Removed</span>';
 
+      const editBtn = isAdmin
+        ? `<button onclick="editUser('${u.id}','${(u.name||'').replace(/'/g,"\\'")}','${(u.role||'Worker').replace(/'/g,"\\'")}','${(u.phone||'').replace(/'/g,"\\'")}')"
+            style="background:#1e3a5f;border:none;border-radius:6px;color:#60a5fa;padding:5px 8px;font-size:14px;cursor:pointer;flex-shrink:0;" title="Edit user">✏️</button>`
+        : '';
+
       const removeBtn = isAdmin && !isCurrentUser
         ? `<button onclick="removeUser('${u.id}','${(u.email||'').replace(/'/g,"\\'")}','${(u.name||u.email||'').replace(/'/g,"\\'")}')"
             style="background:#450a0a;border:none;border-radius:6px;color:#f87171;padding:5px 8px;font-size:14px;cursor:pointer;flex-shrink:0;" title="Remove user">🗑️</button>`
@@ -2127,12 +2132,35 @@
           <div class="user-contact" style="color:#444;">Invited by ${u.invitedBy || '—'}</div>
         </div>
         ${statusBadgeHtml}
-        ${removeBtn}
+        <div style="display:flex;gap:6px;flex-shrink:0;">${editBtn}${removeBtn}</div>
       </div>`;
     }).join('');
 
     list.innerHTML = nirCard + invitedCards;
   }
+
+  window.editUser = function(userId, name, role, phone) {
+    const newName = prompt('Full name:', name || '');
+    if (newName === null) return;
+    const newRole = prompt('Role (e.g. Manager, Worker, Contractor):', role || 'Worker');
+    if (newRole === null) return;
+    const newPhone = prompt('Phone (optional):', phone || '');
+    if (newPhone === null) return;
+    window.saveUser(userId, newName.trim(), newRole.trim(), newPhone.trim());
+  };
+
+  window.saveUser = async function(userId, name, role, phone) {
+    if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
+    try {
+      await updateDoc(doc(db, 'users', userId), { name, role, phone, updatedAt: serverTimestamp() });
+      // Update local cache immediately
+      const idx = allUsers.findIndex(u => u.id === userId);
+      if (idx !== -1) { allUsers[idx] = { ...allUsers[idx], name, role, phone }; renderUsers(allUsers); }
+      window.showToast('✅ User updated!');
+    } catch(e) {
+      window.showToast('Error: ' + e.message, '#e53e3e');
+    }
+  };
 
   window.removeUser = async function(userId, email, name) {
     if (!currentUser || currentUser.email !== ADMIN_EMAIL) return;
