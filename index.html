@@ -1504,14 +1504,21 @@ function doSignOut() {
       const inviteBtn = document.getElementById('invite-user-btn'); if (inviteBtn) inviteBtn.style.display = 'inline-flex';
       const avatarEl = document.getElementById('user-avatar-sm'); if (avatarEl) avatarEl.textContent = 'NM';
       console.log('UI setup done, loading data...');
-      // Load data
-      loadAllDataREST().then(() => {
-        console.log('Data loaded successfully');
-        try {
-          const lastSection = parseInt(localStorage.getItem('last-section') || '0');
-          if (lastSection > 0 && typeof navTo === 'function') navTo(lastSection);
-        } catch(ex) { console.error('navTo error:', ex); }
-      }).catch(err => console.error('loadAllDataREST error:', err));
+      // Load data — wait for renderUsers to be defined first
+      const waitAndLoad = (attempts) => {
+        if (typeof renderUsers === 'function') {
+          loadAllDataREST().then(() => {
+            console.log('Data loaded successfully');
+            try {
+              const lastSection = parseInt(localStorage.getItem('last-section') || '0');
+              if (lastSection > 0 && typeof navTo === 'function') navTo(lastSection);
+            } catch(ex) { console.error('navTo error:', ex); }
+          }).catch(err => console.error('loadAllDataREST error:', err));
+        } else if (attempts < 30) {
+          setTimeout(() => waitAndLoad(attempts + 1), 200);
+        }
+      };
+      waitAndLoad(0);
     } catch(e) {
       console.error('activateBypassLogin crashed:', e);
       alert('Login error: ' + e.message);
