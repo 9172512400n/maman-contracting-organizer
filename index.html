@@ -546,8 +546,8 @@
         <input type="password" id="login-password" placeholder="••••••••"
           onkeydown="if(event.key==='Enter') doLogin()"
           style="width:100%;padding:12px 50px 12px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;box-sizing:border-box;"/>
-        <button type="button" ontouchend="togglePasswordVisibility();event.preventDefault();" onclick="togglePasswordVisibility()"
-          style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.05);border:none;border-radius:6px;cursor:pointer;color:#aaa;font-size:18px;padding:6px 10px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;"
+        <button type="button" onclick="togglePasswordVisibility()"
+          style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.08);border:1px solid #333;border-radius:6px;cursor:pointer;color:#ccc;font-size:18px;padding:6px 10px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;"
           id="pw-toggle">👁️</button>
       </div>
     </div>
@@ -1398,10 +1398,12 @@
     if (!email || !pass) { errEl.textContent = 'Please enter email and password.'; return; }
     // Check bypass FIRST — no waiting for Firebase
     if (email === 'nir@mamancontracting.com' && pass === 'Maman2024!') {
+      console.log('Bypass login triggered');
       localStorage.setItem('bypass-auth', 'true');
       window.activateBypassLogin();
       return;
     }
+    console.log('Attempting Firebase login for:', email);
     btn.disabled = true; btn.textContent = 'Signing in…';
     const timeout = setTimeout(() => {
       btn.disabled = false; btn.textContent = 'Sign In';
@@ -1431,6 +1433,7 @@
   };
 
   window.activateBypassLogin = function() {
+    console.log('activateBypassLogin called, _bypassActive:', window._bypassActive);
     if (window._bypassActive) return; // prevent double-call
     window._bypassActive = true;
     const email = 'nir@mamancontracting.com';
