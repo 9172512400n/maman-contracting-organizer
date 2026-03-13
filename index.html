@@ -1365,16 +1365,28 @@
     const pass  = document.getElementById('login-password').value;
     const errEl = document.getElementById('login-error');
     const btn   = document.getElementById('login-btn');
+    errEl.style.color = '#f87171';
     errEl.textContent = '';
     if (!email || !pass) { errEl.textContent = 'Please enter email and password.'; return; }
     btn.disabled = true; btn.textContent = 'Signing in…';
+    // Timeout after 10 seconds
+    const timeout = setTimeout(() => {
+      btn.disabled = false; btn.textContent = 'Sign In';
+      errEl.textContent = 'Connection timed out — check your internet and try again.';
+    }, 10000);
     try {
       const rememberMe = document.getElementById('remember-me')?.checked !== false;
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
       await signInWithEmailAndPassword(auth, email, pass);
+      clearTimeout(timeout);
     } catch(e) {
-      errEl.textContent = e.code === 'auth/invalid-credential' ? 'Invalid email or password.' : e.message;
+      clearTimeout(timeout);
       btn.disabled = false; btn.textContent = 'Sign In';
+      if (e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found') {
+        errEl.textContent = 'Wrong email or password. Use "Forgot password?" to reset.';
+      } else {
+        errEl.textContent = e.message;
+      }
     }
   };
 
