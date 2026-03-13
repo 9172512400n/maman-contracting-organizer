@@ -1541,17 +1541,20 @@ function doForgotPassword() {
 
   async function loadAllDataREST() {
     try {
+      console.log('loadAllDataREST started');
       const [jobs, contacts, users, permits, activity] = await Promise.all([
         fsGet('jobs'), fsGet('contacts'), fsGet('users'), fsGet('permits'), fsGet('activity')
       ]);
+      console.log('REST data loaded - jobs:', jobs.length, 'users:', users.length, 'contacts:', contacts.length);
       allJobs = jobs.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
       allContacts = contacts.sort((a,b)=>(b.updatedAt?.seconds||0)-(a.updatedAt?.seconds||0));
       allUsers = users.sort((a,b)=>(b.invitedAt?.seconds||0)-(a.invitedAt?.seconds||0));
       allStandalonePermits = permits.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
-      renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); renderSchedule(); checkPermitExpiry();
-      renderContacts(allContacts);
-      renderUsers(allUsers);
-      renderPermitsCards(allStandalonePermits);
+      if (typeof renderJobsTable === 'function') { renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); renderSchedule(); checkPermitExpiry(); }
+      if (typeof renderContacts === 'function') renderContacts(allContacts);
+      if (typeof renderUsers === 'function') { console.log('Calling renderUsers with', allUsers.length, 'users'); renderUsers(allUsers); }
+      else console.error('renderUsers not defined yet!');
+      if (typeof renderPermitsCards === 'function') renderPermitsCards(allStandalonePermits);
       const acts = activity.sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0)).slice(0,10);
       renderActivityLog(acts);
       // Poll every 15 seconds for updates
