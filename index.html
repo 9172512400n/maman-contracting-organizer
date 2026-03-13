@@ -1307,10 +1307,9 @@
       // Re-render users after auth so admin buttons show correctly
       setTimeout(() => { if (allUsers.length) renderUsers(allUsers); }, 800);
     } else {
-      // If bypass login is active, restore session instead of showing login
+      // If bypass login is active, don't log out
       if (localStorage.getItem('bypass-auth') === 'true') {
-        window.activateBypassLogin();
-        return;
+        return; // activateBypassLogin already called from bottom of script
       }
       currentUser = null;
       const ls2 = document.getElementById('login-screen');
@@ -1428,14 +1427,12 @@
     const da = document.getElementById('drawer-avatar'); if (da) da.textContent = 'NM';
     const inviteBtn = document.getElementById('invite-user-btn'); if (inviteBtn) inviteBtn.style.display = 'inline-flex';
     const avatarEl = document.getElementById('user-avatar-sm'); if (avatarEl) avatarEl.textContent = 'NM';
-    try { startListeners(); } catch(ex) { console.error('startListeners:', ex); }
-    // Always load via REST for bypass login (guaranteed to work without auth token)
-    loadAllDataREST();
-    // Restore last visited section
-    const lastSection = parseInt(localStorage.getItem('last-section') || '0');
-    setTimeout(() => {
+    // Load all data via REST (works without Firebase auth token)
+    loadAllDataREST().then(() => {
+      // Restore last visited section after data loads
+      const lastSection = parseInt(localStorage.getItem('last-section') || '0');
       if (lastSection > 0) navTo(lastSection);
-    }, 500);
+    });
   };
 
   window.doSignOut = async function() {
