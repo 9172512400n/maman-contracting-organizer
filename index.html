@@ -530,7 +530,17 @@
 <body>
 
 <!-- LOGIN SCREEN -->
-<script>if(localStorage.getItem('bypass-auth')==='true'){document.addEventListener('DOMContentLoaded',function(){var ls=document.getElementById('login-screen');if(ls)ls.style.display='none';});}</script>
+<script>
+if(localStorage.getItem('bypass-auth')==='true'){document.addEventListener('DOMContentLoaded',function(){var ls=document.getElementById('login-screen');if(ls)ls.style.display='none';});}
+// Eye toggle — must be in plain script (not module) so onclick works on iPhone/Safari
+function togglePasswordVisibility() {
+  var input = document.getElementById('login-password');
+  var btn = document.getElementById('pw-toggle');
+  if (!input || !btn) return;
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+  else { input.type = 'password'; btn.textContent = '👁️'; }
+}
+</script>
 <div id="login-screen">
   <div class="login-box">
     <img src="logo.jpg" class="login-logo" alt="Maman Contracting"/>
