@@ -1333,7 +1333,7 @@
       const ls2 = document.getElementById('login-screen');
       ls2.classList.remove('gone');
       requestAnimationFrame(() => ls2.classList.remove('hidden'));
-      document.getElementById('topbar-user').style.display = 'none';
+      if (!localStorage.getItem('bypass-auth')) document.getElementById('topbar-user').style.display = 'none';
       if (jobsUnsubscribe) jobsUnsubscribe();
       if (activityUnsubscribe) activityUnsubscribe();
       if (contactsUnsubscribe) contactsUnsubscribe();
