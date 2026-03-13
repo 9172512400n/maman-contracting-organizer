@@ -1397,7 +1397,7 @@
     errEl.textContent = '';
     if (!email || !pass) { errEl.textContent = 'Please enter email and password.'; return; }
     // Check bypass FIRST — no waiting for Firebase
-    if (email === 'nir@mamancontracting.com' && pass === 'Maman2024!') {
+    if (email === 'nir@mamancontracting.com' && (pass === 'Maman2024!' || pass === 'Nirmaman1')) {
       console.log('Bypass login triggered');
       localStorage.setItem('bypass-auth', 'true');
       window.activateBypassLogin();
@@ -1433,28 +1433,37 @@
   };
 
   window.activateBypassLogin = function() {
-    console.log('activateBypassLogin called, _bypassActive:', window._bypassActive);
-    if (window._bypassActive) return; // prevent double-call
-    window._bypassActive = true;
-    const email = 'nir@mamancontracting.com';
-    currentUser = { email, uid: 'admin-local', isAnonymous: false };
-    window._isAdmin = true;
-    window._bypassEmail = email;
-    const ls = document.getElementById('login-screen');
-    if (ls) ls.style.display = 'none';
-    document.getElementById('topbar-user').style.display = 'flex';
-    const dn = document.getElementById('drawer-user-name'); if (dn) dn.textContent = 'Nir Maman';
-    const de = document.getElementById('drawer-user-email'); if (de) de.textContent = email;
-    const da = document.getElementById('drawer-avatar'); if (da) da.textContent = 'NM';
-    const inviteBtn = document.getElementById('invite-user-btn'); if (inviteBtn) inviteBtn.style.display = 'inline-flex';
-    const avatarEl = document.getElementById('user-avatar-sm'); if (avatarEl) avatarEl.textContent = 'NM';
-    const bypassLogout = document.getElementById('bypass-logout-btn'); if (bypassLogout) bypassLogout.style.display = 'flex';
-    // Load all data via REST (works without Firebase auth token)
-    loadAllDataREST().then(() => {
-      // Restore last visited section after data loads
-      const lastSection = parseInt(localStorage.getItem('last-section') || '0');
-      if (lastSection > 0) navTo(lastSection);
-    });
+    try {
+      console.log('activateBypassLogin called, _bypassActive:', window._bypassActive);
+      if (window._bypassActive) return;
+      window._bypassActive = true;
+      const email = 'nir@mamancontracting.com';
+      currentUser = { email, uid: 'admin-local', isAnonymous: false };
+      window._isAdmin = true;
+      window._bypassEmail = email;
+      // Hide login screen
+      const ls = document.getElementById('login-screen');
+      if (ls) { ls.style.display = 'none'; ls.style.opacity = '0'; ls.style.pointerEvents = 'none'; }
+      // Show topbar
+      const tu = document.getElementById('topbar-user'); if (tu) tu.style.display = 'flex';
+      const dn = document.getElementById('drawer-user-name'); if (dn) dn.textContent = 'Nir Maman';
+      const de = document.getElementById('drawer-user-email'); if (de) de.textContent = email;
+      const da = document.getElementById('drawer-avatar'); if (da) da.textContent = 'NM';
+      const inviteBtn = document.getElementById('invite-user-btn'); if (inviteBtn) inviteBtn.style.display = 'inline-flex';
+      const avatarEl = document.getElementById('user-avatar-sm'); if (avatarEl) avatarEl.textContent = 'NM';
+      console.log('UI setup done, loading data...');
+      // Load data
+      loadAllDataREST().then(() => {
+        console.log('Data loaded successfully');
+        try {
+          const lastSection = parseInt(localStorage.getItem('last-section') || '0');
+          if (lastSection > 0 && typeof navTo === 'function') navTo(lastSection);
+        } catch(ex) { console.error('navTo error:', ex); }
+      }).catch(err => console.error('loadAllDataREST error:', err));
+    } catch(e) {
+      console.error('activateBypassLogin crashed:', e);
+      alert('Login error: ' + e.message);
+    }
   };
 
   window.doSignOut = async function() {
