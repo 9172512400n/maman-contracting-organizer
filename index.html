@@ -2218,40 +2218,37 @@
     window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
   };
 
-  window.sendInvite = async function() {
+  window.sendInvite = function() {
     const email = document.getElementById('invite-email').value.trim();
     const errEl = document.getElementById('invite-error');
     const btn = document.getElementById('invite-send-btn');
     if (!email) { errEl.textContent = 'Please enter an email address.'; return; }
     errEl.textContent = '';
-    btn.disabled = true; btn.textContent = 'Sending…';
 
-    try {
-      // Save user to Firestore
-      await addDoc(collection(db, 'users'), {
-        email: email,
-        name: '',
-        role: 'Worker',
-        phone: '',
-        invitedBy: currentUser.email,
-        invitedAt: serverTimestamp(),
-        status: 'invited'
-      });
-      await addDoc(collection(db, 'activity'), {
-        action: 'Invited user: ' + email,
-        jobAddress: '',
-        doneBy: currentUser.email,
-        timestamp: serverTimestamp()
-      });
-      closeInviteModal();
-      window.showToast('✅ User added!');
-      // Use location.href for mailto (works on iPhone Safari, unlike window.open after await)
-      setTimeout(() => { window.openInviteEmail(email); }, 400);
-    } catch(e) {
-      errEl.textContent = e.message;
-    } finally {
-      btn.disabled = false; btn.textContent = '📨 Send Invite';
-    }
+    // Open email FIRST (must happen synchronously on tap for iPhone Safari)
+    window.openInviteEmail(email);
+
+    // Then save to Firestore in background
+    closeInviteModal();
+    window.showToast('✅ Invite sent!');
+
+    addDoc(collection(db, 'users'), {
+      email: email,
+      name: '',
+      role: 'Worker',
+      phone: '',
+      invitedBy: currentUser ? currentUser.email : '',
+      invitedAt: serverTimestamp(),
+      status: 'invited'
+    }).catch(e => console.error('Failed to save user:', e));
+
+    addDoc(collection(db, 'activity'), {
+      action: 'Invited user: ' + email,
+      jobAddress: '',
+      doneBy: currentUser ? currentUser.email : '',
+      timestamp: serverTimestamp()
+    }).catch(e => console.error('Failed to log activity:', e));
+
   };
 
   // ── PERMIT MODAL (standalone permits collection) ────────────────────────────
