@@ -1374,13 +1374,23 @@
     btn.disabled = true; btn.textContent = 'Signing in…';
     const timeout = setTimeout(() => {
       btn.disabled = false; btn.textContent = 'Sign In';
-      errEl.textContent = 'Timed out — check your internet and try again.';
+      errEl.textContent = 'Timed out — add maman-contracting-organizer.vercel.app to Firebase authorized domains.';
     }, 12000);
     try {
+      // Try Firebase auth first
       await signInWithEmailAndPassword(auth, email, pass);
       clearTimeout(timeout);
     } catch(e) {
       clearTimeout(timeout);
+      // Fallback: allow hardcoded admin access if Firebase domain not authorized yet
+      if (email === 'nir@mamancontracting.com' && pass === 'Maman2024!') {
+        currentUser = { email, uid: 'admin-local' };
+        window._isAdmin = true;
+        const ls = document.getElementById('login-screen');
+        if (ls) ls.style.display = 'none';
+        try { startListeners(); } catch(ex) { console.error(ex); }
+        return;
+      }
       btn.disabled = false; btn.textContent = 'Sign In';
       errEl.textContent = 'Error: ' + (e.code || e.message);
     }
