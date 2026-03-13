@@ -551,40 +551,30 @@ function doLogin() {
   var btn = document.getElementById('login-btn');
   if (errEl) { errEl.style.color = '#f87171'; errEl.textContent = ''; }
   if (!email || !pass) { if (errEl) errEl.textContent = 'Please enter email and password.'; return; }
-  // Bypass check first
+  // Bypass check — set flag and reload so module picks it up fresh
   if (email === 'nir@mamancontracting.com' && (pass === 'Maman2024!' || pass === 'Nirmaman1')) {
     localStorage.setItem('bypass-auth', 'true');
-    var attempts = 0;
-    var tryActivate = function() {
-      if (window.activateBypassLogin) {
-        window.activateBypassLogin();
-      } else if (attempts++ < 20) {
-        setTimeout(tryActivate, 300);
-      }
-    };
-    tryActivate();
+    localStorage.setItem('bypass-ready', 'true');
+    window.location.reload();
     return;
   }
   // Firebase login
   if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
-  if (window._firebaseSignIn) {
-    window._firebaseSignIn(email, pass).catch(function(e) {
-      if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
-      if (errEl) errEl.textContent = 'Error: ' + (e.code || e.message);
-    });
-  } else {
-    setTimeout(function() {
-      if (window._firebaseSignIn) {
-        window._firebaseSignIn(email, pass).catch(function(e) {
-          if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
-          if (errEl) errEl.textContent = 'Error: ' + (e.code || e.message);
-        });
-      } else {
+  var attempts = 0;
+  var tryFirebase = function() {
+    if (window._firebaseSignIn) {
+      window._firebaseSignIn(email, pass).catch(function(e) {
         if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
-        if (errEl) errEl.textContent = 'App not loaded yet — please refresh and try again.';
-      }
-    }, 2000);
-  }
+        if (errEl) errEl.textContent = 'Wrong email or password.';
+      });
+    } else if (attempts++ < 15) {
+      setTimeout(tryFirebase, 400);
+    } else {
+      if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+      if (errEl) errEl.textContent = 'App not loaded — please refresh and try again.';
+    }
+  };
+  tryFirebase();
 }
 
 function doForgotPassword() {
@@ -3286,6 +3276,7 @@ function doSignOut() {
   // ── BYPASS AUTO-LOGIN ON REFRESH ──────────────────────────────────────────
   // Runs after all functions are defined
   if (localStorage.getItem('bypass-auth') === 'true') {
+    localStorage.removeItem('bypass-ready');
     window.activateBypassLogin();
   }
 
