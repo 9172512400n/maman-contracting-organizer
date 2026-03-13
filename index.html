@@ -1437,43 +1437,43 @@
 
   // ── LISTENERS ─────────────────────────────────────────────────────────────
   function startListeners() {
-    const jobsQ = query(collection(db, 'jobs'), orderBy('createdAt', 'desc'));
-    jobsUnsubscribe = onSnapshot(jobsQ, snap => {
-      allJobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // No orderBy — avoids Firestore index requirements
+    jobsUnsubscribe = onSnapshot(collection(db, 'jobs'), snap => {
+      allJobs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
       renderJobsTable(allJobs);
       renderDashboardRecent(allJobs);
       updateStats(allJobs);
       renderSchedule();
       checkPermitExpiry();
-      // Re-render contacts so job counts stay fresh
       if (allContacts.length) renderContacts(allContacts);
-    });
+    }, err => console.error('jobs listener:', err));
 
-    const actQ = query(collection(db, 'activity'), orderBy('timestamp', 'desc'), limit(10));
-    activityUnsubscribe = onSnapshot(actQ, snap => {
-      const items = snap.docs.map(d => d.data());
+    activityUnsubscribe = onSnapshot(collection(db, 'activity'), snap => {
+      const items = snap.docs.map(d => d.data())
+        .sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0))
+        .slice(0, 10);
       renderActivityLog(items);
       document.getElementById('notif-count').textContent = items.length;
-    });
+    }, err => console.error('activity listener:', err));
 
-    const contactsQ = query(collection(db, 'contacts'), orderBy('updatedAt', 'desc'));
-    contactsUnsubscribe = onSnapshot(contactsQ, snap => {
-      allContacts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    contactsUnsubscribe = onSnapshot(collection(db, 'contacts'), snap => {
+      allContacts = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a,b) => (b.updatedAt?.seconds||0) - (a.updatedAt?.seconds||0));
       renderContacts(allContacts);
-    });
+    }, err => console.error('contacts listener:', err));
 
-
-    const usersQ = query(collection(db, 'users'), orderBy('invitedAt', 'desc'));
-    usersUnsubscribe = onSnapshot(usersQ, snap => {
-      allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    usersUnsubscribe = onSnapshot(collection(db, 'users'), snap => {
+      allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a,b) => (b.invitedAt?.seconds||0) - (a.invitedAt?.seconds||0));
       renderUsers(allUsers);
-    });
+    }, err => console.error('users listener:', err));
 
-    const permitsColQ = query(collection(db, 'permits'), orderBy('createdAt', 'desc'));
-    permitsUnsubscribe = onSnapshot(permitsColQ, snap => {
-      allStandalonePermits = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    permitsUnsubscribe = onSnapshot(collection(db, 'permits'), snap => {
+      allStandalonePermits = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
       renderPermitsCards(allStandalonePermits);
-    });
+    }, err => console.error('permits listener:', err));
   }
 
   // ── STATS ─────────────────────────────────────────────────────────────────
