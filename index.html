@@ -1312,6 +1312,8 @@
       // Re-render users after auth so admin buttons show correctly
       setTimeout(() => { if (allUsers.length) renderUsers(allUsers); }, 800);
     } else {
+      // If bypass login is active, don't show login screen
+      if (localStorage.getItem('bypass-auth') === 'true') return;
       currentUser = null;
       const ls2 = document.getElementById('login-screen');
       ls2.classList.remove('gone');
