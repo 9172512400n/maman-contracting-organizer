@@ -586,10 +586,15 @@ function doForgotPassword() {
   }
 }
 
-// Global navTo — delegates to module function once loaded
+// navTo global - works before and after module loads
 function navTo(idx) {
-  if (window._navTo) { window._navTo(idx); }
-  else { setTimeout(function(){ if(window._navTo) window._navTo(idx); }, 300); }
+  if (typeof window._navTo === 'function') {
+    window._navTo(idx);
+  } else {
+    // Module not loaded yet - queue it
+    var _pending = window._pendingNav = window._pendingNav || [];
+    _pending.push(idx);
+  }
 }
 
 function enterApp() {
@@ -2964,6 +2969,11 @@ function doSignOut() {
   window.showSection = function(idx, _el) { navTo(idx); };
   window.navTo = navTo;
   window._navTo = navTo;
+  // Flush any queued nav calls from before module loaded
+  if (window._pendingNav && window._pendingNav.length) {
+    navTo(window._pendingNav[window._pendingNav.length - 1]);
+    window._pendingNav = [];
+  }
 
   // ── DRAWER ────────────────────────────────────────────────────────────────
   window.openDrawer = function() {
