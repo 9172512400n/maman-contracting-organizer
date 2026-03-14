@@ -799,10 +799,20 @@ function doSignOut() {
   localStorage.removeItem('last-section');
   localStorage.removeItem('entered-app');
   sessionStorage.setItem('signed-out', '1'); // flag to skip auto-login
+  // Close any open dropdowns/drawers
+  var dd = document.getElementById('user-dropdown');
+  if (dd) dd.style.display = 'none';
+  var drawer = document.getElementById('side-drawer');
+  if (drawer) drawer.classList.remove('open');
+  // Sign out Firebase then reload
   if (window._firebaseSignOut) {
-    window._firebaseSignOut().then(function(){ window.location.reload(); }).catch(function(){ window.location.reload(); });
+    window._firebaseSignOut().then(function(){
+      window.location.href = window.location.pathname + '?signedout=1';
+    }).catch(function(){
+      window.location.href = window.location.pathname + '?signedout=1';
+    });
   } else {
-    window.location.reload();
+    window.location.href = window.location.pathname + '?signedout=1';
   }
 }
 </script>
@@ -2156,7 +2166,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Listen for auth state — boot app when signed in
   let _booted = false;
-  const _signedOut = sessionStorage.getItem('signed-out') === '1';
+  const _signedOut = sessionStorage.getItem('signed-out') === '1' ||
+    new URLSearchParams(window.location.search).get('signedout') === '1';
+  // If coming from signout, ensure flag is set
+  if (_signedOut) sessionStorage.setItem('signed-out', '1');
 
   onAuthStateChanged(auth, async (user) => {
     if (_booted) return;
