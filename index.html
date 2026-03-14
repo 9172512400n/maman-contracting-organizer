@@ -596,20 +596,10 @@
   }
 
   function fetchCol(col, cb) {
-    var all = [];
-    function fetchPage(token) {
-      var url = BASE+'/'+col+'?key='+KEY+'&pageSize=300';
-      if (token) url += '&pageToken='+encodeURIComponent(token);
-      fetch(url)
-        .then(function(r){return r.json();})
-        .then(function(d){
-          if (d.documents) all = all.concat(d.documents.map(parseDoc));
-          if (d.nextPageToken) { fetchPage(d.nextPageToken); }
-          else { cb(all); }
-        })
-        .catch(function(){ cb(all.length ? all : []); });
-    }
-    fetchPage(null);
+    fetch(BASE+'/'+col+'?key='+KEY+'&pageSize=300')
+      .then(function(r){return r.json();})
+      .then(function(d){cb((d.documents||[]).map(parseDoc));})
+      .catch(function(){cb([]);});
   }
 
   function renderTable(jobs) {
@@ -2164,24 +2154,43 @@ document.addEventListener('DOMContentLoaded', function() {
       }
   };
 
-  // BOOT IMMEDIATELY — always show app, sign in Firebase in background for writes
-  const _signedOut = sessionStorage.getItem('signed-out') === '1' ||
-    new URLSearchParams(window.location.search).get('signedout') === '1';
+  // Listen for auth state — boot app when signed in
+  let _booted = false;
+  const _signedOut = sessionStorage.getItem('signed-out') === '1';
 
-  if (_signedOut) {
-    // Show login screen
-    const appLoading = document.getElementById('app-loading');
-    if (appLoading) { appLoading.style.display = 'none'; }
-    const ls = document.getElementById('login-screen');
-    if (ls) { ls.style.display = 'flex'; ls.style.zIndex = '9999'; ls.style.pointerEvents = 'auto'; }
-    const loginFieldsWrap = document.getElementById('login-fields-wrap');
-    if (loginFieldsWrap) loginFieldsWrap.style.display = 'block';
-  } else {
-    // Boot app immediately — data loads via REST (no auth needed)
-    await _bootAsAdmin();
-    // Sign in to Firebase in background for write operations
-    signInWithEmailAndPassword(auth, 'nir@mamancontracting.com', 'Nirmaman1').catch(()=>{});
-  }
+  onAuthStateChanged(auth, async (user) => {
+    if (_booted) return;
+    if (user) {
+      _booted = true;
+      sessionStorage.removeItem('signed-out');
+      await _bootAsAdmin();
+    } else {
+      if (_signedOut) {
+        // User explicitly signed out — show login screen
+        _booted = true;
+        const appLoading = document.getElementById('app-loading');
+        if (appLoading) { appLoading.style.display = 'none'; }
+        const ls = document.getElementById('login-screen');
+        if (ls) { ls.style.display = 'flex'; ls.style.zIndex = '9999'; ls.style.pointerEvents = 'auto'; }
+        // Update login screen to allow any email login
+        const loginFieldsWrap = document.getElementById('login-fields-wrap');
+        if (loginFieldsWrap) loginFieldsWrap.style.display = 'block';
+      } else {
+        // Auto sign-in — with 5 second timeout fallback
+        _booted = true;
+        try {
+          await setPersistence(auth, browserLocalPersistence).catch(()=>{});
+          const signInPromise = signInWithEmailAndPassword(auth, 'nir@mamancontracting.com', 'Nirmaman1');
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+          await Promise.race([signInPromise, timeoutPromise]);
+          // onAuthStateChanged will fire with user
+        } catch(e) {
+          console.warn('sign-in:', e.message, '— booting directly');
+          await _bootAsAdmin();
+        }
+      }
+    }
+  });
 
   window.openJobModalWithCrew = function() {
     openJobModal();
