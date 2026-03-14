@@ -85,7 +85,7 @@
 
     /* SWIPE NAV */
     .sections-wrapper {
-      display: flex; flex-direction: row; width: 600%; /* 6 sections */
+      display: flex; flex-direction: row; width: 700%; /* 7 sections */
       transition: transform 0.22s ease-out;
       will-change: transform;
     }
@@ -147,7 +147,7 @@
       height: 58px;
       padding-bottom: env(safe-area-inset-bottom, 0px);
       background: #141414; border-top: 1px solid #2a2a2a;
-      display: grid; grid-template-columns: repeat(6, 1fr);
+      display: grid; grid-template-columns: repeat(7, 1fr);
       align-items: center; z-index: 10000; overflow: hidden;
       pointer-events: all;
     }
@@ -823,6 +823,7 @@ function doSignOut() {
     <div class="drawer-item" data-section="3" onclick="navTo(3)"><span class="di">📅</span><span>Schedule</span></div>
     <div class="drawer-item" data-section="4" onclick="navTo(4)"><span class="di">👥</span><span>Contacts</span></div>
     <div class="drawer-item" data-section="5" onclick="navTo(5)"><span class="di">👥</span><span>Users</span></div>
+    <div class="drawer-item" data-section="6" onclick="navTo(6)"><span class="di">🧮</span><span>Calculator</span></div>
   </nav>
   <div class="drawer-divider"></div>
   <div class="drawer-footer">
@@ -851,6 +852,9 @@ function doSignOut() {
   </button>
   <button class="bnav-item" data-section="5" onclick="navTo(5)">
     <span class="bnav-icon">👥</span><span class="bnav-label">Users</span>
+  </button>
+  <button class="bnav-item" data-section="6" onclick="navTo(6)">
+    <span class="bnav-icon">🧮</span><span class="bnav-label">Calc</span>
   </button>
 </nav>
 
@@ -1072,6 +1076,136 @@ function doSignOut() {
           </div>
           <div class="user-list" id="users-list">
             <div style="text-align:center;color:#555;padding:40px;">Loading users…</div>
+          </div>
+        </div>
+
+        <!-- SECTION 6: CALCULATOR -->
+        <div class="section" id="sec-calculator">
+          <div class="section-header"><h2>Material Calculator</h2></div>
+
+          <!-- Tab switcher -->
+          <div style="display:flex;gap:8px;margin-bottom:20px;">
+            <button onclick="switchCalc('asphalt')" id="calc-tab-asphalt"
+              style="flex:1;padding:10px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;border:2px solid #e53e3e;background:#e53e3e;color:#fff;font-family:'Inter',sans-serif;">
+              🛣️ Asphalt
+            </button>
+            <button onclick="switchCalc('concrete')" id="calc-tab-concrete"
+              style="flex:1;padding:10px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;border:2px solid #2a2a2a;background:transparent;color:#aaa;font-family:'Inter',sans-serif;">
+              🏗️ Concrete
+            </button>
+          </div>
+
+          <!-- ASPHALT CALCULATOR -->
+          <div id="calc-asphalt">
+            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+              <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Inputs</div>
+              <div style="display:grid;gap:12px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                  <label style="font-size:14px;color:#ccc;font-weight:600;white-space:nowrap;">Width (feet)</label>
+                  <input type="number" id="asp-width" placeholder="0" inputmode="decimal"
+                    style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                    oninput="calcAsphalt()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                  <label style="font-size:14px;color:#ccc;font-weight:600;">Length (feet)</label>
+                  <input type="number" id="asp-length" placeholder="0" inputmode="decimal"
+                    style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                    oninput="calcAsphalt()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                  <label style="font-size:14px;color:#ccc;font-weight:600;">Thickness (inches)</label>
+                  <input type="number" id="asp-thickness" placeholder="0" inputmode="decimal"
+                    style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                    oninput="calcAsphalt()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                  <label style="font-size:14px;color:#aaa;font-weight:600;">Cost per ton ($) <span style="font-size:11px;color:#555;">optional</span></label>
+                  <input type="number" id="asp-cost" placeholder="optional" inputmode="decimal"
+                    style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                    oninput="calcAsphalt()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                </div>
+              </div>
+            </div>
+
+            <!-- Results -->
+            <div style="background:#0d1f0d;border:1px solid #1a3a1a;border-radius:14px;padding:20px;margin-bottom:16px;">
+              <div style="font-size:12px;font-weight:700;color:#4ade80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Results</div>
+              <div style="display:grid;gap:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span style="color:#aaa;font-size:14px;">Cubic yards:</span>
+                  <span id="asp-result-cy" style="color:#fff;font-size:18px;font-weight:800;">—</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span style="color:#aaa;font-size:14px;">Hot mix (tons):</span>
+                  <span id="asp-result-tons" style="color:#e53e3e;font-size:18px;font-weight:800;">—</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #1a3a1a;padding-top:12px;">
+                  <span style="color:#4ade80;font-size:15px;font-weight:700;">Total cost:</span>
+                  <span id="asp-result-cost" style="color:#4ade80;font-size:20px;font-weight:900;">—</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;">
+              <button onclick="clearAsphalt()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
+              <button onclick="emailAsphaltResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
+            </div>
+          </div>
+
+          <!-- CONCRETE CALCULATOR -->
+          <div id="calc-concrete" style="display:none;">
+            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+              <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Inputs</div>
+              <div style="display:grid;gap:12px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                  <label style="font-size:14px;color:#ccc;font-weight:600;">Width (feet)</label>
+                  <input type="number" id="con-width" placeholder="0" inputmode="decimal"
+                    style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                    oninput="calcConcrete()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                  <label style="font-size:14px;color:#ccc;font-weight:600;">Length (feet)</label>
+                  <input type="number" id="con-length" placeholder="0" inputmode="decimal"
+                    style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                    oninput="calcConcrete()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                  <label style="font-size:14px;color:#ccc;font-weight:600;">Thickness (inches)</label>
+                  <input type="number" id="con-thickness" placeholder="0" inputmode="decimal"
+                    style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                    oninput="calcConcrete()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                  <label style="font-size:14px;color:#aaa;font-weight:600;">Cost per yard ($) <span style="font-size:11px;color:#555;">optional</span></label>
+                  <input type="number" id="con-cost" placeholder="optional" inputmode="decimal"
+                    style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                    oninput="calcConcrete()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:#0d1f0d;border:1px solid #1a3a1a;border-radius:14px;padding:20px;margin-bottom:16px;">
+              <div style="font-size:12px;font-weight:700;color:#4ade80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Results</div>
+              <div style="display:grid;gap:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span style="color:#aaa;font-size:14px;">Cubic yards:</span>
+                  <span id="con-result-cy" style="color:#fff;font-size:18px;font-weight:800;">—</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span style="color:#aaa;font-size:14px;">Bags (80lb):</span>
+                  <span id="con-result-bags" style="color:#e53e3e;font-size:18px;font-weight:800;">—</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #1a3a1a;padding-top:12px;">
+                  <span style="color:#4ade80;font-size:15px;font-weight:700;">Total cost:</span>
+                  <span id="con-result-cost" style="color:#4ade80;font-size:20px;font-weight:900;">—</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;">
+              <button onclick="clearConcrete()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
+              <button onclick="emailConcreteResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
+            </div>
           </div>
         </div>
 
@@ -2571,7 +2705,7 @@ function doSignOut() {
   };
 
   // ── OCR PERMIT SCANNING ────────────────────────────────────────────────────
-  const OPENAI_API_KEY = 'OPENAI_KEY_REMOVED';
+  const OPENAI_API_KEY = '';
 
   window.handleOCRFile = async function(input) {
     const file = input.files[0];
@@ -2982,7 +3116,7 @@ function doSignOut() {
 <script>
   // ── NAVIGATION ────────────────────────────────────────────────────────────
   const sectionTitles = ['Dashboard','Job Management','Permits','Schedule','Contacts','Users'];
-  const SECTION_COUNT = 6;
+  const SECTION_COUNT = 7;
   let currentSection = 0;
 
   function navTo(idx) {
@@ -3287,6 +3421,95 @@ function doSignOut() {
   // ── INIT ──────────────────────────────────────────────────────────────────
   // Set initial swipe wrapper position
   document.getElementById('sections-wrapper').style.transform = 'translateX(0%)';
+
+  // ── CALCULATOR ────────────────────────────────────────────────────────────
+  window.switchCalc = function(type) {
+    document.getElementById('calc-asphalt').style.display = type === 'asphalt' ? 'block' : 'none';
+    document.getElementById('calc-concrete').style.display = type === 'concrete' ? 'block' : 'none';
+    const aspTab = document.getElementById('calc-tab-asphalt');
+    const conTab = document.getElementById('calc-tab-concrete');
+    if (type === 'asphalt') {
+      aspTab.style.background = '#e53e3e'; aspTab.style.borderColor = '#e53e3e'; aspTab.style.color = '#fff';
+      conTab.style.background = 'transparent'; conTab.style.borderColor = '#2a2a2a'; conTab.style.color = '#aaa';
+    } else {
+      conTab.style.background = '#e53e3e'; conTab.style.borderColor = '#e53e3e'; conTab.style.color = '#fff';
+      aspTab.style.background = 'transparent'; aspTab.style.borderColor = '#2a2a2a'; aspTab.style.color = '#aaa';
+    }
+  };
+
+  window.calcAsphalt = function() {
+    const w = parseFloat(document.getElementById('asp-width').value) || 0;
+    const l = parseFloat(document.getElementById('asp-length').value) || 0;
+    const t = parseFloat(document.getElementById('asp-thickness').value) || 0;
+    const costPerTon = parseFloat(document.getElementById('asp-cost').value) || 0;
+    if (!w || !l || !t) {
+      document.getElementById('asp-result-cy').textContent = '—';
+      document.getElementById('asp-result-tons').textContent = '—';
+      document.getElementById('asp-result-cost').textContent = '—';
+      return;
+    }
+    const cubicFeet = w * l * (t / 12);
+    const cubicYards = cubicFeet / 27;
+    // Asphalt density ~145 lbs/cubic foot
+    const tons = (cubicFeet * 145) / 2000;
+    const totalCost = costPerTon ? tons * costPerTon : 0;
+    document.getElementById('asp-result-cy').textContent = cubicYards.toFixed(2);
+    document.getElementById('asp-result-tons').textContent = tons.toFixed(2);
+    document.getElementById('asp-result-cost').textContent = costPerTon ? '$' + totalCost.toFixed(2) : '—';
+  };
+
+  window.clearAsphalt = function() {
+    ['asp-width','asp-length','asp-thickness','asp-cost'].forEach(id => document.getElementById(id).value = '');
+    ['asp-result-cy','asp-result-tons','asp-result-cost'].forEach(id => document.getElementById(id).textContent = '—');
+  };
+
+  window.emailAsphaltResult = function() {
+    const w = document.getElementById('asp-width').value;
+    const l = document.getElementById('asp-length').value;
+    const t = document.getElementById('asp-thickness').value;
+    const cy = document.getElementById('asp-result-cy').textContent;
+    const tons = document.getElementById('asp-result-tons').textContent;
+    const cost = document.getElementById('asp-result-cost').textContent;
+    const body = encodeURIComponent(`Asphalt Estimate\n\nWidth: ${w} ft\nLength: ${l} ft\nThickness: ${t} in\n\nCubic Yards: ${cy}\nHot Mix (tons): ${tons}\nTotal Cost: ${cost}\n\nMaman Contracting`);
+    window.location.href = `mailto:?subject=Asphalt%20Estimate&body=${body}`;
+  };
+
+  window.calcConcrete = function() {
+    const w = parseFloat(document.getElementById('con-width').value) || 0;
+    const l = parseFloat(document.getElementById('con-length').value) || 0;
+    const t = parseFloat(document.getElementById('con-thickness').value) || 0;
+    const costPerYard = parseFloat(document.getElementById('con-cost').value) || 0;
+    if (!w || !l || !t) {
+      document.getElementById('con-result-cy').textContent = '—';
+      document.getElementById('con-result-bags').textContent = '—';
+      document.getElementById('con-result-cost').textContent = '—';
+      return;
+    }
+    const cubicFeet = w * l * (t / 12);
+    const cubicYards = cubicFeet / 27;
+    // 80lb bag covers ~0.6 cubic feet
+    const bags = Math.ceil(cubicFeet / 0.6);
+    const totalCost = costPerYard ? cubicYards * costPerYard : 0;
+    document.getElementById('con-result-cy').textContent = cubicYards.toFixed(2);
+    document.getElementById('con-result-bags').textContent = bags;
+    document.getElementById('con-result-cost').textContent = costPerYard ? '$' + totalCost.toFixed(2) : '—';
+  };
+
+  window.clearConcrete = function() {
+    ['con-width','con-length','con-thickness','con-cost'].forEach(id => document.getElementById(id).value = '');
+    ['con-result-cy','con-result-bags','con-result-cost'].forEach(id => document.getElementById(id).textContent = '—');
+  };
+
+  window.emailConcreteResult = function() {
+    const w = document.getElementById('con-width').value;
+    const l = document.getElementById('con-length').value;
+    const t = document.getElementById('con-thickness').value;
+    const cy = document.getElementById('con-result-cy').textContent;
+    const bags = document.getElementById('con-result-bags').textContent;
+    const cost = document.getElementById('con-result-cost').textContent;
+    const body = encodeURIComponent(`Concrete Estimate\n\nWidth: ${w} ft\nLength: ${l} ft\nThickness: ${t} in\n\nCubic Yards: ${cy}\n80lb Bags: ${bags}\nTotal Cost: ${cost}\n\nMaman Contracting`);
+    window.location.href = `mailto:?subject=Concrete%20Estimate&body=${body}`;
+  };
 </script>
 
 <style>
