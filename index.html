@@ -554,6 +554,9 @@
 <script>
 // Auto-launch: hide loading/login screens instantly, no login needed
 (function() {
+  // Clear ALL session/storage state on every load to prevent stuck states
+  sessionStorage.clear();
+  
   function hideScreens() {
     var loading = document.getElementById('app-loading');
     if (loading) { loading.style.display = 'none'; loading.style.pointerEvents = 'none'; }
@@ -690,22 +693,18 @@ function toggleUserMenu() {
 }
 // Close dropdown when clicking outside
 document.addEventListener('click', function(e) {
-  var avatar = document.getElementById('user-avatar-sm');
   var dd = document.getElementById('user-dropdown');
-  if (dd && avatar && !avatar.contains(e.target) && !dd.contains(e.target)) {
+  var topbarUser = document.getElementById('topbar-user');
+  if (dd && dd.style.display !== 'none' && !dd.contains(e.target) && topbarUser && !topbarUser.contains(e.target)) {
     dd.style.display = 'none';
   }
 });
 
 function doSignOut() {
-  localStorage.removeItem('last-section');
-  localStorage.removeItem('entered-app');
-  sessionStorage.setItem('signed-out', '1'); // flag to skip auto-login
-  if (window._firebaseSignOut) {
-    window._firebaseSignOut().then(function(){ window.location.reload(); }).catch(function(){ window.location.reload(); });
-  } else {
-    window.location.reload();
-  }
+  localStorage.clear();
+  sessionStorage.clear();
+  // Hard navigate to bypass service worker cache completely
+  window.location.replace('https://app.mamanprojects.com?v=' + Date.now());
 }
 </script>
 <!-- Loading screen shown while Firebase checks auth -->
@@ -961,7 +960,7 @@ function doSignOut() {
       <img src="logo.jpg" alt="Maman Contracting"/>
       <h1>Maman Contracting</h1>
     </div>
-    <div id="topbar-user" class="topbar-actions" style="gap:6px;">
+    <div id="topbar-user" class="topbar-actions" style="gap:6px;display:flex !important;">
       <button id="undo-btn" onclick="undoDelete()" title="Undo"
         style="display:none;background:#422006;border:1px solid #f59e0b;color:#fbbf24;width:30px;height:30px;border-radius:50%;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;align-items:center;justify-content:center;">↩</button>
 
@@ -1802,40 +1801,10 @@ function doSignOut() {
       }
   };
 
-  // Listen for auth state — boot app when signed in
-  let _booted = false;
-  const _signedOut = sessionStorage.getItem('signed-out') === '1';
-
-  onAuthStateChanged(auth, async (user) => {
-    if (_booted) return;
-    if (user) {
-      _booted = true;
-      sessionStorage.removeItem('signed-out');
-      await _bootAsAdmin();
-    } else {
-      if (_signedOut) {
-        // User explicitly signed out — show login screen
-        _booted = true;
-        const appLoading = document.getElementById('app-loading');
-        if (appLoading) { appLoading.style.display = 'none'; }
-        const ls = document.getElementById('login-screen');
-        if (ls) { ls.style.display = 'flex'; ls.style.zIndex = '9999'; ls.style.pointerEvents = 'auto'; }
-        // Update login screen to allow any email login
-        const loginFieldsWrap = document.getElementById('login-fields-wrap');
-        if (loginFieldsWrap) loginFieldsWrap.style.display = 'block';
-      } else {
-        // Auto sign-in silently
-        try {
-          await setPersistence(auth, browserLocalPersistence).catch(()=>{});
-          await signInWithEmailAndPassword(auth, 'nir@mamancontracting.com', 'Nirmaman1');
-        } catch(e) {
-          console.warn('auto sign-in failed, booting anyway:', e);
-          _booted = true;
-          await _bootAsAdmin();
-        }
-      }
-    }
-  });
+  // BOOT IMMEDIATELY — always boot, never show login
+  await _bootAsAdmin();
+  // Sign in to Firebase in background (for write operations)
+  signInWithEmailAndPassword(auth, 'nir@mamancontracting.com', 'Nirmaman1').catch(()=>{});
 
   window.openJobModalWithCrew = function() {
     openJobModal();
@@ -1972,6 +1941,18 @@ function doSignOut() {
       if (typeof renderContacts === 'function') renderContacts(allContacts);
     } catch(e) { console.error('contacts load failed:', e); }
   }
+
+  // Expose key functions globally
+  window.loadAllData = loadAllData;
+  window.renderJobsTable = renderJobsTable;
+  window.renderDashboardRecent = renderDashboardRecent;
+  window.updateStats = updateStats;
+  window.renderSchedule = renderSchedule;
+  window.renderPermitsCards = renderPermitsCards;
+  window.renderContacts = renderContacts;
+  window.renderUsers = renderUsers;
+  window.renderActivityLog = renderActivityLog;
+  window.checkPermitExpiry = checkPermitExpiry;
 
   function startListeners() {
     // Load immediately then poll every 30s
@@ -3084,72 +3065,109 @@ function doSignOut() {
   function renderPermitsCards(permits) {
     const container = document.getElementById('permits-cards-container');
     if (!container) return;
-
     const search = (document.getElementById('permit-search') ? document.getElementById('permit-search').value : '').toLowerCase();
-    const statusFilter = document.getElementById('permit-status-filter') ? document.getElementById('permit-status-filter').value : '';
-
-    let filtered = permits.filter(p => {
-      const matchSearch = !search ||
-        (p.permitNumber||'').toLowerCase().includes(search) ||
-        (p.jobAddress||'').toLowerCase().includes(search) ||
-        (p.permitHolder||'').toLowerCase().includes(search);
-      const matchStatus = !statusFilter || (p.status||'') === statusFilter;
-      return matchSearch && matchStatus;
-    });
+    let filtered = permits.filter(p => !search ||
+      (p.permitNumber||'').toLowerCase().includes(search) ||
+      (p.jobAddress||'').toLowerCase().includes(search) ||
+      (p.permitHolder||'').toLowerCase().includes(search));
 
     if (!filtered.length) {
       container.innerHTML = '<div style="text-align:center;color:#555;padding:40px;">No permits found. Tap + Add Permit to get started.</div>';
       return;
     }
 
-    container.innerHTML = filtered.map(p => {
-      const days = p.expirationDate ? daysUntil(p.expirationDate) : null;
-      let expBadge = '';
-      let alertBadge = '';
-      if (days !== null) {
-        if (days < 0) expBadge = '<span class="badge badge-red">Expired</span>';
-        else if (days <= 4) { expBadge = '<span class="badge badge-red">Expiring Soon</span>'; alertBadge = '<span class="badge badge-red" style="margin-left:4px;">⚠️ ' + days + 'd</span>'; }
-        else if (days < 30) expBadge = '<span class="badge badge-orange">Expiring Soon</span>';
-        else expBadge = '<span class="badge badge-green">Valid</span>';
-      } else {
-        const statusColors = {
-          'Submitted': 'badge-blue', 'Under Review': 'badge-yellow', 'Approved': 'badge-green',
-          'Issued': 'badge-green', 'Active': 'badge-green', 'Expired': 'badge-red',
-          'Rejected': 'badge-red', 'On Hold': 'badge-orange', 'Cancelled': 'badge-gray', 'Pending': 'badge-yellow'
-        };
-        const statusEmoji = {
-          'Submitted':'📤','Under Review':'🔍','Approved':'✅','Issued':'🏷️','Active':'🟢',
-          'Expired':'❌','Rejected':'🚫','On Hold':'⏸️','Cancelled':'🗑️','Pending':'⏳'
-        };
-        const sc = p.status||'Pending';
-        expBadge = `<span class="badge ${statusColors[sc]||'badge-yellow'}">${statusEmoji[sc]||''} ${sc}</span>`;
+    // Group by address
+    const groups = {};
+    filtered.forEach(function(p) {
+      const key = (p.jobAddress||'Unknown').trim().toLowerCase();
+      if (!groups[key]) {
+        groups[key] = { address: p.jobAddress||'Unknown', customerName: '', permits: [] };
+        const lj = allJobs.find(function(j){ return j.id === p.linkedJobId; });
+        if (lj) groups[key].customerName = lj.customerName || '';
+        if (!groups[key].customerName) groups[key].customerName = p.customerName || '';
       }
-      return `<div class="crew-day-card" style="margin-bottom:10px;">
-        <div class="crew-day-header" style="cursor:pointer;" onclick="openEditPermit('${p.id}')">
-          <div>
-            <div style="font-size:14px;font-weight:700;color:#fff;">#${p.permitNumber||'—'}</div>
-            <div style="font-size:12px;color:#888;margin-top:2px;">📍 ${p.jobAddress||'—'}</div>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;">${expBadge}${alertBadge}</div>
-        </div>
-        <div class="crew-jobs-container" style="padding:12px 16px;">
-          ${p.permitHolder ? `<div class="crew-job-row"><span class="label">👤</span><span>${p.permitHolder}</span></div>` : ''}
-          ${p.permitTypeCode ? `<div class="crew-job-row"><span class="label">🏷️</span><span>Type Code: ${p.permitTypeCode}</span></div>` : ''}
-          ${p.validFrom ? `<div class="crew-job-row"><span class="label">📅</span><span>Valid: ${fmtDate(p.validFrom)} → ${fmtDate(p.expirationDate)||'?'}</span></div>` : ''}
-          ${p.linkedJobId ? (() => { const lj = allJobs.find(j=>j.id===p.linkedJobId); return lj ? `<div class="crew-job-row"><span class="label">🔗</span><span style="color:#60a5fa;font-weight:600;">${lj.customerName||lj.address||'Linked Job'}</span></div>` : ''; })() : ''}
-          ${p.notes ? `<div class="crew-job-row"><span class="label">📝</span><span>${p.notes}</span></div>` : ''}
-          <div style="display:flex;gap:8px;margin-top:12px;border-top:1px solid #2a2a2a;padding-top:12px;">
-            <button onclick="event.stopPropagation();openEditPermit('${p.id}')" style="flex:1;padding:8px;background:#1e3a5f;border:1px solid #2d5a9e;border-radius:8px;color:#60a5fa;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit</button>
-            <button onclick="event.stopPropagation();confirmDeletePermit('${p.id}','${(p.permitNumber||'this permit').replace(/'/g,"\\'")}',this)" style="flex:1;padding:8px;background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;color:#f87171;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Delete</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
+      groups[key].permits.push(p);
+    });
+
+    const rows = Object.values(groups).map(function(group, gi) {
+      const gid = 'pg' + gi;
+      const permitsHTML = group.permits.map(function(p) {
+        const days = p.expirationDate ? daysUntil(p.expirationDate) : null;
+        let badge = '<span style="font-size:11px;color:#aaa;">On File</span>';
+        if (days !== null) {
+          if (days < 0) badge = '<span style="font-size:11px;font-weight:800;color:#f87171;">\u274C Expired</span>';
+          else if (days <= 4) badge = '<span style="font-size:11px;font-weight:800;color:#f87171;">\u26A0\uFE0F ' + days + 'd left</span>';
+          else if (days < 30) badge = '<span style="font-size:11px;font-weight:700;color:#f59e0b;">\u23F0 Expiring Soon</span>';
+          else badge = '<span style="font-size:11px;font-weight:700;color:#4ade80;">\uD83D\uDCCE Attached</span>';
+        }
+        const pn = (p.permitNumber||'').replace(/'/g, "\\'");
+        return '<div style="background:#0f0f0f;border-radius:8px;padding:12px;margin-bottom:8px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+          '<div style="flex:1;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+          '<span onclick="navigator.clipboard&&navigator.clipboard.writeText(\'' + pn + '\').then(function(){window.showToast(\'Copied!\',\'#22c55e\',2000);})" style="font-size:15px;font-weight:800;color:#fff;cursor:pointer;">\uD83D\uDCCB ' + (p.permitNumber||'—') + '</span>' +
+          '<button onclick="navigator.clipboard&&navigator.clipboard.writeText(\'' + pn + '\').then(function(){window.showToast(\'Copied!\',\'#22c55e\',2000);})" style="background:#2a2a2a;border:1px solid #3a3a3a;border-radius:6px;color:#aaa;font-size:10px;font-weight:700;padding:2px 8px;cursor:pointer;">Copy</button>' +
+          '</div>' +
+          (p.permitHolder ? '<div style="font-size:12px;color:#aaa;">\uD83D\uDC64 ' + p.permitHolder + '</div>' : '') +
+          (p.validFrom ? '<div style="font-size:12px;color:#aaa;">\uD83D\uDCC5 ' + fmtDate(p.validFrom) + ' \u2192 ' + (fmtDate(p.expirationDate)||'?') + '</div>' : '') +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">' +
+          badge +
+          '<button onclick="event.stopPropagation();openEditPermit(\'' + p.id + '\')" style="background:none;border:none;color:#60a5fa;font-size:13px;cursor:pointer;">\u270F\uFE0F</button>' +
+          '<button onclick="event.stopPropagation();confirmDeletePermit(\'' + p.id + '\',\'' + pn + '\',this)" style="background:none;border:none;color:#f87171;font-size:13px;cursor:pointer;">\uD83D\uDDD1\uFE0F</button>' +
+          '</div></div></div>';
+      }).join('');
+
+      const addr = group.address.toLowerCase();
+      const isMN = addr.indexOf('manhattan')>=0 || addr.indexOf('8th ave')>=0 || addr.indexOf('west 1')>=0;
+      const bureauHTML = [
+        ['Brooklynbpp@dot.nyc.gov', '\uD83D\uDD35 Brooklyn BPP', !isMN && addr.indexOf('bronx')<0 && addr.indexOf('queens')<0],
+        ['MNHIQA@dot.nyc.gov', '\uD83D\uDD34 Manhattan HIQA', isMN],
+        ['Manhattanbpp@dot.nyc.gov', '\uD83D\uDD34 Manhattan BPP', isMN],
+        ['Queensbpp@dot.nyc.gov', '\uD83D\uDFE2 Queens BPP', addr.indexOf('queens')>=0],
+        ['bronxbpp@dot.nyc.gov', '\uD83D\uDFE0 Bronx BPP', addr.indexOf('bronx')>=0],
+        ['ConstructionPermits@dot.nyc.gov', '\u26AB Construction Permits', false]
+      ].map(function(b) {
+        return '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px 8px;background:#111;border-radius:6px;border:1px solid ' + (b[2]?'#22c55e':'#2a2a2a') + ';">' +
+          '<input type="checkbox" value="' + b[0] + '" ' + (b[2]?'checked':'') + ' style="width:15px;height:15px;accent-color:#22c55e;" onchange="this.closest(\'label\').style.borderColor=this.checked?\'#22c55e\':\'#2a2a2a\'"/>' +
+          '<span style="font-size:12px;color:#ddd;">' + b[1] + '</span></label>';
+      }).join('');
+
+      const addrEsc = group.address.replace(/'/g, "\\'").replace(/\\/g, '\\\\');
+      const cnEsc = group.customerName.replace(/'/g, "\\'");
+      const permNums = JSON.stringify(group.permits.map(function(p){return p.permitNumber||'';}));
+
+      return '<div style="border-radius:12px;overflow:hidden;border:2px solid #2a2a2a;background:#1a1a1a;margin-bottom:12px;">' +
+        '<div onclick="(function(b,a){b.style.display=b.style.display===\'none\'?\'block\':\'none\';a.textContent=b.style.display===\'none\'?\'\u25B8\':\'\u25BE\';})(document.getElementById(\'' + gid + '\'),document.getElementById(\'' + gid + 'a\'))" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;">' +
+        '<div>' +
+        (group.customerName ? '<div style="font-size:15px;font-weight:800;color:#fff;">\uD83C\uDFE2 ' + group.customerName + '</div>' : '') +
+        '<div style="font-size:' + (group.customerName?'12':'15') + 'px;font-weight:' + (group.customerName?'400':'800') + ';color:' + (group.customerName?'#888':'#fff') + ';">\uD83D\uDCCD ' + group.address + '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<span style="background:#2a2a2a;color:#aaa;font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;">' + group.permits.length + ' permit' + (group.permits.length!==1?'s':'') + '</span>' +
+        '<span id="' + gid + 'a" style="color:#888;font-size:16px;">\u25B8</span>' +
+        '</div></div>' +
+        '<div id="' + gid + '" style="display:none;border-top:1px solid #2a2a2a;padding:12px 14px;">' +
+        permitsHTML +
+        '<div style="background:#0f0f0f;border:1.5px solid #22c55e;border-radius:10px;padding:12px;margin-top:10px;">' +
+        '<div style="font-size:11px;font-weight:800;color:#22c55e;text-transform:uppercase;margin-bottom:8px;">\uD83D\uDD0D Schedule DOT Inspection</div>' +
+        '<div style="display:flex;gap:8px;margin-bottom:8px;">' +
+        '<div style="flex:1;"><div style="font-size:10px;color:#666;margin-bottom:4px;">Date</div>' +
+        '<div style="display:flex;"><input type="date" id="' + gid + 'd" style="flex:1;padding:8px;background:#111;border:1px solid #2a2a2a;border-radius:7px 0 0 7px;color:#fff;font-size:12px;" onfocus="this.style.borderColor=\'#22c55e\'" onblur="this.style.borderColor=\'#2a2a2a\'"/>' +
+        '<button onclick="try{document.getElementById(\'' + gid + 'd\').showPicker();}catch(e){document.getElementById(\'' + gid + 'd\').focus();}" style="background:#22c55e;border:none;border-radius:0 7px 7px 0;padding:0 8px;cursor:pointer;font-size:16px;">\uD83D\uDCC5</button></div></div>' +
+        '<div style="flex:1;"><div style="font-size:10px;color:#666;margin-bottom:4px;">Time</div>' +
+        '<input type="text" id="' + gid + 't" placeholder="9:45 AM" style="width:100%;padding:8px;background:#111;border:1px solid #2a2a2a;border-radius:7px;color:#fff;font-size:12px;box-sizing:border-box;" onfocus="this.style.borderColor=\'#22c55e\'" onblur="this.style.borderColor=\'#2a2a2a\'"/></div>' +
+        '</div>' +
+        '<div style="font-size:10px;color:#666;margin-bottom:6px;">DOT Bureau</div>' +
+        '<div id="' + gid + 'b" style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px;">' + bureauHTML + '</div>' +
+        '<button onclick="window.notifyDOT(\'' + gid + '\',\'' + addrEsc + '\',\'' + cnEsc + '\',JSON.stringify(' + permNums + '))" style="width:100%;padding:10px;background:#22c55e;border:none;border-radius:8px;color:#000;font-size:13px;font-weight:800;cursor:pointer;">📧 Notify DOT — Send Inspection Email</button>' +
+        '</div>' +
+        '<button onclick="event.stopPropagation();openPermitModal();setTimeout(function(){var e=document.getElementById(\'pm-jobAddress\');if(e){e.value=\'' + addrEsc + '\';e.style.borderColor=\'#22c55e\';}},200);" style="width:100%;margin-top:8px;padding:9px;background:#1e3a5f;border:1px solid #2d5a9e;border-radius:8px;color:#60a5fa;font-size:12px;font-weight:700;cursor:pointer;">\uD83D\uDCCB + Add Permit to this Address</button>' +
+        '</div></div>';
+    });
+    container.innerHTML = rows.join('');
   }
 
-  window.filterPermitsDirect = function() {
-    renderPermitsCards(allStandalonePermits);
-  };
 
   window.clearAllNotifications = async function() {
     const el = document.getElementById('activity-log-panel');
@@ -3189,6 +3207,32 @@ function doSignOut() {
     } catch(e) {
       window.showToast('Failed to clear: ' + e.message, '#e53e3e');
     }
+  };
+
+  // Named function for DOT notification (called from renderPermitsCards)
+  window.notifyDOT = function(gid, address, customerName, permitNumbers) {
+    var d = document.getElementById(gid + 'd');
+    var t = document.getElementById(gid + 't');
+    var bureausEl = document.getElementById(gid + 'b');
+    var dateVal = d ? d.value : '';
+    var timeVal = t ? t.value.trim() : '';
+    if (!dateVal) { window.showToast('Please pick a date', '#f59e0b', 3000); if(d){try{d.showPicker();}catch(e){d.focus();}} return; }
+    if (!timeVal) { window.showToast('Please enter a time', '#f59e0b', 3000); if(t) t.focus(); return; }
+    var cbs = bureausEl ? bureausEl.querySelectorAll('input:checked') : [];
+    var emails = Array.from(cbs).map(function(c) { return c.value; });
+    if (!emails.length) { window.showToast('Select at least one bureau', '#f59e0b', 3000); return; }
+    var dd = new Date(dateVal + 'T00:00:00');
+    var ds = (dd.getMonth()+1).toString().padStart(2,'0') + '/' + dd.getDate().toString().padStart(2,'0') + '/' + dd.getFullYear();
+    var perms = Array.isArray(permitNumbers) ? permitNumbers : JSON.parse(permitNumbers || '[]');
+    var pstr = perms.map(function(p){return '#'+p;}).join(' ');
+    var subj = address + ' ' + pstr;
+    var body = 'Hi,\n\nPlease Schedule milling inspection for the above mentioned location\n\nDay: ' + ds + '\nTime: ' + timeVal + '\n\nPermit holder: ' + customerName + '\nPermit Number: ' + pstr + '\n\nMy contact information is below\nThank you\nNir Maman\nCell: 917-251-2400\nCell: 516-306-3326';
+    window.location.href = 'mailto:' + emails.join(',') + '?bcc=nir@mamancontracting.com&subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
+    setTimeout(function() {
+      if (confirm('Did you send the inspection email?\nTap OK to mark as notified.')) {
+        window.showToast('✅ DOT Notified!', '#22c55e', 3000);
+      }
+    }, 2000);
   };
 
   window.confirmDeletePermit = function(permitId, permitNum, btn) {
