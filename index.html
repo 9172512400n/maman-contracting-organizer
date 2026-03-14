@@ -1912,7 +1912,8 @@ function doSignOut() {
 </div>
 <!-- PLAIN DATA LOADER — runs immediately, no dependencies -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+// Run immediately AND on DOMContentLoaded
+(function() {
   var KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
   var BASE = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
   function pv(v){if(!v)return '';if(v.stringValue!==undefined)return v.stringValue;if(v.booleanValue!==undefined)return v.booleanValue;if(v.integerValue!==undefined)return v.integerValue;if(v.arrayValue)return(v.arrayValue.values||[]).map(function(av){if(av.mapValue){var m={};Object.keys(av.mapValue.fields||{}).forEach(function(k){m[k]=pv(av.mapValue.fields[k]);});return m;}return pv(av);});return '';}
@@ -1939,18 +1940,37 @@ document.addEventListener('DOMContentLoaded', function() {
       if(window.renderSchedule)try{window.renderSchedule();}catch(e){}
       if(window.renderWeekList)try{window.renderWeekList();}catch(e){}
     });
-    get('contacts',function(c){window.allContacts=c;if(window.renderContacts)try{window.renderContacts(c);}catch(e){}});
-    get('permits',function(p){window.allStandalonePermits=p;if(window.renderPermitsCards)try{window.renderPermitsCards(p);}catch(e){}});
-    get('users',function(u){window.allUsers=u;if(window.renderUsers)try{window.renderUsers(u);}catch(e){}});
+    get('contacts',function(c){
+      window.allContacts=c;
+      if(window.renderContacts)try{window.renderContacts(c);}catch(e){}
+      // Retry after module loads
+      setTimeout(function(){if(window.renderContacts&&window.allContacts)try{window.renderContacts(window.allContacts);}catch(e){}},3000);
+      setTimeout(function(){if(window.renderContacts&&window.allContacts)try{window.renderContacts(window.allContacts);}catch(e){}},7000);
+    });
+    get('permits',function(p){
+      window.allStandalonePermits=p;
+      if(window.renderPermitsCards)try{window.renderPermitsCards(p);}catch(e){}
+      setTimeout(function(){if(window.renderPermitsCards&&window.allStandalonePermits)try{window.renderPermitsCards(window.allStandalonePermits);}catch(e){}},3000);
+      setTimeout(function(){if(window.renderPermitsCards&&window.allStandalonePermits)try{window.renderPermitsCards(window.allStandalonePermits);}catch(e){}},7000);
+    });
+    get('users',function(u){
+      window.allUsers=u;
+      if(window.renderUsers)try{window.renderUsers(u);}catch(e){}
+      setTimeout(function(){if(window.renderUsers&&window.allUsers)try{window.renderUsers(window.allUsers);}catch(e){}},3000);
+    });
     get('activity',function(a){var items=a.sort(function(x,y){return(y.timestamp||'')>(x.timestamp||'')?1:-1;}).slice(0,10);if(window.renderActivityLog)try{window.renderActivityLog(items);}catch(e){}});
   }
   
-  // Run at 1s, 3s, and 8s to catch module loading at any speed
-  setTimeout(run, 1000);
-  setTimeout(run, 3000);
-  setTimeout(run, 8000);
+  // Run immediately, on DOMContentLoaded, and at multiple delays
+  if (document.readyState !== 'loading') {
+    setTimeout(run, 500);
+  }
+  document.addEventListener('DOMContentLoaded', function() { setTimeout(run, 500); });
+  setTimeout(run, 2000);
+  setTimeout(run, 5000);
+  setTimeout(run, 10000);
   setInterval(run, 60000);
-});
+})();
 </script>
 
 <!-- FIREBASE + MAIN SCRIPT -->
@@ -2327,6 +2347,13 @@ document.addEventListener('DOMContentLoaded', function() {
   window._renderFunctionsReady = true;
   // Load all data immediately now that render functions are ready
   loadAllData();
+  // Also render any data already fetched by the plain loader
+  setTimeout(function() {
+    try { if(window.allContacts && window.allContacts.length) renderContacts(window.allContacts); } catch(e){}
+    try { if(window.allStandalonePermits && window.allStandalonePermits.length) renderPermitsCards(window.allStandalonePermits); } catch(e){}
+    try { if(window.allUsers && window.allUsers.length) renderUsers(window.allUsers); } catch(e){}
+    try { if(window.allJobs && window.allJobs.length) { renderJobsTable(window.allJobs); renderSchedule(); } } catch(e){}
+  }, 500);
 
   function startListeners() {
     // Always use REST — reliable regardless of auth state
