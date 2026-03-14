@@ -48,7 +48,7 @@
     .login-btn { width: 100%; padding: 13px; background: #e53e3e; border: none; border-radius: 8px; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 6px; font-family: 'Inter', sans-serif; transition: background 0.2s; }
     .login-btn:hover { background: #c53030; }
     .login-btn:disabled { background: #7f1d1d; cursor: not-allowed; }
-    .login-error { color: #ff6b6b; font-size: 13px; margin-top: 12px; min-height: 18px; }
+    .login-error { color: #f87171; font-size: 13px; margin-top: 12px; min-height: 18px; }
 
     /* LIGHT MODE */
     body.light { background: #f4f6f9; color: #1a1a1a; }
@@ -75,12 +75,7 @@
     body.light .notif-title { color: #1a1a1a; }
     body.light .filter-select, body.light .search-input { background: #fff; border-color: #e2e8f0; color: #374151; }
     body.light .crew-day-card { background: #fff; border-color: #e2e8f0; }
-    body.light .crew-job-card { background: #f9f9f9; }
-    body.light .crew-job-name { color: #111 !important; }
-    body.light .crew-job-row { color: #1a1a1a !important; font-weight: 700 !important; }
-    body.light .crew-job-row span.label { color: #444 !important; }
-    body.light .crew-day-title { color: #e53e3e !important; }
-    body.light .crew-day-count { color: #555 !important; }
+    body.light .crew-job-card { background: #fff7f7; }
     body.light .crew-day-header { border-bottom-color: #e2e8f0; }
     body.light .user-card { background: #fff; border-color: #e2e8f0; }
     body.light .user-name { color: #1a1a1a; }
@@ -272,7 +267,7 @@
     .permit-alert-item { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
     .permit-alert-item:last-child { margin-bottom: 0; }
     .permit-alert-info { font-size: 13px; color: #fca5a5; font-weight: 600; }
-    .permit-alert-meta { font-size: 12px; color: #ff6b6b; }
+    .permit-alert-meta { font-size: 12px; color: #f87171; }
     .permit-alert-days { background: #dc2626; color: #fff; border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 800; white-space: nowrap; }
 
     /* SUMMARY CARDS */
@@ -304,7 +299,7 @@
     .badge { padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; display: inline-block; white-space: nowrap; }
     .badge-green { background: #14532d; color: #4ade80; }
     .badge-yellow { background: #422006; color: #fbbf24; }
-    .badge-red { background: #450a0a; color: #ff6b6b; }
+    .badge-red { background: #450a0a; color: #f87171; }
     .badge-gray { background: #1f1f1f; color: #6b7280; }
     .badge-blue { background: #172554; color: #60a5fa; }
     .badge-orange { background: #431407; color: #fb923c; }
@@ -425,7 +420,7 @@
     .person-phone-input { flex: 2; min-width: 0; }
     .person-role-input { flex: 1.5; min-width: 0; }
     .btn-remove-person { background: #2a2a2a; border: none; color: #888; width: 28px; height: 28px; border-radius: 6px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
-    .btn-remove-person:hover { background: #450a0a; color: #ff6b6b; }
+    .btn-remove-person:hover { background: #450a0a; color: #f87171; }
     .btn-add-person { background: transparent; border: 1.5px dashed #444; border-radius: 8px; color: #aaa; font-size: 12px; font-weight: 700; cursor: pointer; padding: 8px 14px; font-family: 'Inter', sans-serif; transition: all 0.18s; width: 100%; margin-top: 10px; }
     .btn-add-person:hover { border-color: #e53e3e; color: #e53e3e; }
 
@@ -491,7 +486,7 @@
 
     /* ── TAPPABLE ROWS & CARDS — ripple tap feedback ────────────────────── */
     tr.clickable-row { position: relative; overflow: hidden; }
-    tr.clickable-row:active td { background: #1a1a2e !important; }
+    tr.clickable-row:active td { background: #2a1a1a !important; }
 
     /* Ripple effect for table rows */
     .tap-ripple {
@@ -523,7 +518,7 @@
     /* Permit table rows & dashboard rows */
     tr[onclick] { cursor: pointer; position: relative; overflow: hidden; }
     tr[onclick]:hover td { background: #2a2020 !important; color: #fff !important; }
-    tr[onclick]:active td { background: #1a1a2e !important; }
+    tr[onclick]:active td { background: #2a1a1a !important; }
     /* Subtle pencil hint on last cell of tappable rows */
     tr[onclick] td:last-child::after,
     tr.clickable-row td:last-child::after {
@@ -565,98 +560,14 @@
     var loginScreen = document.getElementById('login-screen');
     if (loginScreen) { loginScreen.style.display = 'none'; loginScreen.style.pointerEvents = 'none'; loginScreen.style.zIndex = '-1'; }
   }
+  // Hide immediately if DOM ready, otherwise on DOMContentLoaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', hideScreens);
   } else {
     hideScreens();
   }
+  // Belt and suspenders: also hide after 300ms in case elements rendered late
   setTimeout(hideScreens, 300);
-
-  // SELF-CONTAINED DATA LOADER — no Firebase dependency
-  var KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
-  var BASE = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
-
-  function pv(v) {
-    if (!v) return '';
-    if (v.stringValue !== undefined) return v.stringValue;
-    if (v.booleanValue !== undefined) return v.booleanValue;
-    if (v.integerValue !== undefined) return v.integerValue;
-    if (v.arrayValue) return (v.arrayValue.values||[]).map(function(av) {
-      if (av.mapValue) { var m={}; Object.keys(av.mapValue.fields||{}).forEach(function(k){m[k]=pv(av.mapValue.fields[k]);}); return m; }
-      return pv(av);
-    });
-    return '';
-  }
-
-  function parseDoc(doc) {
-    var id = doc.name.split('/').pop();
-    var out = {id:id};
-    Object.keys(doc.fields||{}).forEach(function(k){out[k]=pv(doc.fields[k]);});
-    return out;
-  }
-
-  function fetchCol(col, cb) {
-    fetch(BASE+'/'+col+'?key='+KEY+'&pageSize=300')
-      .then(function(r){return r.json();})
-      .then(function(d){cb((d.documents||[]).map(parseDoc));})
-      .catch(function(){cb([]);});
-  }
-
-  function renderTable(jobs) {
-    var tbody = document.getElementById('jobs-tbody');
-    if (!tbody || !jobs.length) return;
-    tbody.innerHTML = jobs.map(function(j) {
-      return '<tr class="clickable-row" onclick="if(window.openEditJob)openEditJob(\''+j.id+'\')">' +
-        '<td>'+(j.address||'—')+'</td>' +
-        '<td>'+(j.customerName||'—')+'</td>' +
-        '<td>'+(j.taskType||'—')+'</td>' +
-        '<td>'+(j.altParkingDays||'—')+'</td>' +
-        '<td>'+(j.projectSize||'—')+'</td>' +
-        '<td>—</td><td>'+(j.scheduleDay||'—')+'</td>' +
-        '<td>—</td><td>'+(j.status||'—')+'</td>' +
-        '<td>—</td><td>—</td><td></td></tr>';
-    }).join('');
-    var st = document.getElementById('stat-total');
-    var so = document.getElementById('stat-open');
-    var sc = document.getElementById('stat-completed');
-    if(st) st.textContent = jobs.length;
-    if(so) so.textContent = jobs.filter(function(j){return j.status==='Pending'||j.status==='In Progress';}).length;
-    if(sc) sc.textContent = jobs.filter(function(j){return j.status==='Completed'||j.status==='Closed';}).length;
-  }
-
-  function loadAll() {
-    fetchCol('jobs', function(jobs) {
-      window.allJobs = jobs;
-      renderTable(jobs);
-      try { if(window.renderJobsTable) window.renderJobsTable(jobs); } catch(e){}
-      try { if(window.renderDashboardRecent) window.renderDashboardRecent(jobs); } catch(e){}
-      try { if(window.updateStats) window.updateStats(jobs); } catch(e){}
-      try { if(window.renderSchedule) window.renderSchedule(); } catch(e){}
-      try { if(window.renderWeekList) window.renderWeekList(); } catch(e){}
-    });
-    fetchCol('contacts', function(contacts) {
-      window.allContacts = contacts;
-      try { if(window.renderContacts) window.renderContacts(contacts); } catch(e){}
-    });
-    fetchCol('permits', function(permits) {
-      window.allStandalonePermits = permits;
-      try { if(window.renderPermitsCards) window.renderPermitsCards(permits); } catch(e){}
-    });
-    fetchCol('users', function(users) {
-      window.allUsers = users;
-      try { if(window.renderUsers) window.renderUsers(users); } catch(e){}
-    });
-    fetchCol('activity', function(acts) {
-      var items = acts.sort(function(a,b){return (b.timestamp||'')>(a.timestamp||'')?1:-1;}).slice(0,10);
-      try { if(window.renderActivityLog) window.renderActivityLog(items); } catch(e){}
-    });
-  }
-
-  // Load immediately and on every render function ready check
-  setTimeout(loadAll, 800);
-  setTimeout(loadAll, 3000);
-  setInterval(loadAll, 90000);
-
 })();
 
 function togglePasswordVisibility() {
@@ -741,13 +652,6 @@ function navTo(idx) {
   _currentSectionGlobal = idx;
   window._currentSection = idx;
   localStorage.setItem('last-section', String(idx));
-  // Always scroll Jobs table to left when navigating to Jobs tab
-  if (idx === 1) {
-    setTimeout(function() {
-      var t = document.getElementById('jobs-table-scroll');
-      if (t) t.scrollLeft = 0;
-    }, 50);
-  }
 
   var wrapper = document.getElementById('sections-wrapper');
   if (wrapper) {
@@ -786,11 +690,9 @@ function toggleUserMenu() {
 }
 // Close dropdown when clicking outside
 document.addEventListener('click', function(e) {
+  var avatar = document.getElementById('user-avatar-sm');
   var dd = document.getElementById('user-dropdown');
-  if (!dd) return;
-  // Close if click is outside the dropdown AND outside the topbar-user area
-  var topbarUser = document.getElementById('topbar-user');
-  if (dd.style.display !== 'none' && !dd.contains(e.target) && topbarUser && !topbarUser.contains(e.target)) {
+  if (dd && avatar && !avatar.contains(e.target) && !dd.contains(e.target)) {
     dd.style.display = 'none';
   }
 });
@@ -890,7 +792,7 @@ function doSignOut() {
         style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
         onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
     </div>
-    <div id="invite-error" style="color:#ff6b6b;font-size:12px;margin-bottom:12px;min-height:16px;"></div>
+    <div id="invite-error" style="color:#f87171;font-size:12px;margin-bottom:12px;min-height:16px;"></div>
     <div style="display:flex;gap:10px;">
       <button onclick="closeInviteModal()" style="flex:1;padding:11px;background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
       <button id="invite-send-btn" onclick="sendInvite()" style="flex:2;padding:11px;background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📨 Send Invite</button>
@@ -929,7 +831,7 @@ function doSignOut() {
         <div style="display:flex;gap:8px;">
           <button onclick="document.getElementById('ocr-add-input').click()" style="flex:1;padding:9px;background:#1a1a2e;border:1.5px solid #2d3a6e;border-radius:8px;color:#60a5fa;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">+ Add Page</button>
           <button onclick="scanAllPages()" style="flex:1;padding:9px;background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🔍 Scan All Pages</button>
-          <button onclick="clearOCRPages()" style="padding:9px 12px;background:#450a0a;border:none;border-radius:8px;color:#ff6b6b;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
+          <button onclick="clearOCRPages()" style="padding:9px 12px;background:#450a0a;border:none;border-radius:8px;color:#f87171;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
         </div>
       </div>
       <input type="file" id="ocr-add-input" accept="image/*" style="display:none" onchange="addOCRPage(this)" multiple/>
@@ -987,33 +889,6 @@ function doSignOut() {
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Notes</label>
         <textarea id="pm-notes" placeholder="Any notes…" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;min-height:70px;resize:vertical;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
       </div>
-      <!-- PERMIT FILE UPLOAD -->
-      <div style="grid-column:1/-1;">
-        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px;">📎 Attach Permit Document</label>
-        <!-- Hidden file inputs -->
-        <input type="file" id="pm-file-camera" accept="image/*" capture="environment" style="display:none" onchange="handlePermitFileUpload(this)"/>
-        <input type="file" id="pm-file-library" accept=".pdf,image/*" style="display:none" onchange="handlePermitFileUpload(this)"/>
-        <!-- Buttons -->
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <button type="button" onclick="document.getElementById('pm-file-camera').click()"
-            style="flex:1;padding:10px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#ccc;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;"
-            onmouseover="this.style.borderColor='#60a5fa'" onmouseout="this.style.borderColor='#2a2a2a'">
-            📷 Camera
-          </button>
-          <button type="button" onclick="document.getElementById('pm-file-library').click()"
-            style="flex:1;padding:10px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#ccc;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;"
-            onmouseover="this.style.borderColor='#60a5fa'" onmouseout="this.style.borderColor='#2a2a2a'">
-            🖼️ Photo Library / PDF
-          </button>
-        </div>
-        <!-- Preview -->
-        <div id="pm-file-preview" style="display:none;background:#0a1a0a;border:1px solid #22c55e;border-radius:8px;padding:10px;text-align:center;">
-          <div id="pm-file-name" style="font-size:12px;color:#4ade80;font-weight:700;margin-bottom:6px;"></div>
-          <img id="pm-file-img" src="" style="max-width:100%;max-height:150px;border-radius:8px;display:none;"/>
-          <button type="button" onclick="window._permitFileData=null;document.getElementById('pm-file-preview').style.display='none';document.getElementById('pm-file-camera').value='';document.getElementById('pm-file-library').value='';"
-            style="margin-top:8px;background:none;border:none;color:#888;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;">✕ Remove</button>
-        </div>
-      </div>
     </div>
 
     <div style="display:flex;gap:12px;margin-top:20px;">
@@ -1043,13 +918,12 @@ function doSignOut() {
     <div class="drawer-item" data-section="4" onclick="navTo(4)"><span class="di">👥</span><span>Contacts</span></div>
     <div class="drawer-item" data-section="5" onclick="navTo(5)"><span class="di">🧮</span><span>Calculator</span></div>
     <div id="drawer-users-item" class="drawer-item" onclick="openUsersPanel()" style="display:none;"><span class="di">👥</span><span>Users (Admin)</span></div>
-    <div id="drawer-backup-item" class="drawer-item" onclick="openBackupPanel();closeDrawer();" style="display:none;"><span class="di">💾</span><span>Backup & Restore</span></div>
   </nav>
   <div class="drawer-divider"></div>
   <div class="drawer-footer">
     <div style="height:1px;background:#2a2a2a;margin:4px 16px;"></div>
     <div class="drawer-item" onclick="toggleTheme(); closeDrawer();" id="theme-drawer-item" style="color:rgba(255,255,255,0.6);"><span class="di" style="font-size:18px;">🌙</span><span id="theme-drawer-label">Night / Day Mode</span></div>
-    <div class="drawer-item" onclick="doSignOut()" style="color:#ff6b6b;"><span class="di">🚪</span><span>Sign Out</span></div>
+    <div class="drawer-item" onclick="doSignOut()" style="color:#f87171;"><span class="di">🚪</span><span>Sign Out</span></div>
   </div>
 </div>
 
@@ -1130,9 +1004,6 @@ function doSignOut() {
             <button id="dropdown-users" onclick="openUsersPanel();toggleUserMenu();" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#eee;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
               <span style="font-size:16px;">👥</span> Manage Users
             </button>
-            <button onclick="openBackupPanel();toggleUserMenu();" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#eee;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
-              <span style="font-size:16px;">💾</span> Backup & Restore
-            </button>
           </div>
           <!-- Account actions -->
           <div>
@@ -1140,7 +1011,7 @@ function doSignOut() {
             <button onclick="toggleTheme();toggleUserMenu();" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#eee;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
               <span style="font-size:16px;" id="dropdown-theme-icon">🌙</span> Toggle Theme
             </button>
-            <button onclick="doSignOut()" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#ff6b6b;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;border-top:1px solid #2a2a2a;display:flex;align-items:center;gap:10px;">
+            <button onclick="doSignOut()" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#f87171;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;border-top:1px solid #2a2a2a;display:flex;align-items:center;gap:10px;">
               <span style="font-size:16px;">🚪</span> Sign Out
             </button>
           </div>
@@ -1198,17 +1069,17 @@ function doSignOut() {
               <table>
                 <thead><tr><th>Address</th><th>Task Type</th><th>Crew</th><th>Status</th><th>Schedule</th></tr></thead>
                 <tbody id="dashboard-recent-tbody">
-                  <tr><td colspan="5" style="text-align:center;color:#555;padding:20px;">⏳ Loading data...</td></tr>
+                  <tr><td colspan="5" style="text-align:center;color:#555;padding:20px;">Loading…</td></tr>
                 </tbody>
               </table>
             </div>
             <div class="panel">
               <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
                 <span>🔔 Activity &amp; Alerts</span>
-                <button onclick="clearAllNotifications()" style="background:#450a0a;border:1px solid #7f1d1d;border-radius:6px;color:#ff6b6b;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Clear All</button>
+                <button onclick="clearAllNotifications()" style="background:#450a0a;border:1px solid #7f1d1d;border-radius:6px;color:#f87171;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Clear All</button>
               </div>
               <div id="activity-log-panel">
-                <div class="notif-item"><div class="notif-title" style="color:#555;">⏳ Loading data...</div></div>
+                <div class="notif-item"><div class="notif-title" style="color:#555;">Loading…</div></div>
               </div>
             </div>
           </div>
@@ -1232,7 +1103,7 @@ function doSignOut() {
             <button class="filter-pill" data-filter="blocked" onclick="setJobFilter('blocked',this)">🚫 Blocked</button>
             <button class="filter-pill" data-filter="On Hold" onclick="setJobFilter('On Hold',this)">On Hold</button>
           </div>
-          <div class="panel" id="jobs-table-scroll" style="overflow-x:auto;">
+          <div class="panel" style="overflow-x:auto;">
             <table>
               <thead>
                 <tr>
@@ -1294,29 +1165,19 @@ function doSignOut() {
               </button>
             </div>
           </div>
-          <!-- Week list — tap to expand -->
-          <div id="week-list-container" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;"></div>
-
-          <!-- Expanded day view (shown below selected week) -->
-          <div id="sched-day-view" style="display:none;">
-            <!-- Day strip -->
-            <div id="week-day-strip" style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;"></div>
-            <!-- Crew filter -->
-            <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
-              <button class="crew-pill active" data-crew="all" onclick="setCrewFilter('all',this)">All</button>
-              <button class="crew-pill" data-crew="asphalt" onclick="setCrewFilter('asphalt',this)">🟠 Asphalt</button>
-              <button class="crew-pill" data-crew="concrete" onclick="setCrewFilter('concrete',this)">🔵 Concrete</button>
-            </div>
-            <div id="sched-tbd-section" style="margin-bottom:24px;display:none;">
-              <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📌 Date TBD</div>
-              <div id="sched-tbd-container"></div>
-            </div>
-            <div id="sched-dated-section">
-              <div id="sched-dated-container"></div>
-            </div>
+          <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+            <button class="crew-pill active" data-crew="all" onclick="setCrewFilter('all',this)">All Crews</button>
+            <button class="crew-pill" data-crew="asphalt" onclick="setCrewFilter('asphalt',this)">🟠 Asphalt</button>
+            <button class="crew-pill" data-crew="concrete" onclick="setCrewFilter('concrete',this)">🔵 Concrete</button>
           </div>
-          <!-- Hidden label for week nav compat -->
-          <div id="week-label" style="display:none;"></div>
+          <div id="sched-tbd-section" style="margin-bottom:24px;">
+            <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📌 Date TBD</div>
+            <div id="sched-tbd-container"></div>
+          </div>
+          <div id="sched-dated-section">
+            <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📅 Scheduled Jobs</div>
+            <div id="sched-dated-container"></div>
+          </div>
         </div>
 
         <!-- SECTION 4: CONTACTS -->
@@ -1403,7 +1264,7 @@ function doSignOut() {
             </div>
 
             <div style="display:flex;gap:10px;">
-              <button onclick="clearAsphalt()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#ff6b6b;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
+              <button onclick="clearAsphalt()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
               <button onclick="shareAsphaltResult()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Text</button>
               <button onclick="emailAsphaltResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
             </div>
@@ -1462,7 +1323,7 @@ function doSignOut() {
             </div>
 
             <div style="display:flex;gap:10px;">
-              <button onclick="clearConcrete()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#ff6b6b;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
+              <button onclick="clearConcrete()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
               <button onclick="shareConcreteResult()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Text</button>
               <button onclick="emailConcreteResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
             </div>
@@ -1570,7 +1431,7 @@ function doSignOut() {
         <div style="font-size:12px;color:#666;margin-top:2px;" id="modal-subtitle">Fill in all the job details below</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">
-        <button id="modal-delete-btn" onclick="requestDeleteFromModal()" style="display:none;background:#450a0a;border:1px solid #7f1d1d;color:#ff6b6b;font-size:13px;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;">🗑️ Delete</button>
+        <button id="modal-delete-btn" onclick="requestDeleteFromModal()" style="display:none;background:#450a0a;border:1px solid #7f1d1d;color:#f87171;font-size:13px;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;">🗑️ Delete</button>
         <button onclick="closeJobModal()" style="background:#2a2a2a;border:none;color:#aaa;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
       </div>
     </div>
@@ -1653,129 +1514,13 @@ function doSignOut() {
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Job Status</label>
-        <select id="f-status" onchange="onJobStatusChange(this.value)" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
+        <select id="f-status" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
           <option>Pending</option>
           <option>In Progress</option>
+          <option>Completed</option>
           <option>On Hold</option>
           <option>Cancelled</option>
-          <option>Closed</option>
         </select>
-      </div>
-      <!-- SCOPE OF WORK — always visible -->
-      <div style="grid-column:1/-1;background:#111;border:1.5px solid #2a2a2a;border-radius:10px;padding:14px;">
-        <div style="font-size:11px;font-weight:800;color:#60a5fa;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">🏗️ Scope of Work</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-
-          <!-- Sidewalk -->
-          <div style="background:#0a0a0a;border-radius:8px;border:1px solid #2a2a2a;overflow:hidden;">
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;" onchange="toggleScopeDetail('sidewalk',this.querySelector('input').checked)">
-              <input type="checkbox" id="f-scope-sidewalk" style="width:18px;height:18px;accent-color:#60a5fa;cursor:pointer;flex-shrink:0;" onchange="toggleScopeDetail('sidewalk',this.checked)"/>
-              <div style="flex:1;">
-                <div style="font-size:13px;font-weight:800;color:#fff;">🚶 Sidewalk</div>
-                <div style="font-size:11px;color:#666;">Include sidewalk work in this project</div>
-              </div>
-            </label>
-            <div id="scope-sidewalk-detail" style="display:none;padding:0 12px 12px;border-top:1px solid #1a1a1a;">
-              <div style="font-size:10px;color:#666;margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.5px;">Who's doing it?</div>
-              <div style="display:flex;gap:8px;">
-                <label style="flex:1;display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 10px;background:#111;border-radius:7px;border:1px solid #2a2a2a;" onclick="this.style.borderColor=this.querySelector('input').checked?'#60a5fa':'#2a2a2a'">
-                  <input type="radio" name="sidewalk-who" value="inhouse" checked style="accent-color:#60a5fa;" onchange="this.closest('label').style.borderColor='#60a5fa';document.getElementById('sidewalk-sub-wrap').style.display='none'"/>
-                  <span style="font-size:12px;font-weight:700;color:#ddd;">🏠 In House</span>
-                </label>
-                <label style="flex:1;display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 10px;background:#111;border-radius:7px;border:1px solid #2a2a2a;">
-                  <input type="radio" name="sidewalk-who" value="sub" style="accent-color:#60a5fa;" onchange="this.closest('label').style.borderColor='#60a5fa';document.getElementById('sidewalk-sub-wrap').style.display='block'"/>
-                  <span style="font-size:12px;font-weight:700;color:#ddd;">🤝 Subcontractor</span>
-                </label>
-              </div>
-              <div id="sidewalk-sub-wrap" style="display:none;margin-top:6px;">
-                <input type="text" id="f-sidewalk-sub" placeholder="Sub name / company" style="width:100%;padding:8px 10px;background:#111;border:1px solid #2a2a2a;border-radius:7px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;box-sizing:border-box;" onfocus="this.style.borderColor='#60a5fa'" onblur="this.style.borderColor='#2a2a2a'"/>
-              </div>
-            </div>
-          </div>
-
-          <!-- Roadway -->
-          <div style="background:#0a0a0a;border-radius:8px;border:1px solid #2a2a2a;overflow:hidden;">
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;">
-              <input type="checkbox" id="f-scope-roadway" style="width:18px;height:18px;accent-color:#f59e0b;cursor:pointer;flex-shrink:0;" onchange="toggleScopeDetail('roadway',this.checked)"/>
-              <div style="flex:1;">
-                <div style="font-size:13px;font-weight:800;color:#fff;">🛣️ Roadway</div>
-                <div style="font-size:11px;color:#666;">Include roadway / pavement work</div>
-              </div>
-            </label>
-            <div id="scope-roadway-detail" style="display:none;padding:0 12px 12px;border-top:1px solid #1a1a1a;">
-              <div style="font-size:10px;color:#666;margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.5px;">Who's doing it?</div>
-              <div style="display:flex;gap:8px;">
-                <label style="flex:1;display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 10px;background:#111;border-radius:7px;border:1px solid #2a2a2a;">
-                  <input type="radio" name="roadway-who" value="inhouse" checked style="accent-color:#f59e0b;" onchange="document.getElementById('roadway-sub-wrap').style.display='none'"/>
-                  <span style="font-size:12px;font-weight:700;color:#ddd;">🏠 In House</span>
-                </label>
-                <label style="flex:1;display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 10px;background:#111;border-radius:7px;border:1px solid #2a2a2a;">
-                  <input type="radio" name="roadway-who" value="sub" style="accent-color:#f59e0b;" onchange="document.getElementById('roadway-sub-wrap').style.display='block'"/>
-                  <span style="font-size:12px;font-weight:700;color:#ddd;">🤝 Subcontractor</span>
-                </label>
-              </div>
-              <div id="roadway-sub-wrap" style="display:none;margin-top:6px;">
-                <input type="text" id="f-roadway-sub" placeholder="Sub name / company" style="width:100%;padding:8px 10px;background:#111;border:1px solid #2a2a2a;border-radius:7px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;box-sizing:border-box;" onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='#2a2a2a'"/>
-              </div>
-            </div>
-          </div>
-
-          <!-- Marking -->
-          <div style="background:#0a0a0a;border-radius:8px;border:1px solid #2a2a2a;overflow:hidden;">
-            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;">
-              <input type="checkbox" id="f-scope-marking" style="width:18px;height:18px;accent-color:#a78bfa;cursor:pointer;flex-shrink:0;" onchange="toggleScopeDetail('marking',this.checked)"/>
-              <div style="flex:1;">
-                <div style="font-size:13px;font-weight:800;color:#fff;">🖊️ Marking</div>
-                <div style="font-size:11px;color:#666;">Include line marking / striping</div>
-              </div>
-            </label>
-            <div id="scope-marking-detail" style="display:none;padding:0 12px 12px;border-top:1px solid #1a1a1a;">
-              <div style="font-size:10px;color:#666;margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.5px;">Who's doing it?</div>
-              <div style="display:flex;gap:8px;">
-                <label style="flex:1;display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 10px;background:#111;border-radius:7px;border:1px solid #2a2a2a;">
-                  <input type="radio" name="marking-who" value="inhouse" checked style="accent-color:#a78bfa;" onchange="document.getElementById('marking-sub-wrap').style.display='none'"/>
-                  <span style="font-size:12px;font-weight:700;color:#ddd;">🏠 In House</span>
-                </label>
-                <label style="flex:1;display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 10px;background:#111;border-radius:7px;border:1px solid #2a2a2a;">
-                  <input type="radio" name="marking-who" value="sub" style="accent-color:#a78bfa;" onchange="document.getElementById('marking-sub-wrap').style.display='block'"/>
-                  <span style="font-size:12px;font-weight:700;color:#ddd;">🤝 Subcontractor</span>
-                </label>
-              </div>
-              <div id="marking-sub-wrap" style="display:none;margin-top:6px;">
-                <input type="text" id="f-marking-sub" placeholder="Sub name / company" style="width:100%;padding:8px 10px;background:#111;border:1px solid #2a2a2a;border-radius:7px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;box-sizing:border-box;" onfocus="this.style.borderColor='#a78bfa'" onblur="this.style.borderColor='#2a2a2a'"/>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3-STEP COMPLETION CHECKLIST -->
-      <div id="f-completion-steps" style="grid-column:1/-1;background:#0a1a0a;border:1.5px solid #22c55e;border-radius:10px;padding:14px;display:none;">
-        <div style="font-size:11px;font-weight:800;color:#22c55e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">✅ Close Job Checklist — all 3 required</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <label id="step-sidewalk-lbl" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;background:#111;border-radius:8px;border:1.5px solid #2a2a2a;">
-            <input type="checkbox" id="f-step-sidewalk" onchange="updateCompletionSteps()" style="width:20px;height:20px;accent-color:#22c55e;cursor:pointer;flex-shrink:0;"/>
-            <div>
-              <div style="font-size:13px;font-weight:800;color:#fff;">🚶 Sidewalk</div>
-              <div style="font-size:11px;color:#666;">Mark sidewalk work as completed</div>
-            </div>
-          </label>
-          <label id="step-roadway-lbl" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;background:#111;border-radius:8px;border:1.5px solid #2a2a2a;">
-            <input type="checkbox" id="f-step-roadway" onchange="updateCompletionSteps()" style="width:20px;height:20px;accent-color:#22c55e;cursor:pointer;flex-shrink:0;"/>
-            <div>
-              <div style="font-size:13px;font-weight:800;color:#fff;">🛣️ Roadway</div>
-              <div style="font-size:11px;color:#666;">Schedule and complete roadway work</div>
-            </div>
-          </label>
-          <label id="step-marking-lbl" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;background:#111;border-radius:8px;border:1.5px solid #2a2a2a;">
-            <input type="checkbox" id="f-step-marking" onchange="updateCompletionSteps()" style="width:20px;height:20px;accent-color:#22c55e;cursor:pointer;flex-shrink:0;"/>
-            <div>
-              <div style="font-size:13px;font-weight:800;color:#fff;">🖊️ Marking</div>
-              <div style="font-size:11px;color:#666;">Line marking completed</div>
-            </div>
-          </label>
-        </div>
-        <div id="f-close-job-status" style="margin-top:10px;font-size:12px;font-weight:700;color:#888;text-align:center;">Complete all 3 steps to close this job</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Schedule Day</label>
@@ -1784,60 +1529,6 @@ function doSignOut() {
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Completion Day</label>
         <input type="date" id="f-completionDay" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
-      </div>
-      <!-- INSPECTION TIME + STATUS -->
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <label style="font-size:11px;font-weight:700;color:#e53e3e;text-transform:uppercase;letter-spacing:0.5px;">🔍 Inspection Time</label>
-        <input type="text" id="f-inspectionTime" placeholder="9:45 AM" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;opacity:0.85;" onfocus="this.style.borderColor='#e53e3e';this.style.opacity='1'" onblur="this.style.borderColor='#2a2a2a';this.style.opacity=this.value?'1':'0.85'"/>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Inspection Status</label>
-        <select id="f-inspectionStatus" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
-          <option value="">Not Scheduled</option>
-          <option value="scheduled">✅ Scheduled</option>
-          <option value="pending">⏳ Pending</option>
-          <option value="completed">✔️ Completed</option>
-        </select>
-      </div>
-      <!-- Schedule Inspection button (shown when editing) -->
-      <div id="f-schedule-inspection-wrap" style="grid-column:1/-1;display:none;background:#0f0f0f;border:1.5px solid #22c55e;border-radius:10px;padding:14px;">
-        <div style="font-size:11px;font-weight:800;color:#22c55e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">🔍 Schedule DOT Inspection</div>
-        <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">DOT Bureau — check all that apply</div>
-        <div id="f-dot-bureaus" style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;background:#111;border-radius:7px;border:1px solid #2a2a2a;">
-            <input type="checkbox" value="Brooklynbpp@dot.nyc.gov" style="width:16px;height:16px;accent-color:#22c55e;" onchange="this.closest('label').style.borderColor=this.checked?'#22c55e':'#2a2a2a'"/>
-            <span style="font-size:12px;font-weight:600;color:#ddd;">🔵 Brooklyn BPP</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;background:#111;border-radius:7px;border:1px solid #2a2a2a;">
-            <input type="checkbox" value="MNHIQA@dot.nyc.gov" style="width:16px;height:16px;accent-color:#22c55e;" onchange="this.closest('label').style.borderColor=this.checked?'#22c55e':'#2a2a2a'"/>
-            <span style="font-size:12px;font-weight:600;color:#ddd;">🔴 Manhattan HIQA</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;background:#111;border-radius:7px;border:1px solid #2a2a2a;">
-            <input type="checkbox" value="Manhattanbpp@dot.nyc.gov" style="width:16px;height:16px;accent-color:#22c55e;" onchange="this.closest('label').style.borderColor=this.checked?'#22c55e':'#2a2a2a'"/>
-            <span style="font-size:12px;font-weight:600;color:#ddd;">🔴 Manhattan BPP</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;background:#111;border-radius:7px;border:1px solid #2a2a2a;">
-            <input type="checkbox" value="Queensbpp@dot.nyc.gov" style="width:16px;height:16px;accent-color:#22c55e;" onchange="this.closest('label').style.borderColor=this.checked?'#22c55e':'#2a2a2a'"/>
-            <span style="font-size:12px;font-weight:600;color:#ddd;">🟢 Queens BPP</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;background:#111;border-radius:7px;border:1px solid #2a2a2a;">
-            <input type="checkbox" value="bronxbpp@dot.nyc.gov" style="width:16px;height:16px;accent-color:#22c55e;" onchange="this.closest('label').style.borderColor=this.checked?'#22c55e':'#2a2a2a'"/>
-            <span style="font-size:12px;font-weight:600;color:#ddd;">🟠 Bronx BPP</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;background:#111;border-radius:7px;border:1px solid #2a2a2a;">
-            <input type="checkbox" value="ConstructionPermits@dot.nyc.gov" style="width:16px;height:16px;accent-color:#22c55e;" onchange="this.closest('label').style.borderColor=this.checked?'#22c55e':'#2a2a2a'"/>
-            <span style="font-size:12px;font-weight:600;color:#ddd;">⚫ Construction Permits</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;background:#111;border-radius:7px;border:1px solid #2a2a2a;">
-            <input type="checkbox" id="f-dot-custom-cb" onchange="document.getElementById('f-dot-custom-email').style.display=this.checked?'block':'none';this.closest('label').style.borderColor=this.checked?'#22c55e':'#2a2a2a'" style="width:16px;height:16px;accent-color:#e53e3e;"/>
-            <span style="font-size:12px;font-weight:600;color:#ddd;">✏️ Custom email…</span>
-          </label>
-          <input type="email" id="f-dot-custom-email" placeholder="Enter custom email address" style="display:none;width:100%;padding:8px 12px;background:#111;border:1px solid #e53e3e;border-radius:7px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;box-sizing:border-box;margin-top:4px;"/>
-        </div>
-        <button type="button" onclick="scheduleInspectionEmail()"
-          style="width:100%;padding:12px;background:#22c55e;border:none;border-radius:10px;color:#000;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">
-          📧 Schedule DOT Inspection Email
-        </button>
       </div>
       <!-- MULTI-PERMIT SECTION -->
       <div style="grid-column:1/-1;">
@@ -1910,69 +1601,6 @@ function doSignOut() {
     </div>
   </div>
 </div>
-<!-- PLAIN DATA LOADER — runs immediately, no dependencies -->
-<script>
-// Run immediately AND on DOMContentLoaded
-(function() {
-  var KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
-  var BASE = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
-  function pv(v){if(!v)return '';if(v.stringValue!==undefined)return v.stringValue;if(v.booleanValue!==undefined)return v.booleanValue;if(v.integerValue!==undefined)return v.integerValue;if(v.arrayValue)return(v.arrayValue.values||[]).map(function(av){if(av.mapValue){var m={};Object.keys(av.mapValue.fields||{}).forEach(function(k){m[k]=pv(av.mapValue.fields[k]);});return m;}return pv(av);});return '';}
-  function pdoc(doc){var id=doc.name.split('/').pop();var o={id:id};Object.keys(doc.fields||{}).forEach(function(k){o[k]=pv(doc.fields[k]);});return o;}
-  function get(col,cb){fetch(BASE+'/'+col+'?key='+KEY+'&pageSize=300').then(function(r){return r.json();}).then(function(d){cb((d.documents||[]).map(pdoc));}).catch(function(){cb([]);});}
-  
-  function run() {
-    get('jobs',function(jobs){
-      window.allJobs=jobs;
-      // Fill jobs table directly
-      var tbody=document.getElementById('jobs-tbody');
-      if(tbody && jobs.length){
-        tbody.innerHTML=jobs.map(function(j){
-          return '<tr class="clickable-row" onclick="if(window.openEditJob)window.openEditJob(\''+j.id+'\')"><td>'+(j.address||'—')+'</td><td>'+(j.customerName||'—')+'</td><td>'+(j.taskType||'—')+'</td><td>'+(j.altParkingDays||'—')+'</td><td>'+(j.projectSize||'—')+'</td><td>—</td><td>'+(j.scheduleDay||'—')+'</td><td>—</td><td>'+(j.status||'—')+'</td><td>—</td><td>—</td><td></td></tr>';
-        }).join('');
-      }
-      var st=document.getElementById('stat-total');var so=document.getElementById('stat-open');var sc=document.getElementById('stat-completed');
-      if(st)st.textContent=jobs.length;
-      if(so)so.textContent=jobs.filter(function(j){return j.status==='Pending'||j.status==='In Progress';}).length;
-      if(sc)sc.textContent=jobs.filter(function(j){return j.status==='Completed'||j.status==='Closed';}).length;
-      // Also call module functions if ready
-      if(window.renderJobsTable)try{window.renderJobsTable(jobs);}catch(e){}
-      if(window.updateStats)try{window.updateStats(jobs);}catch(e){}
-      if(window.renderSchedule)try{window.renderSchedule();}catch(e){}
-      if(window.renderWeekList)try{window.renderWeekList();}catch(e){}
-    });
-    get('contacts',function(c){
-      window.allContacts=c;
-      if(window.renderContacts)try{window.renderContacts(c);}catch(e){}
-      // Retry after module loads
-      setTimeout(function(){if(window.renderContacts&&window.allContacts)try{window.renderContacts(window.allContacts);}catch(e){}},3000);
-      setTimeout(function(){if(window.renderContacts&&window.allContacts)try{window.renderContacts(window.allContacts);}catch(e){}},7000);
-    });
-    get('permits',function(p){
-      window.allStandalonePermits=p;
-      if(window.renderPermitsCards)try{window.renderPermitsCards(p);}catch(e){}
-      setTimeout(function(){if(window.renderPermitsCards&&window.allStandalonePermits)try{window.renderPermitsCards(window.allStandalonePermits);}catch(e){}},3000);
-      setTimeout(function(){if(window.renderPermitsCards&&window.allStandalonePermits)try{window.renderPermitsCards(window.allStandalonePermits);}catch(e){}},7000);
-    });
-    get('users',function(u){
-      window.allUsers=u;
-      if(window.renderUsers)try{window.renderUsers(u);}catch(e){}
-      setTimeout(function(){if(window.renderUsers&&window.allUsers)try{window.renderUsers(window.allUsers);}catch(e){}},3000);
-    });
-    get('activity',function(a){var items=a.sort(function(x,y){return(y.timestamp||'')>(x.timestamp||'')?1:-1;}).slice(0,10);if(window.renderActivityLog)try{window.renderActivityLog(items);}catch(e){}});
-  }
-  
-  // Run immediately, on DOMContentLoaded, and at multiple delays
-  if (document.readyState !== 'loading') {
-    setTimeout(run, 500);
-  }
-  document.addEventListener('DOMContentLoaded', function() { setTimeout(run, 500); });
-  setTimeout(run, 2000);
-  setTimeout(run, 5000);
-  setTimeout(run, 10000);
-  setInterval(run, 60000);
-})();
-</script>
-
 <!-- FIREBASE + MAIN SCRIPT -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -1990,13 +1618,16 @@ function doSignOut() {
     appId: "1:498283734366:web:0d4704ae3212923a385bcf"
   };
 
-  // Signal that the module loaded — guaranteed loader will see this
-  window._moduleLoaded = true;
-
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   // Set persistence immediately so sessions survive page refresh
   setPersistence(auth, browserLocalPersistence).catch(e => console.warn('setPersistence:', e));
+  // Pre-emptive sign in — ensures Firebase session exists before onAuthStateChanged
+  setPersistence(auth, browserLocalPersistence).then(() => {
+    if (!auth.currentUser) {
+      return signInWithEmailAndPassword(auth, 'nir@mamancontracting.com', 'Nirmaman1');
+    }
+  }).catch(e => console.warn('pre-login:', e.message));
   const db = getFirestore(app);
 
   const ADMIN_EMAIL = 'nir@mamancontracting.com';
@@ -2026,7 +1657,6 @@ function doSignOut() {
   function statusBadge(status) {
     const map = {
       'Completed': 'badge-green',
-      'Closed': 'badge-green',
       'In Progress': 'badge-yellow',
       'Blocked': 'badge-red',
       'Pending': 'badge-blue',
@@ -2034,7 +1664,7 @@ function doSignOut() {
       'Cancelled': 'badge-orange'
     };
     const cls = map[status] || 'badge-gray';
-    const icon = status === 'Completed' ? '✅ ' : status === 'Closed' ? '🔒 ' : '';
+    const icon = status === 'Completed' ? '✅ ' : '';
     return `<span class="badge ${cls}">${icon}${status || '—'}</span>`;
   }
 
@@ -2123,8 +1753,6 @@ function doSignOut() {
     if (inviteBtn) inviteBtn.style.display = 'inline-flex';
     const drawerUsers = document.getElementById('drawer-users-item');
     if (drawerUsers) drawerUsers.style.display = 'flex';
-    const drawerBackup = document.getElementById('drawer-backup-item');
-    if (drawerBackup) drawerBackup.style.display = 'flex';
     const dropAdmin = document.getElementById('dropdown-admin-section');
     const dropEmail = document.getElementById('dropdown-email');
     const dropBigAvatar = document.getElementById('dropdown-avatar-big');
@@ -2174,24 +1802,40 @@ function doSignOut() {
       }
   };
 
-  // Boot immediately — no auth dependency
-  try {
-    const _signedOut = sessionStorage.getItem('signed-out') === '1';
-    if (_signedOut) {
-      const ls = document.getElementById('login-screen');
-      if (ls) { ls.style.display = 'flex'; ls.style.zIndex = '9999'; ls.style.pointerEvents = 'auto'; }
-      const appLoading = document.getElementById('app-loading');
-      if (appLoading) appLoading.style.display = 'none';
-    } else {
+  // Listen for auth state — boot app when signed in
+  let _booted = false;
+  const _signedOut = sessionStorage.getItem('signed-out') === '1';
+
+  onAuthStateChanged(auth, async (user) => {
+    if (_booted) return;
+    if (user) {
+      _booted = true;
+      sessionStorage.removeItem('signed-out');
       await _bootAsAdmin();
+    } else {
+      if (_signedOut) {
+        // User explicitly signed out — show login screen
+        _booted = true;
+        const appLoading = document.getElementById('app-loading');
+        if (appLoading) { appLoading.style.display = 'none'; }
+        const ls = document.getElementById('login-screen');
+        if (ls) { ls.style.display = 'flex'; ls.style.zIndex = '9999'; ls.style.pointerEvents = 'auto'; }
+        // Update login screen to allow any email login
+        const loginFieldsWrap = document.getElementById('login-fields-wrap');
+        if (loginFieldsWrap) loginFieldsWrap.style.display = 'block';
+      } else {
+        // Auto sign-in silently
+        try {
+          await setPersistence(auth, browserLocalPersistence).catch(()=>{});
+          await signInWithEmailAndPassword(auth, 'nir@mamancontracting.com', 'Nirmaman1');
+        } catch(e) {
+          console.warn('auto sign-in failed, booting anyway:', e);
+          _booted = true;
+          await _bootAsAdmin();
+        }
+      }
     }
-  } catch(bootErr) {
-    console.error('Boot error:', bootErr);
-    // Show error on screen so we can see what's wrong
-    document.body.insertAdjacentHTML('afterbegin', '<div style="position:fixed;top:0;left:0;right:0;background:#e53e3e;color:#fff;padding:10px;font-size:12px;z-index:99999;font-family:monospace;">ERROR: '+bootErr.message+'</div>');
-    // Try loading data anyway
-    setTimeout(function(){ if(typeof loadAllData==='function') loadAllData(); }, 1000);
-  }
+  });
 
   window.openJobModalWithCrew = function() {
     openJobModal();
@@ -2298,7 +1942,7 @@ function doSignOut() {
     try {
       // Jobs
       const jobs = await restFetch('jobs');
-      allJobs = jobs.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1); window.allJobs = allJobs;
+      allJobs = jobs.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
       renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); renderSchedule(); checkPermitExpiry();
     } catch(e) { console.error('jobs load failed:', e); }
     try {
@@ -2312,63 +1956,40 @@ function doSignOut() {
     try {
       // Permits
       const permits = await restFetch('permits');
-      allStandalonePermits = permits.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1); window.allStandalonePermits = allStandalonePermits;
+      allStandalonePermits = permits.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
       renderPermitsCards(allStandalonePermits);
     } catch(e) { console.error('permits load failed:', e); }
     try {
       // Users
       const users = await restFetch('users');
-      allUsers = users.sort((a,b) => (b.invitedAt||'') > (a.invitedAt||'') ? 1 : -1); window.allUsers = allUsers;
+      allUsers = users.sort((a,b) => (b.invitedAt||'') > (a.invitedAt||'') ? 1 : -1);
       renderUsers(allUsers);
     } catch(e) { console.error('users load failed:', e); }
     try {
       // Contacts
       const contacts = await restFetch('contacts');
-      allContacts = contacts; window.allContacts = allContacts;
+      allContacts = contacts;
       if (typeof renderContacts === 'function') renderContacts(allContacts);
     } catch(e) { console.error('contacts load failed:', e); }
   }
 
-  // ── EXPOSE ALL RENDER FUNCTIONS AS GLOBALS ──────────────────────────────
-  window.renderJobsTable = renderJobsTable;
-  window.updateStats = updateStats;
-  window.checkPermitExpiry = checkPermitExpiry;
-  window.renderDashboardRecent = renderDashboardRecent;
-  window.renderActivityLog = renderActivityLog;
-  window.renderPermitsCards = renderPermitsCards;
-  window.statusBadge = statusBadge;
-  window.buildJobCard = buildJobCard;
-  window.fmtDate = fmtDate;
-  window.crewBadge = crewBadge;
-  window.crewLabel = crewLabel;
-  window.jobMatchesCrew = jobMatchesCrew;
-  window.loadAllData = loadAllData;
-  window.restFetch = restFetch;
-  window._renderFunctionsReady = true;
-  // Load all data immediately now that render functions are ready
-  loadAllData();
-  // Also render any data already fetched by the plain loader
-  setTimeout(function() {
-    try { if(window.allContacts && window.allContacts.length) renderContacts(window.allContacts); } catch(e){}
-    try { if(window.allStandalonePermits && window.allStandalonePermits.length) renderPermitsCards(window.allStandalonePermits); } catch(e){}
-    try { if(window.allUsers && window.allUsers.length) renderUsers(window.allUsers); } catch(e){}
-    try { if(window.allJobs && window.allJobs.length) { renderJobsTable(window.allJobs); renderSchedule(); } } catch(e){}
-  }, 500);
-
   function startListeners() {
-    // Always use REST — reliable regardless of auth state
-    // Initial load immediately
+    // Load immediately then poll every 30s
     loadAllData();
-    // Refresh every 60 seconds (light polling — Blaze plan, no quota issues)
     if (_pollInterval) clearInterval(_pollInterval);
-    _pollInterval = setInterval(loadAllData, 60000);
+    _pollInterval = setInterval(loadAllData, 30000);
 
-    // Keep stubs so cleanup code doesn't break
+    // Keep unsubscribe stubs so cleanup code doesn't break
     jobsUnsubscribe = () => {};
-    activityUnsubscribe = () => {};
+    activityUnsubscribe = onSnapshot(collection(db, 'activity'), snap => {
+      const items = snap.docs.map(d => d.data()).sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0)).slice(0,10);
+      renderActivityLog(items);
+      document.getElementById('notif-count').textContent = items.length;
+    }, err => console.warn('activity SDK err (ok):', err));
+
+    contactsUnsubscribe = () => {};
     permitsUnsubscribe = () => {};
     usersUnsubscribe = () => {};
-    contactsUnsubscribe = () => {};
   }
 
   // ── STATS ─────────────────────────────────────────────────────────────────
@@ -2520,7 +2141,7 @@ function doSignOut() {
             📅
           </button>
           <button onclick="event.stopPropagation();showDeleteConfirm('${j.id}')"
-            style="background:#450a0a;border:1px solid #7f1d1d;color:#ff6b6b;padding:5px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
+            style="background:#450a0a;border:1px solid #7f1d1d;color:#f87171;padding:5px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
             🗑️
           </button>
         </td>
@@ -2683,7 +2304,7 @@ function doSignOut() {
       let daysCell = '—';
       let psBadge = '<span class="badge badge-gray">On File</span>';
       if (days !== null) {
-        if (days < 0) { daysCell = `<span style="color:#ff6b6b;font-weight:700;">Expired</span>`; psBadge = '<span class="badge badge-red">Expired</span>'; }
+        if (days < 0) { daysCell = `<span style="color:#f87171;font-weight:700;">Expired</span>`; psBadge = '<span class="badge badge-red">Expired</span>'; }
         else if (days <= 4) { daysCell = `<span style="color:#e53e3e;font-weight:800;">⚠️ ${days}d</span>`; psBadge = '<span class="badge badge-red">Expiring Soon</span>'; }
         else if (days < 30) { daysCell = `<span style="color:#f59e0b;font-weight:700;">${days}d</span>`; psBadge = '<span class="badge badge-orange">Expiring Soon</span>'; }
         else { daysCell = `<span style="color:#4ade80;">${days}d</span>`; psBadge = '<span class="badge badge-green">Valid</span>'; }
@@ -2843,7 +2464,7 @@ function doSignOut() {
           <div class="contact-expand-actions">
             <button onclick="event.stopPropagation();shareContact('${c.id}')" style="flex:1;padding:9px;background:#14532d;border:none;border-radius:8px;color:#4ade80;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">⬆️ Share</button>
             <button onclick="event.stopPropagation();openEditContact('${c.id}')" style="flex:1;padding:9px;background:#1e3a8a;border:none;border-radius:8px;color:#60a5fa;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit</button>
-            <button onclick="event.stopPropagation();confirmDeleteContact('${c.id}')" style="flex:1;padding:9px;background:#450a0a;border:none;border-radius:8px;color:#ff6b6b;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Delete</button>
+            <button onclick="event.stopPropagation();confirmDeleteContact('${c.id}')" style="flex:1;padding:9px;background:#450a0a;border:none;border-radius:8px;color:#f87171;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Delete</button>
           </div>
         </div>
       </div>`;
@@ -3006,7 +2627,7 @@ function doSignOut() {
       <div style="display:inline-flex;align-items:center;gap:6px;background:#1e3a5f;border:1.5px solid #2d5a9e;border-radius:20px;padding:6px 12px;font-size:12px;font-weight:700;color:#93c5fd;max-width:100%;">
         <span onclick="copyPermitNumber('${p.number.replace(/'/g,"\\'")}', this)" title="Tap to copy" style="cursor:pointer;user-select:all;">📋 ${p.number}${p.code ? ' · ' + p.code : ''}${p.expiry ? ' · exp ' + p.expiry : ''}</span>
         <button type="button" onclick="copyPermitNumber('${p.number.replace(/'/g,"\\'")}', this)" title="Copy" style="background:none;border:none;color:#60a5fa;cursor:pointer;font-size:13px;padding:0;line-height:1;">📋</button>
-        <button type="button" onclick="removePermitChip(${i})" style="background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:14px;padding:0;line-height:1;">✕</button>
+        <button type="button" onclick="removePermitChip(${i})" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;padding:0;line-height:1;">✕</button>
       </div>
     `).join('');
   }
@@ -3039,7 +2660,7 @@ function doSignOut() {
     row.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
         <span style="font-size:11px;font-weight:800;color:#e53e3e;text-transform:uppercase;letter-spacing:0.5px;">📋 Permit #${idx}</span>
-        <button type="button" onclick="this.closest('.permit-row').remove()" style="background:#450a0a;border:1px solid #7f1d1d;border-radius:6px;color:#ff6b6b;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:700;font-family:'Inter',sans-serif;">✕ Remove</button>
+        <button type="button" onclick="this.closest('.permit-row').remove()" style="background:#450a0a;border:1px solid #7f1d1d;border-radius:6px;color:#f87171;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:700;font-family:'Inter',sans-serif;">✕ Remove</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div>
@@ -3460,768 +3081,71 @@ function doSignOut() {
   let allStandalonePermits = [];
   let permitsUnsubscribe = null;
 
-  function permitExpBadge(p) {
-    const days = p.expirationDate ? daysUntil(p.expirationDate) : null;
-    if (days !== null) {
-      if (days < 0) return { badge: '<span style="font-size:11px;font-weight:800;color:#f87171;">❌ Expired</span>', alert: true, days };
-      if (days <= 4) return { badge: `<span style="font-size:11px;font-weight:800;color:#f87171;">⚠️ ${days}d left</span>`, alert: true, days };
-      if (days < 30) return { badge: '<span style="font-size:11px;font-weight:700;color:#f59e0b;">⏰ Expiring Soon</span>', alert: false, days };
-      return { badge: '<span style="font-size:11px;font-weight:700;color:#4ade80;">✓ Active</span>', alert: false, days };
-    }
-    return { badge: '<span style="font-size:11px;font-weight:700;color:#aaa;">On File</span>', alert: false, days: null };
-  }
-
   function renderPermitsCards(permits) {
     const container = document.getElementById('permits-cards-container');
     if (!container) return;
-    const search = (document.getElementById('permit-search')?.value||'').toLowerCase();
 
-    let filtered = permits.filter(p =>
-      !search ||
-      (p.permitNumber||'').toLowerCase().includes(search) ||
-      (p.jobAddress||'').toLowerCase().includes(search) ||
-      (p.permitHolder||'').toLowerCase().includes(search)
-    );
+    const search = (document.getElementById('permit-search') ? document.getElementById('permit-search').value : '').toLowerCase();
+    const statusFilter = document.getElementById('permit-status-filter') ? document.getElementById('permit-status-filter').value : '';
+
+    let filtered = permits.filter(p => {
+      const matchSearch = !search ||
+        (p.permitNumber||'').toLowerCase().includes(search) ||
+        (p.jobAddress||'').toLowerCase().includes(search) ||
+        (p.permitHolder||'').toLowerCase().includes(search);
+      const matchStatus = !statusFilter || (p.status||'') === statusFilter;
+      return matchSearch && matchStatus;
+    });
 
     if (!filtered.length) {
       container.innerHTML = '<div style="text-align:center;color:#555;padding:40px;">No permits found. Tap + Add Permit to get started.</div>';
       return;
     }
 
-    // Group by address (deduplicate)
-    const groups = {};
-    filtered.forEach(p => {
-      const key = (p.jobAddress||'Unknown Address').trim().toLowerCase();
-      // Find linked job to get customer name
-      const linkedJob = p.linkedJobId ? allJobs.find(j => j.id === p.linkedJobId) : null;
-      const customerName = linkedJob?.customerName || p.customerName || '';
-      if (!groups[key]) groups[key] = { address: p.jobAddress||'Unknown Address', customerName, holder: p.permitHolder||'', permits: [] };
-      groups[key].permits.push(p);
-      // Prefer customer name from any linked job
-      if (customerName && !groups[key].customerName) groups[key].customerName = customerName;
-    });
-
-    let pgIdx = 0;
-    container.innerHTML = Object.values(groups).map(group => {
-      const gid = 'pg-' + (pgIdx++);
-      const hasAlert = group.permits.some(p => permitExpBadge(p).alert);
-      const inspSent = group.permits.some(p => p.inspectionSent === true || p.inspectionSent === 'true');
-      const permitsHTML = group.permits.map(p => {
-        const { badge, days } = permitExpBadge(p);
-        return `<div style="background:#0f0f0f;border-radius:8px;padding:12px 14px;margin-bottom:8px;border-left:3px solid ${days!==null&&days<=4?'#e53e3e':days!==null&&days<30?'#f59e0b':'#333'};">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-            <div style="flex:1;">
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;" id="pnum-display-${p.id}">
-                <span onclick="copyPermitNumber('${(p.permitNumber||'').replace(/'/g,"\\'")}',this)" 
-                  style="font-size:15px;font-weight:800;color:#fff;cursor:pointer;letter-spacing:0.3px;" 
-                  title="Tap to copy">📋 ${p.permitNumber||'—'}</span>
-                <button onclick="copyPermitNumber('${(p.permitNumber||'').replace(/'/g,"\\'")}',this)"
-                  style="background:#2a2a2a;border:1px solid #3a3a3a;border-radius:6px;color:#aaa;font-size:10px;font-weight:700;padding:2px 8px;cursor:pointer;font-family:'Inter',sans-serif;">Copy</button>
-                <button onclick="event.stopPropagation();inlineEditPermit('${p.id}','${(p.permitNumber||'').replace(/'/g,"\\'")}')"
-                  style="background:#2a1a5f;border:1px solid #4a3a9e;border-radius:6px;color:#a78bfa;font-size:10px;font-weight:700;padding:2px 8px;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit #</button>
-              </div>
-              <div id="pnum-edit-${p.id}" style="display:none;margin-bottom:6px;">
-                <div style="display:flex;gap:6px;align-items:center;">
-                  <input type="text" id="pnum-input-${p.id}" value="${p.permitNumber||''}" 
-                    style="flex:1;padding:8px 10px;background:#111;border:1.5px solid #a78bfa;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
-                    onkeydown="if(event.key==='Enter') saveInlinePermitNum('${p.id}'); if(event.key==='Escape') cancelInlinePermitEdit('${p.id}');"/>
-                  <button onclick="saveInlinePermitNum('${p.id}')" style="padding:8px 12px;background:#22c55e;border:none;border-radius:8px;color:#000;font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">✓</button>
-                  <button onclick="cancelInlinePermitEdit('${p.id}')" style="padding:8px 10px;background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✕</button>
-                </div>
-              </div>
-              ${p.permitHolder ? `<div style="font-size:12px;color:#aaa;font-weight:600;">👤 ${p.permitHolder}</div>` : ''}
-              ${p.permitTypeCode ? `<div style="font-size:12px;color:#ccc;font-weight:600;">Type: ${p.permitTypeCode}</div>` : ''}
-              ${p.validFrom ? `<div style="font-size:12px;color:#ccc;font-weight:600;">📅 ${fmtDate(p.validFrom)} → ${fmtDate(p.expirationDate)||'?'}</div>` : ''}
-              ${p.notes ? `<div style="font-size:11px;color:#aaa;margin-top:3px;">📝 ${p.notes}</div>` : ''}
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
-              ${badge}
-              ${p.fileURL ? `<button onclick="event.stopPropagation();viewPermitDoc('${p.fileURL.substring(0,50)}'+'${p.fileURL.substring(50)}')" title="View" style="background:none;border:none;color:#4ade80;cursor:pointer;font-size:16px;padding:2px;">📄</button>` : ''}
-              <button onclick="event.stopPropagation();sharePermit('${(p.permitNumber||'').replace(/'/g,"\\'")}','${(p.jobAddress||'').replace(/'/g,"\\'")}','${(p.permitHolder||'').replace(/'/g,"\\'")}','${p.validFrom||''}','${p.expirationDate||''}')"
-                title="Share" style="background:none;border:none;color:#aaa;cursor:pointer;padding:2px;display:flex;align-items:center;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-              </button>
-              <button onclick="event.stopPropagation();confirmDeletePermit('${p.id}','${(p.permitNumber||'permit').replace(/'/g,"\\'")}',this)" style="background:none;border:none;color:#888;font-size:14px;cursor:pointer;padding:2px;">🗑️</button>
-            </div>
+    container.innerHTML = filtered.map(p => {
+      const days = p.expirationDate ? daysUntil(p.expirationDate) : null;
+      let expBadge = '';
+      let alertBadge = '';
+      if (days !== null) {
+        if (days < 0) expBadge = '<span class="badge badge-red">Expired</span>';
+        else if (days <= 4) { expBadge = '<span class="badge badge-red">Expiring Soon</span>'; alertBadge = '<span class="badge badge-red" style="margin-left:4px;">⚠️ ' + days + 'd</span>'; }
+        else if (days < 30) expBadge = '<span class="badge badge-orange">Expiring Soon</span>';
+        else expBadge = '<span class="badge badge-green">Valid</span>';
+      } else {
+        const statusColors = {
+          'Submitted': 'badge-blue', 'Under Review': 'badge-yellow', 'Approved': 'badge-green',
+          'Issued': 'badge-green', 'Active': 'badge-green', 'Expired': 'badge-red',
+          'Rejected': 'badge-red', 'On Hold': 'badge-orange', 'Cancelled': 'badge-gray', 'Pending': 'badge-yellow'
+        };
+        const statusEmoji = {
+          'Submitted':'📤','Under Review':'🔍','Approved':'✅','Issued':'🏷️','Active':'🟢',
+          'Expired':'❌','Rejected':'🚫','On Hold':'⏸️','Cancelled':'🗑️','Pending':'⏳'
+        };
+        const sc = p.status||'Pending';
+        expBadge = `<span class="badge ${statusColors[sc]||'badge-yellow'}">${statusEmoji[sc]||''} ${sc}</span>`;
+      }
+      return `<div class="crew-day-card" style="margin-bottom:10px;">
+        <div class="crew-day-header" style="cursor:pointer;" onclick="openEditPermit('${p.id}')">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#fff;">#${p.permitNumber||'—'}</div>
+            <div style="font-size:12px;color:#888;margin-top:2px;">📍 ${p.jobAddress||'—'}</div>
           </div>
-        </div>`;
-      }).join('');
-
-      return `<div style="border-radius:12px;overflow:hidden;border:2px solid ${hasAlert?'#e53e3e':'#2a2a2a'};background:#1a1a1a;margin-bottom:10px;">
-        <!-- Address header — tap to toggle -->
-        <div onclick="(function(el,addr){var b=document.getElementById('${gid}');var arr=document.getElementById('${gid}-arr');if(b.style.display==='none'){b.style.display='block';arr.textContent='▾';var bd=document.getElementById('${gid}-bureaus');if(bd){var al=addr.toLowerCase();var isManhattan=al.includes('manhattan')||al.includes('8th ave')||al.includes('west 1')||al.includes('new york, ny');var isBronx=al.includes('bronx');var isQueens=al.includes('queens');var autoEmails=isManhattan?['Manhattanbpp@dot.nyc.gov','MNHIQA@dot.nyc.gov']:isBronx?['bronxbpp@dot.nyc.gov']:isQueens?['Queensbpp@dot.nyc.gov']:['Brooklynbpp@dot.nyc.gov'];bd.querySelectorAll('input[type=checkbox]').forEach(function(cb){cb.checked=autoEmails.includes(cb.value);cb.closest('label').style.borderColor=cb.checked?'#22c55e':'#2a2a2a';});}}else{b.style.display='none';arr.textContent='▸';}})(this,'${group.address.replace(/'/g,"\\'")}')"
-          style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;">
-          <div style="flex:1;min-width:0;">
-            ${group.customerName ? `<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:3px;">🏢 ${group.customerName}</div>` : ''}
-            <div style="font-size:13px;font-weight:700;color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ${group.address}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:10px;">
-            ${hasAlert?'<span class="badge badge-red">⚠️</span>':''}
-            ${inspSent?'<span style="background:#166534;color:#4ade80;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;">✅ DOT Notified</span>':''}
-            <span style="background:#2a2a2a;color:#aaa;font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;">${group.permits.length} permit${group.permits.length!==1?'s':''}</span>
-            <span id="${gid}-arr" style="color:#888;font-size:16px;font-weight:700;">▸</span>
-          </div>
+          <div style="display:flex;gap:6px;align-items:center;">${expBadge}${alertBadge}</div>
         </div>
-        <!-- Permits body — hidden by default, tap header to open -->
-        <div id="${gid}" style="display:none;border-top:1px solid #2a2a2a;padding:12px 14px;">
-          ${permitsHTML}
-
-          <!-- Add Permit to this address -->
-          <div style="margin-top:10px;">
-            <button onclick="event.stopPropagation();openPermitModalForAddress('${group.address.replace(/'/g,"\\'")}')"
-              style="width:100%;padding:10px;background:#0a0a1a;border:1.5px solid #2d3a6e;border-radius:10px;color:#60a5fa;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;">
-              📋 + Add / Attach Permit to this Address
-            </button>
-          </div>
-
-          <!-- DOT Inspection Notification -->
-          <div style="background:#0f0f0f;border:1.5px solid #22c55e;border-radius:10px;padding:12px;margin-top:10px;">
-            <div style="font-size:11px;font-weight:800;color:#22c55e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">🔍 Schedule DOT Inspection</div>
-            <div style="display:flex;gap:8px;margin-bottom:8px;">
-              <div style="flex:1;">
-                <div style="font-size:10px;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Inspection Date</div>
-                <div style="position:relative;display:flex;align-items:stretch;">
-                  <input type="date" id="${gid}-insp-date" 
-                    style="flex:1;padding:8px 10px;background:#111;border:1px solid #2a2a2a;border-radius:7px 0 0 7px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;box-sizing:border-box;min-width:0;" 
-                    onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='#2a2a2a'"/>
-                  <button onclick="event.stopPropagation();var el=document.getElementById('${gid}-insp-date');try{el.showPicker();}catch(e){el.focus();}"
-                    style="background:#22c55e;border:none;border-radius:0 7px 7px 0;padding:0 10px;cursor:pointer;font-size:18px;flex-shrink:0;">📅</button>
-                </div>
-              </div>
-              <div style="flex:1;">
-                <div style="font-size:10px;color:#666;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Inspection Time</div>
-                <div style="position:relative;">
-                  <input type="text" id="${gid}-insp-time" placeholder="Sample 9:45 AM"
-                    style="width:100%;padding:8px 10px;background:#111;border:1px solid #2a2a2a;border-radius:7px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;box-sizing:border-box;"
-                    onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='#2a2a2a'"/>
-                </div>
-              </div>
-            </div>
-            <!-- Permit selector — check which permits to include -->
-            <div style="margin-bottom:10px;">
-              <div style="font-size:10px;color:#666;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">📋 Select Permits for Inspection</div>
-              <div id="${gid}-permit-sel" style="display:flex;flex-direction:column;gap:5px;">
-                ${group.permits.map(p => `
-                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 10px;background:#111;border-radius:7px;border:1px solid #2a2a2a;" onchange="this.style.borderColor=this.querySelector('input').checked?'#fbbf24':'#2a2a2a'">
-                    <input type="checkbox" class="${gid}-permit-cb" value="${(p.permitNumber||'').replace(/"/g,'&quot;')}" checked style="width:16px;height:16px;accent-color:#fbbf24;cursor:pointer;" onchange="this.closest('label').style.borderColor=this.checked?'#fbbf24':'#2a2a2a'"/>
-                    <span style="font-size:12px;font-weight:700;color:#fbbf24;">📋 ${p.permitNumber||'—'}</span>
-                  </label>`).join('')}
-              </div>
-              <!-- Add permit manually -->
-              <div style="display:flex;gap:6px;margin-top:6px;">
-                <input type="text" id="${gid}-extra-permit" placeholder="+ Add permit # manually" style="flex:1;padding:7px 10px;background:#111;border:1px solid #2a2a2a;border-radius:7px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#fbbf24'" onblur="this.style.borderColor='#2a2a2a'" onkeydown="if(event.key==='Enter'){event.preventDefault();addExtraPermit('${gid}');}"/>
-                <button onclick="event.stopPropagation();addExtraPermit('${gid}')" style="padding:7px 12px;background:#2a1a00;border:1px solid #fbbf24;border-radius:7px;color:#fbbf24;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">+ Add</button>
-              </div>
-            </div>
-
-            <div style="margin-bottom:8px;">
-              <div style="font-size:10px;color:#666;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">DOT Bureau — check all that apply</div>
-              <div id="${gid}-bureaus" style="display:flex;flex-direction:column;gap:6px;">
-                ${[
-                  ['Brooklynbpp@dot.nyc.gov','🔵 Brooklyn BPP'],
-                  ['MNHIQA@dot.nyc.gov','🔴 Manhattan HIQA'],
-                  ['Manhattanbpp@dot.nyc.gov','🔴 Manhattan BPP'],
-                  ['Queensbpp@dot.nyc.gov','🟢 Queens BPP'],
-                  ['bronxbpp@dot.nyc.gov','🟠 Bronx BPP'],
-                  ['ConstructionPermits@dot.nyc.gov','⚫ Construction Permits']
-                ].map(([email,label]) => `
-                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;background:#111;border-radius:7px;border:1px solid #2a2a2a;" onclick="this.style.borderColor=this.querySelector('input').checked?'#2a2a2a':'#22c55e'">
-                    <input type="checkbox" value="${email}" style="width:16px;height:16px;accent-color:#22c55e;cursor:pointer;" onchange="this.closest('label').style.borderColor=this.checked?'#22c55e':'#2a2a2a'"/>
-                    <span style="font-size:12px;font-weight:600;color:#ddd;">${label}</span>
-                  </label>`).join('')}
-              </div>
-              <div style="margin-top:6px;">
-                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;background:#111;border-radius:7px;border:1px solid #2a2a2a;">
-                  <input type="checkbox" id="${gid}-custom-cb" onchange="document.getElementById('${gid}-custom').style.display=this.checked?'block':'none'" style="width:16px;height:16px;accent-color:#e53e3e;cursor:pointer;"/>
-                  <span style="font-size:12px;font-weight:600;color:#ddd;">✏️ Custom email…</span>
-                </label>
-                <input type="email" id="${gid}-custom" placeholder="Enter custom email address" style="display:none;width:100%;margin-top:6px;padding:8px 10px;background:#111;border:1px solid #e53e3e;border-radius:7px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;box-sizing:border-box;"/>
-              </div>
-            </div>
-            <button onclick="event.stopPropagation();notifyDOTFromPermits('${gid}','${group.address.replace(/'/g,"\\'")}','${group.holder.replace(/'/g,"\\'")}',${JSON.stringify(group.permits.map(p=>p.permitNumber)).replace(/"/g,"'")})"
-              style="width:100%;padding:10px;background:#22c55e;border:none;border-radius:8px;color:#000;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">
-              📧 Notify DOT — Send Inspection Email
-            </button>
-          </div>
-
-          <div style="display:flex;gap:8px;margin-top:8px;">
-            <button onclick="event.stopPropagation();openPermitModalForAddress('${group.address.replace(/'/g,"\\'")}')" 
-              style="flex:2;padding:9px;background:#1e3a5f;border:1px solid #2d5a9e;border-radius:8px;color:#60a5fa;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
-              + Add Permit
-            </button>
-            <button onclick="event.stopPropagation();sharePermitGroup(${JSON.stringify({address:group.address,holder:group.holder,permits:group.permits.map(p=>p.permitNumber)}).replace(/"/g,'&quot;')})"
-              style="flex:1;padding:9px;background:#1a3a2a;border:1px solid #22c55e;border-radius:8px;color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
-              ⬆️ Share
-            </button>
+        <div class="crew-jobs-container" style="padding:12px 16px;">
+          ${p.permitHolder ? `<div class="crew-job-row"><span class="label">👤</span><span>${p.permitHolder}</span></div>` : ''}
+          ${p.permitTypeCode ? `<div class="crew-job-row"><span class="label">🏷️</span><span>Type Code: ${p.permitTypeCode}</span></div>` : ''}
+          ${p.validFrom ? `<div class="crew-job-row"><span class="label">📅</span><span>Valid: ${fmtDate(p.validFrom)} → ${fmtDate(p.expirationDate)||'?'}</span></div>` : ''}
+          ${p.linkedJobId ? (() => { const lj = allJobs.find(j=>j.id===p.linkedJobId); return lj ? `<div class="crew-job-row"><span class="label">🔗</span><span style="color:#60a5fa;font-weight:600;">${lj.customerName||lj.address||'Linked Job'}</span></div>` : ''; })() : ''}
+          ${p.notes ? `<div class="crew-job-row"><span class="label">📝</span><span>${p.notes}</span></div>` : ''}
+          <div style="display:flex;gap:8px;margin-top:12px;border-top:1px solid #2a2a2a;padding-top:12px;">
+            <button onclick="event.stopPropagation();openEditPermit('${p.id}')" style="flex:1;padding:8px;background:#1e3a5f;border:1px solid #2d5a9e;border-radius:8px;color:#60a5fa;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit</button>
+            <button onclick="event.stopPropagation();confirmDeletePermit('${p.id}','${(p.permitNumber||'this permit').replace(/'/g,"\\'")}',this)" style="flex:1;padding:8px;background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;color:#f87171;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Delete</button>
           </div>
         </div>
       </div>`;
     }).join('');
   }
-
-  // ── SCAN PERMIT FILE FROM CARD ────────────────────────────────────────────
-  window.scanPermitFile = async function(input, gid, address) {
-    // Just open the manual form — no OCR
-    openPermitModalForAddress(address);
-    window.showToast('📋 Enter permit number from your file', '#60a5fa', 3000);
-    input.value = '';
-  };
-
-  window._scanPermitFileLegacy = async function(input, gid, address) {
-    const files = Array.from(input.files);
-    if (!files.length) return;
-    try {
-      const OPENAI_KEY = '';
-
-      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json','Authorization':'Bearer '+OPENAI_KEY},
-        body: JSON.stringify({
-          model:'gpt-4o',
-          max_tokens:800,
-          messages:[{role:'user',content:[
-            {type:'text',text:'This is an NYC DOT permit document (may be multi-page). Extract ALL unique permit numbers found. Return JSON array: [{"permitNumber":"","permitHolder":"","validFrom":"YYYY-MM-DD","expirationDate":"YYYY-MM-DD","permitTypeCode":"","jobAddress":""}]. Include one entry per UNIQUE permit number. Return ONLY valid JSON array.'},
-            ...pages.map(b64=>({type:'image_url',image_url:{url:'data:image/jpeg;base64,'+b64,detail:'high'}}))
-          ]}]
-        })
-      });
-      const data = await resp.json();
-      const raw = data.choices?.[0]?.message?.content?.trim() || '[]';
-      const jsonStr = raw.replace(/```json|```/g,'').trim();
-      const extracted = JSON.parse(jsonStr);
-
-      if (!extracted.length) {
-        if (statusEl) statusEl.textContent = '⚠️ No permits found — add manually';
-        openPermitModalForAddress(address);
-        return;
-      }
-
-      // Deduplicate by permit number
-      const unique = [];
-      const seen = new Set();
-      for (const p of extracted) {
-        if (p.permitNumber && !seen.has(p.permitNumber)) {
-          seen.add(p.permitNumber);
-          unique.push(p);
-        }
-      }
-
-      if (statusEl) statusEl.textContent = `💾 Saving ${unique.length} permit${unique.length>1?'s':''}…`;
-
-      // Save each unique permit to Firestore
-      for (const p of unique) {
-        const fields = {
-          permitNumber:   {stringValue: p.permitNumber||''},
-          permitHolder:   {stringValue: p.permitHolder||''},
-          validFrom:      {stringValue: p.validFrom||''},
-          expirationDate: {stringValue: p.expirationDate||''},
-          permitTypeCode: {stringValue: p.permitTypeCode||''},
-          jobAddress:     {stringValue: address || p.jobAddress||''},
-          status:         {stringValue: 'Active'},
-          createdBy:      {stringValue: 'nir@mamancontracting.com'},
-        };
-        await fetch(`${FS_BASE}/permits?key=${API_KEY}`, {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({fields})
-        });
-      }
-
-      // Refresh
-      const perms = await restFetch('permits');
-      allStandalonePermits = perms;
-      renderPermitsCards(allStandalonePermits);
-      window.showToast(`✅ ${unique.length} permit${unique.length>1?'s':''} added!`, '#22c55e', 3000);
-
-    } catch(e) {
-      console.error('scan error:', e);
-      if (statusEl) statusEl.textContent = '❌ Error — try again or add manually';
-      openPermitModalForAddress(address);
-    }
-    input.value = '';
-  };
-
-  // ── PERMIT FILE UPLOAD ────────────────────────────────────────────────────
-  window._permitFileData = null;
-
-  window.handlePermitFileUpload = function(input) {
-    const file = input.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { window.showToast('File too large — max 5MB', '#f59e0b'); return; }
-    const reader = new FileReader();
-    reader.onload = e => {
-      window._permitFileData = e.target.result;
-      const preview = document.getElementById('pm-file-preview');
-      const nameEl = document.getElementById('pm-file-name');
-      const imgEl = document.getElementById('pm-file-img');
-      if (preview) preview.style.display = 'block';
-      if (nameEl) nameEl.textContent = '✅ ' + file.name;
-      if (imgEl && file.type.startsWith('image/')) {
-        imgEl.src = e.target.result;
-        imgEl.style.display = 'block';
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  window.viewPermitDoc = function(url) {
-    if (!url) { window.showToast('No document attached', '#f59e0b'); return; }
-    window.open(url, '_blank');
-  };
-
-  window.inlineEditPermit = function(permitId, currentNum) {
-    document.getElementById('pnum-display-' + permitId).style.display = 'none';
-    const editEl = document.getElementById('pnum-edit-' + permitId);
-    editEl.style.display = 'block';
-    const inp = document.getElementById('pnum-input-' + permitId);
-    if (inp) {
-      inp.focus(); inp.select();
-      // Blinking border effect
-      inp.style.borderColor = '#a78bfa';
-      let blink = true;
-      const blinkInterval = setInterval(() => {
-        inp.style.borderColor = blink ? '#a78bfa' : '#6d28d9';
-        blink = !blink;
-      }, 400);
-      inp._blinkInterval = blinkInterval;
-      inp.addEventListener('blur', () => clearInterval(blinkInterval), {once:true});
-    }
-  };
-
-  window.cancelInlinePermitEdit = function(permitId) {
-    document.getElementById('pnum-display-' + permitId).style.display = 'flex';
-    document.getElementById('pnum-edit-' + permitId).style.display = 'none';
-  };
-
-  window.saveInlinePermitNum = async function(permitId) {
-    const inp = document.getElementById('pnum-input-' + permitId);
-    const newNum = inp ? inp.value.trim() : '';
-    if (!newNum) { window.showToast('Permit number cannot be empty', '#f59e0b'); return; }
-    try {
-      await fetch(`${FS_BASE}/permits/${permitId}?key=${API_KEY}&updateMask.fieldPaths=permitNumber`, {
-        method: 'PATCH',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({fields:{permitNumber:{stringValue:newNum}}})
-      });
-      // Update local data
-      const p = allStandalonePermits.find(x => x.id === permitId);
-      if (p) p.permitNumber = newNum;
-      renderPermitsCards(allStandalonePermits);
-      window.showToast('✅ Permit number updated!', '#22c55e');
-    } catch(e) {
-      window.showToast('Error: ' + e.message, '#e53e3e');
-    }
-  };
-
-  window.addExtraPermit = function(gid) {
-    const inp = document.getElementById(gid + '-extra-permit');
-    const val = inp ? inp.value.trim() : '';
-    if (!val) return;
-    const container = document.getElementById(gid + '-permit-sel');
-    if (!container) return;
-    // Add as a checked label
-    const label = document.createElement('label');
-    label.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 10px;background:#111;border-radius:7px;border:1px solid #fbbf24;';
-    label.innerHTML = `
-      <input type="checkbox" class="${gid}-permit-cb" value="${val}" checked style="width:16px;height:16px;accent-color:#fbbf24;cursor:pointer;" onchange="this.closest('label').style.borderColor=this.checked?'#fbbf24':'#2a2a2a'"/>
-      <span style="font-size:12px;font-weight:700;color:#fbbf24;">📋 ${val}</span>
-      <button type="button" onclick="this.closest('label').remove()" style="background:none;border:none;color:#888;font-size:14px;cursor:pointer;margin-left:auto;">✕</button>
-    `;
-    container.appendChild(label);
-    if (inp) inp.value = '';
-    window.showToast('✅ Permit added', '#22c55e', 1500);
-  };
-
-  window.notifyDOTFromPermits = function(gid, address, holder, permitNumbers) {
-    const dateEl = document.getElementById(gid + '-insp-date');
-    const timeEl = document.getElementById(gid + '-insp-time');
-    const bureausEl = document.getElementById(gid + '-bureaus');
-    const customCb = document.getElementById(gid + '-custom-cb');
-    const customEl = document.getElementById(gid + '-custom');
-
-    const inspDate = dateEl?.value || '';
-    const inspTime = timeEl?.value?.trim() || '';
-
-    // Require date AND time before sending
-    if (!inspDate) {
-      window.showToast('⚠️ Please select an inspection date first', '#f59e0b', 3000);
-      if (dateEl) { dateEl.focus(); try { dateEl.showPicker(); } catch(e) {} }
-      return;
-    }
-    if (!inspTime) {
-      window.showToast('⚠️ Please enter an inspection time first', '#f59e0b', 3000);
-      if (timeEl) timeEl.focus();
-      return;
-    }
-
-    // Collect all checked bureaus
-    const checkedBoxes = bureausEl ? Array.from(bureausEl.querySelectorAll('input[type=checkbox]:checked')) : [];
-    const dotEmails = checkedBoxes.map(cb => cb.value);
-    if (customCb?.checked && customEl?.value?.trim()) {
-      dotEmails.push(customEl.value.trim());
-    }
-    if (!dotEmails.length) {
-      window.showToast('Please select at least one DOT bureau', '#f59e0b'); return;
-    }
-    const dotEmail = dotEmails.join(',');
-
-    let dayStr = '';
-    if (inspDate) {
-      const d = new Date(inspDate + 'T00:00:00');
-      dayStr = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${d.getFullYear()}`;
-    }
-
-    // Get only CHECKED permits
-    const permitCheckboxes = document.querySelectorAll(`.${gid}-permit-cb:checked`);
-    const checkedPermits = Array.from(permitCheckboxes).map(cb => cb.value).filter(Boolean);
-    // Add any extra manually-entered permits that were added
-    const extraContainer = document.getElementById(gid + '-extra-permit-list');
-    if (extraContainer) {
-      extraContainer.querySelectorAll('span[data-pnum]').forEach(s => checkedPermits.push(s.dataset.pnum));
-    }
-    if (!checkedPermits.length) {
-      window.showToast('⚠️ Please check at least one permit to include', '#f59e0b', 3000);
-      return;
-    }
-    const allPermitStr = checkedPermits.map(p => '#' + p).join(' ');
-    const subject = `${address} ${allPermitStr}`.trim();
-
-    const body = `Hi,
-
-Please Schedule milling inspection for the above mentioned location
-
-Day: ${dayStr || '(enter date)'}
-Time: ${inspTime || '(enter time)'}
-
-Permit holder: ${holder || '(enter permit holder)'}
-Permit Number: ${allPermitStr}
-
-My contact information is below
-Thank you
-Nir Maman
-Cell: 917-251-2400
-Cell: 516-306-3326`;
-
-    const mailtoLink = `mailto:${dotEmail}?bcc=nir@mamancontracting.com&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoLink;
-
-    // After email opens, confirm sent and mark green
-    setTimeout(() => {
-      if (confirm('✅ Did you send the inspection email to DOT?\n\nTap OK to mark as Sent.')) {
-        // Mark the button green
-        const btn = document.querySelector(`#${gid} button[onclick*="notifyDOTFromPermits"]`);
-        if (btn) {
-          btn.style.background = '#166534';
-          btn.style.color = '#fff';
-          btn.textContent = '✅ Inspection Email Sent';
-          btn.disabled = true;
-        }
-        // Save sent status to the permit group in Firestore
-        fetch(`${FS_BASE}/permits?key=${API_KEY}&pageSize=50`)
-          .then(r => r.json()).then(data => {
-            (data.documents||[]).forEach(doc => {
-              const f = doc.fields || {};
-              if ((f.jobAddress?.stringValue||'').toLowerCase() === address.toLowerCase()) {
-                const id = doc.name.split('/').pop();
-                fetch(`${FS_BASE}/permits/${id}?key=${API_KEY}&updateMask.fieldPaths=inspectionSent&updateMask.fieldPaths=inspectionSentDate`, {
-                  method: 'PATCH',
-                  headers: {'Content-Type':'application/json'},
-                  body: JSON.stringify({fields:{
-                    inspectionSent:{booleanValue:true},
-                    inspectionSentDate:{stringValue: new Date().toISOString()}
-                  }})
-                });
-              }
-            });
-          });
-        window.showToast('✅ DOT Inspection marked as sent!', '#22c55e', 3000);
-      }
-    }, 1500);
-  };
-
-  // ── JOB COMPLETION STEPS ─────────────────────────────────────────────────
-  window.toggleScopeDetail = function(scope, show) {
-    const el = document.getElementById('scope-' + scope + '-detail');
-    if (el) el.style.display = show ? 'block' : 'none';
-  };
-
-  window.onJobStatusChange = function(val) {
-    const stepsDiv = document.getElementById('f-completion-steps');
-    if (stepsDiv) stepsDiv.style.display = val === 'Closed' ? 'block' : 'none';
-  };
-
-  window.updateCompletionSteps = function() {
-    const sw = document.getElementById('f-step-sidewalk')?.checked;
-    const rw = document.getElementById('f-step-roadway')?.checked;
-    const mk = document.getElementById('f-step-marking')?.checked;
-    const statusEl = document.getElementById('f-close-job-status');
-
-    // Update label borders
-    ['sidewalk','roadway','marking'].forEach(step => {
-      const cb = document.getElementById('f-step-' + step);
-      const lbl = document.getElementById('step-' + step + '-lbl');
-      if (cb && lbl) lbl.style.borderColor = cb.checked ? '#22c55e' : '#2a2a2a';
-    });
-
-    const allDone = sw && rw && mk;
-    if (statusEl) {
-      if (allDone) {
-        statusEl.textContent = '✅ All steps complete — job will be Closed!';
-        statusEl.style.color = '#4ade80';
-      } else {
-        const remaining = [!sw&&'Sidewalk', !rw&&'Roadway', !mk&&'Marking'].filter(Boolean).join(', ');
-        statusEl.textContent = `⏳ Still needed: ${remaining}`;
-        statusEl.style.color = '#f59e0b';
-      }
-    }
-  };
-
-  // ── BACKUP & RESTORE ──────────────────────────────────────────────────────
-  window.openBackupPanel = function() {
-    // Update last backup time
-    const lastBak = localStorage.getItem('last-backup-time');
-    const el = document.getElementById('last-backup-time');
-    if (el) el.textContent = lastBak ? new Date(lastBak).toLocaleString('en-US', {month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}) : 'Never';
-    document.getElementById('backup-panel').style.display = 'block';
-    document.body.style.overflow = 'hidden';
-  };
-
-  window.closeBackupPanel = function() {
-    document.getElementById('backup-panel').style.display = 'none';
-    document.body.style.overflow = '';
-  };
-
-  window.exportBackup = async function() {
-    const statusEl = document.getElementById('backup-status');
-    if (statusEl) statusEl.textContent = '⏳ Collecting all data…';
-    try {
-      // Fetch all collections
-      const [jobs, permits, contacts, users, activity] = await Promise.all([
-        restFetch('jobs', 500),
-        restFetch('permits', 500),
-        restFetch('contacts', 500),
-        restFetch('users', 200),
-        restFetch('activity', 200),
-      ]);
-
-      const backup = {
-        version: '1.0',
-        exportedAt: new Date().toISOString(),
-        exportedBy: 'nir@mamancontracting.com',
-        counts: { jobs: jobs.length, permits: permits.length, contacts: contacts.length, users: users.length, activity: activity.length },
-        data: { jobs, permits, contacts, users, activity }
-      };
-
-      // Download as JSON file
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const date = new Date().toISOString().slice(0,10);
-      a.href = url;
-      a.download = `maman-contracting-backup-${date}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      // Save timestamp
-      localStorage.setItem('last-backup-time', new Date().toISOString());
-      const el = document.getElementById('last-backup-time');
-      if (el) el.textContent = new Date().toLocaleString('en-US', {month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
-
-      if (statusEl) statusEl.textContent = `✅ Backup downloaded! ${jobs.length} jobs, ${permits.length} permits, ${contacts.length} contacts`;
-      statusEl.style.color = '#4ade80';
-      window.showToast('✅ Backup downloaded!', '#22c55e', 3000);
-    } catch(e) {
-      if (statusEl) { statusEl.textContent = '❌ Error: ' + e.message; statusEl.style.color = '#f87171'; }
-    }
-  };
-
-  let _restoreData = null;
-  window.previewRestore = function(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const data = JSON.parse(e.target.result);
-        _restoreData = data;
-        const preview = document.getElementById('restore-preview');
-        const previewText = document.getElementById('restore-preview-text');
-        if (preview) preview.style.display = 'block';
-        if (previewText) {
-          const c = data.counts || {};
-          const exported = data.exportedAt ? new Date(data.exportedAt).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}) : 'Unknown';
-          previewText.innerHTML = `<strong style="color:#fff;">📄 ${file.name}</strong><br>
-            Exported: ${exported}<br>
-            Contains: ${c.jobs||0} jobs, ${c.permits||0} permits, ${c.contacts||0} contacts, ${c.users||0} users`;
-        }
-      } catch(err) {
-        window.showToast('❌ Invalid backup file', '#e53e3e');
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  window.confirmRestore = async function() {
-    if (!_restoreData) return;
-    if (!confirm(`⚠️ Restore backup?\n\nThis will ADD all data from the backup file to your app.\n\nContains: ${_restoreData.counts?.jobs||0} jobs, ${_restoreData.counts?.permits||0} permits, ${_restoreData.counts?.contacts||0} contacts\n\nContinue?`)) return;
-
-    const statusEl = document.getElementById('restore-status');
-    if (statusEl) statusEl.textContent = '⏳ Restoring data…';
-    let restored = 0;
-
-    try {
-      const collections = ['jobs','permits','contacts','activity'];
-      for (const col of collections) {
-        const items = _restoreData.data?.[col] || [];
-        for (const item of items) {
-          const { id, ...fields } = item;
-          // Convert fields to Firestore format
-          const fsFields = {};
-          for (const [k,v] of Object.entries(fields)) {
-            if (typeof v === 'boolean') fsFields[k] = {booleanValue: v};
-            else if (typeof v === 'number') fsFields[k] = {doubleValue: v};
-            else if (Array.isArray(v)) fsFields[k] = {arrayValue:{values:v.map(i=>typeof i==='object'?{mapValue:{fields:Object.fromEntries(Object.entries(i).map(([mk,mv])=>[mk,{stringValue:String(mv||'')}]))}}:{stringValue:String(i||'')})}};
-            else fsFields[k] = {stringValue: String(v||'')};
-          }
-          await fetch(`${FS_BASE}/${col}?key=${API_KEY}`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({fields: fsFields})
-          });
-          restored++;
-        }
-      }
-
-      if (statusEl) { statusEl.textContent = `✅ Restored ${restored} records successfully!`; statusEl.style.color = '#4ade80'; }
-      window.showToast(`✅ Restored ${restored} records!`, '#22c55e', 3000);
-      setTimeout(() => loadAllData(), 1000);
-    } catch(e) {
-      if (statusEl) { statusEl.textContent = '❌ Restore failed: ' + e.message; statusEl.style.color = '#f87171'; }
-    }
-  };
-
-  window.toggleCustomEmail = function(val) {
-    const el = document.getElementById('f-dot-custom-email');
-    if (el) el.style.display = val === 'custom' ? 'block' : 'none';
-  };
-
-  // ── DOT INSPECTION EMAIL ──────────────────────────────────────────────────
-  window.scheduleInspectionEmail = function() {
-    // Get current job data from open form
-    const address = document.getElementById('f-address')?.value?.trim() || '';
-    const inspTime = document.getElementById('f-inspectionTime')?.value?.trim() || '';
-    const schedDay = document.getElementById('f-scheduleDay')?.value || '';
-    const permits = window._permitChips || [];
-    const primaryPermit = permits[0]?.number || document.getElementById('f-invoiceNumber')?.value?.trim() || '';
-    const permitHolder = ''; // from permit data
-
-    // Format date
-    let dayStr = '';
-    if (schedDay) {
-      const d = new Date(schedDay + 'T00:00:00');
-      dayStr = `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${d.getFullYear()}`;
-    }
-
-    // Require date and time
-    const schedDay = document.getElementById('f-scheduleDay')?.value || '';
-    const inspTimeVal = document.getElementById('f-inspectionTime')?.value?.trim() || '';
-    if (!inspTimeVal) {
-      window.showToast('⚠️ Please enter an inspection time first', '#f59e0b', 3000);
-      document.getElementById('f-inspectionTime')?.focus();
-      return;
-    }
-
-    // Get all checked bureau emails
-    const bureausDiv = document.getElementById('f-dot-bureaus');
-    const checked = bureausDiv ? Array.from(bureausDiv.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value).filter(v => v !== 'on') : [];
-    const customCb = document.getElementById('f-dot-custom-cb');
-    const customEmailEl = document.getElementById('f-dot-custom-email');
-    if (customCb?.checked && customEmailEl?.value?.trim()) checked.push(customEmailEl.value.trim());
-    if (!checked.length) { window.showToast('Please select at least one DOT bureau', '#f59e0b'); return; }
-    const dotEmail = checked.join(',');
-
-    // Build subject: address + all permit numbers
-    const allPermitNums = permits.length > 0 
-      ? permits.map(p => '#' + p.number).join(' ') 
-      : (primaryPermit ? '#' + primaryPermit : '');
-    const subject = `${address} ${allPermitNums}`.trim();
-
-    // Get permit holder from chips or form
-    const permitHolderVal = document.getElementById('f-altParkingDays')?.value?.trim() || '';
-
-    const body = `Hi,
-
-Please Schedule milling inspection for the above mentioned location
-
-Day: ${dayStr}
-Time: ${inspTime || '(enter time)'}
-
-Permit holder: ${document.getElementById('f-customerName')?.value?.trim() || '(enter permit holder)'}
-Permit Number: ${allPermitNums}
-
-My contact information is below
-Thank you
-Nir Maman
-Cell: 917-251-2400
-Cell: 516-306-3326`;
-
-    const mailtoLink = `mailto:${dotEmail}?bcc=nir@mamancontracting.com&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoLink;
-
-    // After email opens, ask to mark as scheduled
-    setTimeout(() => {
-      const markIt = confirm('Did you send the inspection email? Tap OK to mark as ✅ Scheduled.');
-      if (markIt) {
-        document.getElementById('f-inspectionStatus').value = 'scheduled';
-        window.showToast('✅ Inspection marked as scheduled!', '#22c55e');
-        // Auto-save the status
-        if (window.saveJob) window.saveJob();
-      }
-    }, 2000);
-  };
-
-  window.sharePermit = function(number, address, holder, validFrom, expiry) {
-    const lines = [
-      '📋 PERMIT DETAILS',
-      number ? `Permit #: ${number}` : '',
-      address ? `📍 Address: ${address}` : '',
-      holder ? `👤 Holder: ${holder}` : '',
-      validFrom ? `📅 Valid From: ${fmtDate(validFrom)}` : '',
-      expiry ? `⏰ Expires: ${fmtDate(expiry)}` : '',
-      '',
-      'Maman Contracting'
-    ].filter(Boolean).join('\n');
-    if (navigator.share) {
-      navigator.share({ title: `Permit ${number}`, text: lines }).catch(()=>{});
-    } else {
-      window.location.href = `mailto:?subject=Permit ${encodeURIComponent(number)}&body=${encodeURIComponent(lines)}`;
-    }
-  };
-
-  window.sharePermitGroup = function(group) {
-    const lines = [
-      `📋 PERMITS — ${group.address}`,
-      group.holder ? `👤 ${group.holder}` : '',
-      '',
-      ...group.permits.map((num, i) => `${i+1}. ${num}`),
-      '',
-      'Maman Contracting'
-    ].filter(l => l !== undefined).join('\n');
-    if (navigator.share) {
-      navigator.share({ title: `Permits — ${group.address}`, text: lines }).catch(()=>{});
-    } else {
-      window.location.href = `mailto:?subject=${encodeURIComponent('Permits — '+group.address)}&body=${encodeURIComponent(lines)}`;
-    }
-  };
-
-  window.openPermitModalForAddress = function(address) {
-    openPermitModal();
-    setTimeout(() => {
-      const el = document.getElementById('pm-jobAddress');
-      if (el) { el.value = address; el.style.borderColor = '#22c55e'; setTimeout(()=>el.style.borderColor='',1500); }
-    }, 200);
-  };
 
   window.filterPermitsDirect = function() {
     renderPermitsCards(allStandalonePermits);
@@ -4235,7 +3159,7 @@ Cell: 516-306-3326`;
     confirmDiv.id = 'notif-clear-confirm';
     confirmDiv.style.cssText = 'padding:16px;text-align:center;background:#1a1a1a;border-radius:10px;margin:8px 0;';
     confirmDiv.innerHTML = `
-      <div style="font-size:13px;font-weight:700;color:#ff6b6b;margin-bottom:12px;">Clear all notifications?</div>
+      <div style="font-size:13px;font-weight:700;color:#f87171;margin-bottom:12px;">Clear all notifications?</div>
       <div style="display:flex;gap:8px;justify-content:center;">
         <button onclick="doDeleteAllActivity()" style="padding:9px 22px;background:#dc2626;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✅ Yes, Clear</button>
         <button onclick="document.getElementById('notif-clear-confirm').remove()" style="padding:9px 22px;background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✕ Cancel</button>
@@ -4272,7 +3196,7 @@ Cell: 516-306-3326`;
     const row = btn.parentElement;
     row.innerHTML = `
       <div style="flex:1;display:flex;align-items:center;gap:8px;">
-        <span style="font-size:12px;color:#ff6b6b;font-weight:700;">Delete #${permitNum}?</span>
+        <span style="font-size:12px;color:#f87171;font-weight:700;">Delete #${permitNum}?</span>
       </div>
       <button onclick="event.stopPropagation();doDeletePermit('${permitId}')" style="flex:1;padding:8px;background:#dc2626;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">✅ Yes, Delete</button>
       <button onclick="event.stopPropagation();loadAllData()" style="flex:1;padding:8px;background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✕ Cancel</button>
@@ -4310,18 +3234,10 @@ Cell: 516-306-3326`;
     document.getElementById('pm-validFrom').value = '';
     document.getElementById('pm-expirationDate').value = '';
     document.getElementById('pm-status').value = 'Pending';
-    const ocrStatus = document.getElementById('ocr-status');
-    const ocrImg = document.getElementById('ocr-preview-img');
-    const ocrPages = document.getElementById('ocr-pages-preview');
-    if (ocrStatus) ocrStatus.textContent = '';
-    if (ocrImg) ocrImg.style.display = 'none';
-    if (ocrPages) ocrPages.style.display = 'none';
-    window._permitFileData = null;
-    const fp = document.getElementById('pm-file-preview');
-    if (fp) fp.style.display = 'none';
-    const fi = document.getElementById('pm-file-input');
-    if (fi) fi.value = '';
-    try { populateJobDropdown(''); } catch(e) {}
+    document.getElementById('ocr-status').textContent = '';
+    document.getElementById('ocr-preview-img').style.display = 'none';
+    document.getElementById('ocr-pages-preview').style.display = 'none';
+    populateJobDropdown('');
     document.getElementById('permit-modal').style.display = 'block';
     document.body.style.overflow = 'hidden';
   };
@@ -4370,7 +3286,6 @@ Cell: 516-306-3326`;
       notes: document.getElementById('pm-notes').value.trim(),
       linkedJobId: document.getElementById('pm-linked-job')?.value || '',
     };
-    if (window._permitFileData) permitData.fileURL = window._permitFileData;
 
     try {
       if (editingPermitId) {
@@ -4381,32 +3296,8 @@ Cell: 516-306-3326`;
         window.showToast('✅ Permit saved!');
       }
       closePermitModal();
-      setTimeout(() => { if (typeof loadAllData === "function") loadAllData(); }, 500);
     } catch(e) {
-      // REST fallback (works even if SDK quota exceeded)
-      try {
-        const fsFields = {};
-        for (const [k,v] of Object.entries(permitData)) fsFields[k] = { stringValue: String(v||'') };
-        fsFields.createdBy = { stringValue: userEmail };
-        const url = editingPermitId
-          ? `${FS_BASE}/permits/${editingPermitId}?key=${API_KEY}&updateMask.fieldPaths=${Object.keys(fsFields).join('&updateMask.fieldPaths=')}`
-          : `${FS_BASE}/permits?key=${API_KEY}`;
-        const method = editingPermitId ? 'PATCH' : 'POST';
-        const r = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify({ fields: fsFields }) });
-        const result = await r.json();
-        if (result.name) {
-          window.showToast(editingPermitId ? '✅ Permit updated!' : '✅ Permit saved!');
-          closePermitModal();
-          // Refresh permits list via REST
-          const pd = await restFetch('permits');
-          allStandalonePermits = pd;
-          renderPermitsCards(allStandalonePermits);
-        } else {
-          window.showToast('Error: ' + (result.error?.message || 'Save failed'), '#e53e3e');
-        }
-      } catch(e2) {
-        window.showToast('Error: ' + e2.message, '#e53e3e');
-      }
+      window.showToast('Error: ' + e.message, '#e53e3e');
     } finally {
       btn.disabled = false; btn.textContent = '💾 Save Permit';
     }
@@ -4660,60 +3551,6 @@ Cell: 516-306-3326`;
     document.getElementById('f-status').value = j.status || 'Pending';
     document.getElementById('f-scheduleDay').value = j.scheduleDay || '';
     document.getElementById('f-completionDay').value = j.completionDay || '';
-    document.getElementById('f-inspectionTime').value = j.inspectionTime || '';
-    document.getElementById('f-inspectionStatus').value = j.inspectionStatus || '';
-    // Load scope of work
-    const scopeSW = document.getElementById('f-scope-sidewalk');
-    const scopeRW = document.getElementById('f-scope-roadway');
-    const scopeMK = document.getElementById('f-scope-marking');
-    if (scopeSW) { scopeSW.checked = !!j.scopeSidewalk; toggleScopeDetail('sidewalk', !!j.scopeSidewalk); }
-    if (scopeRW) { scopeRW.checked = !!j.scopeRoadway; toggleScopeDetail('roadway', !!j.scopeRoadway); }
-    if (scopeMK) { scopeMK.checked = !!j.scopeMarking; toggleScopeDetail('marking', !!j.scopeMarking); }
-    if (j.sidewalkWho) { const r = document.querySelector(`input[name="sidewalk-who"][value="${j.sidewalkWho}"]`); if(r) r.checked=true; }
-    if (j.roadwayWho) { const r = document.querySelector(`input[name="roadway-who"][value="${j.roadwayWho}"]`); if(r) r.checked=true; }
-    if (j.markingWho) { const r = document.querySelector(`input[name="marking-who"][value="${j.markingWho}"]`); if(r) r.checked=true; }
-    const swSubWrap = document.getElementById('sidewalk-sub-wrap');
-    const rwSubWrap = document.getElementById('roadway-sub-wrap');
-    const mkSubWrap = document.getElementById('marking-sub-wrap');
-    if (swSubWrap) swSubWrap.style.display = j.sidewalkWho==='sub' ? 'block' : 'none';
-    if (rwSubWrap) rwSubWrap.style.display = j.roadwayWho==='sub' ? 'block' : 'none';
-    if (mkSubWrap) mkSubWrap.style.display = j.markingWho==='sub' ? 'block' : 'none';
-    const swSubEl = document.getElementById('f-sidewalk-sub');
-    const rwSubEl = document.getElementById('f-roadway-sub');
-    const mkSubEl = document.getElementById('f-marking-sub');
-    if (swSubEl) swSubEl.value = j.sidewalkSub || '';
-    if (rwSubEl) rwSubEl.value = j.roadwaySub || '';
-    if (mkSubEl) mkSubEl.value = j.markingSub || '';
-
-    // Load completion steps
-    const swCb = document.getElementById('f-step-sidewalk');
-    const rwCb = document.getElementById('f-step-roadway');
-    const mkCb = document.getElementById('f-step-marking');
-    if (swCb) swCb.checked = !!j.stepSidewalk;
-    if (rwCb) rwCb.checked = !!j.stepRoadway;
-    if (mkCb) mkCb.checked = !!j.stepMarking;
-    // Show checklist if status is Closed
-    const stepsDiv = document.getElementById('f-completion-steps');
-    if (stepsDiv) stepsDiv.style.display = (j.status === 'Closed') ? 'block' : 'none';
-    window.updateCompletionSteps();
-    // Show Schedule Inspection button when editing
-    const inspWrap = document.getElementById('f-schedule-inspection-wrap');
-    if (inspWrap) inspWrap.style.display = 'block';
-    // Auto-check bureaus based on address
-    const bureausDiv2 = document.getElementById('f-dot-bureaus');
-    if (bureausDiv2 && j.address) {
-      const al = j.address.toLowerCase();
-      const isMN = al.includes('manhattan') || al.includes('8th ave') || al.includes('west 1') || al.includes('new york, ny');
-      const isBX = al.includes('bronx');
-      const isQN = al.includes('queens');
-      const autoEmails = isMN ? ['Manhattanbpp@dot.nyc.gov','MNHIQA@dot.nyc.gov'] : isBX ? ['bronxbpp@dot.nyc.gov'] : isQN ? ['Queensbpp@dot.nyc.gov'] : ['Brooklynbpp@dot.nyc.gov'];
-      bureausDiv2.querySelectorAll('input[type=checkbox]').forEach(cb => {
-        if (cb.value && cb.value !== 'on') {
-          cb.checked = autoEmails.includes(cb.value);
-          cb.closest('label').style.borderColor = cb.checked ? '#22c55e' : '#2a2a2a';
-        }
-      });
-    }
     // Load permits as chips
     loadPermitChips(j.permits, j.permitNumber, j.permitCode, j.permitExpiry);
     document.getElementById('f-notes').value = j.notes || '';
@@ -4754,22 +3591,6 @@ Cell: 516-306-3326`;
   // ── SAVE JOB ───────────────────────────────────────────────────────────────
   window.saveJob = async function() {
     if (!currentUser) { window.showToast('Not logged in!', '#e53e3e'); return; }
-
-    // Enforce 3-step checklist before closing
-    const status = document.getElementById('f-status')?.value;
-    if (status === 'Closed') {
-      const sw = document.getElementById('f-step-sidewalk')?.checked;
-      const rw = document.getElementById('f-step-roadway')?.checked;
-      const mk = document.getElementById('f-step-marking')?.checked;
-      if (!sw || !rw || !mk) {
-        const missing = [!sw&&'🚶 Sidewalk', !rw&&'🛣️ Roadway', !mk&&'🖊️ Marking'].filter(Boolean).join(', ');
-        window.showToast(`⚠️ Cannot close — complete: ${missing}`, '#f59e0b', 4000);
-        return;
-      }
-      // Double confirm
-      if (!confirm('✅ Confirm closing this job?\n\n• Sidewalk ✅\n• Roadway ✅\n• Marking ✅\n\nThis job will be marked CLOSED.')) return;
-    }
-
     const btn = document.getElementById('save-job-btn');
     btn.disabled = true; btn.textContent = editingJobId ? 'Updating…' : 'Saving…';
 
@@ -4792,22 +3613,8 @@ Cell: 516-306-3326`;
       altParkingTime: document.getElementById('f-altParkingTime').value.trim(),
       blocked:        document.getElementById('f-blocked').value,
       status:         document.getElementById('f-status').value,
-      stepSidewalk:   document.getElementById('f-step-sidewalk')?.checked || false,
-      stepRoadway:    document.getElementById('f-step-roadway')?.checked || false,
-      stepMarking:    document.getElementById('f-step-marking')?.checked || false,
-      scopeSidewalk:  document.getElementById('f-scope-sidewalk')?.checked || false,
-      scopeRoadway:   document.getElementById('f-scope-roadway')?.checked || false,
-      scopeMarking:   document.getElementById('f-scope-marking')?.checked || false,
-      sidewalkWho:    document.querySelector('input[name="sidewalk-who"]:checked')?.value || 'inhouse',
-      roadwayWho:     document.querySelector('input[name="roadway-who"]:checked')?.value || 'inhouse',
-      markingWho:     document.querySelector('input[name="marking-who"]:checked')?.value || 'inhouse',
-      sidewalkSub:    document.getElementById('f-sidewalk-sub')?.value?.trim() || '',
-      roadwaySub:     document.getElementById('f-roadway-sub')?.value?.trim() || '',
-      markingSub:     document.getElementById('f-marking-sub')?.value?.trim() || '',
-      scheduleDay:      document.getElementById('f-scheduleDay').value,
-      completionDay:    document.getElementById('f-completionDay').value,
-      inspectionTime:   document.getElementById('f-inspectionTime').value.trim(),
-      inspectionStatus: document.getElementById('f-inspectionStatus').value,
+      scheduleDay:    document.getElementById('f-scheduleDay').value,
+      completionDay:  document.getElementById('f-completionDay').value,
       permits:        getPermitRows(),
       permitCode:     getPermitRows()[0]?.code || '',
       permitNumber:   getPermitRows()[0]?.number || '',
@@ -4830,8 +3637,6 @@ Cell: 516-306-3326`;
       await upsertContact(jobData);
       closeJobModal();
       window.clearJobForm();
-      // Refresh all data after save
-      setTimeout(() => { if (typeof loadAllData === 'function') loadAllData(); }, 500);
     } catch(e) {
       window.showToast('Error: ' + e.message, '#e53e3e');
     } finally {
@@ -4902,166 +3707,67 @@ Cell: 516-306-3326`;
         ${j.phone ? `<a href="tel:${j.phone}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;background:#1a3a2a;border:1px solid #22c55e;color:#4ade80;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;">📞 ${j.phone}</a>` : ''}
         ${j.email ? `<a href="mailto:${j.email}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;background:#1e3a5f;border:1px solid #2d5a9e;color:#60a5fa;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;">✉️ Email</a>` : ''}
       </div>` : '';
-    return `<div class="crew-job-card ${cardClass}">
-      <!-- Card header with Edit button -->
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;">
-        <div style="flex:1;">
-          ${j.customerName ? `<div class="crew-job-name">${j.customerName}</div>` : ''}
-          ${j.address ? `<div class="crew-job-row"><span class="label">📍</span><span>${j.address}</span></div>` : ''}
-        </div>
-        <button onclick="event.stopPropagation();openEditJob('${j.id}')"
-          style="background:#1e3a5f;border:1px solid #2d5a9e;border-radius:8px;color:#60a5fa;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;flex-shrink:0;">
-          ✏️ Edit
-        </button>
-      </div>
+    return `<div class="crew-job-card ${cardClass}" style="cursor:pointer;" onclick="openEditJob('${j.id}')">
+      ${j.customerName ? `<div class="crew-job-name">${j.customerName}</div>` : ''}
+      ${j.address ? `<div class="crew-job-row"><span class="label">📍</span><span>${j.address}</span></div>` : ''}
       ${j.taskType ? `<div class="crew-job-row"><span class="label">🏗️</span><span>${j.taskType}</span></div>` : ''}
       ${j.projectSize ? `<div class="crew-job-row"><span class="label">📐</span><span>${j.projectSize}</span></div>` : ''}
       ${parking ? `<div class="crew-job-row"><span class="label">🚫</span><span style="color:#e53e3e;font-weight:600;">No Parking: ${parking}</span></div>` : ''}
       ${crewName && crewName !== '—' ? `<div class="crew-job-row"><span class="label">${crewEmoji}</span><span style="font-weight:600;">${crewName}</span></div>` : ''}
       ${permitLines.length ? permitLines.map((p,i) => `<div class="crew-job-row"><span class="label">${i===0?'📋':'　'}</span><span onclick="event.stopPropagation();copyPermitNumber('${p.replace(/'/g,"\\'")}',this)" title="Tap to copy" style="color:#fbbf24;font-weight:700;cursor:pointer;">${p} <span style="font-size:10px;color:#a16207;">copy</span></span></div>`).join('') : ''}
-      ${j.notes ? `<div class="crew-job-row"><span class="label">📝</span><span style="font-weight:600;">${j.notes}</span></div>` : ''}
+      ${j.notes ? `<div class="crew-job-row"><span class="label">📝</span><span style="color:#d1d5db;font-weight:600;">${j.notes}</span></div>` : ''}
       ${customRows}
       <div class="crew-job-row" style="margin-top:4px;"><span class="label">⚡</span><span>${statusBadge(j.status)}</span></div>
-      ${j.inspectionTime ? `<div class="crew-job-row"><span class="label">🔍</span><span style="color:${j.inspectionStatus==='scheduled'?'#4ade80':'#fbbf24'};font-weight:700;">Inspection: ${j.inspectionTime} ${j.inspectionStatus==='scheduled'?'✅ Scheduled':j.inspectionStatus==='completed'?'✔️ Done':'⏳ Not Scheduled'}</span></div>` : ''}
-      ${(j.stepSidewalk || j.stepRoadway || j.stepMarking) ? `<div class="crew-job-row" style="margin-top:4px;gap:8px;">
-        <span class="label">📋</span>
-        <span style="font-size:11px;font-weight:700;">${j.stepSidewalk?'<span style="color:#4ade80;">🚶✓</span>':'<span style="color:#555;">🚶</span>'} ${j.stepRoadway?'<span style="color:#4ade80;">🛣️✓</span>':'<span style="color:#555;">🛣️</span>'} ${j.stepMarking?'<span style="color:#4ade80;">🖊️✓</span>':'<span style="color:#555;">🖊️</span>'}</span>
-      </div>` : ''}
       ${contactBtns}
     </div>`;
   }
 
-  // ── WEEK LIST + DAY VIEW ──────────────────────────────────────────────────
-  window._selectedWeekOffset = 0; // open current week by default
-  window._selectedDay = null;
+  window.renderSchedule = function() {
+    const filter = window._schedCrewFilter || 'all';
+    const jobs = allJobs.filter(j => jobMatchesCrew(j, filter));
+    const tbdJobs = jobs.filter(j => !j.scheduleDay);
+    const datedJobs = jobs.filter(j => !!j.scheduleDay).sort((a,b) => a.scheduleDay.localeCompare(b.scheduleDay));
 
-  function isoDate(d) { return d.toISOString().slice(0,10); }
+    const tbdSection = document.getElementById('sched-tbd-section');
+    const tbdContainer = document.getElementById('sched-tbd-container');
+    if (tbdJobs.length === 0) {
+      tbdSection.style.display = 'none';
+    } else {
+      tbdSection.style.display = 'block';
+      tbdContainer.innerHTML = `<div class="crew-day-card">
+        <div class="crew-day-header">
+          <span class="crew-day-title">📌 Date TBD</span>
+          <span class="crew-day-count">${tbdJobs.length} job${tbdJobs.length!==1?'s':''}</span>
+        </div>
+        <div class="crew-jobs-container">${tbdJobs.map(buildJobCard).join('')}</div>
+      </div>`;
+    }
 
-  function getWeekStart(offset) {
-    const now = new Date();
-    const dow = now.getDay();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - dow + 1 + (offset||0) * 7);
-    monday.setHours(0,0,0,0);
-    return monday;
-  }
-
-  window.selectSchedDay = function(dateStr) {
-    window._selectedDay = window._selectedDay === dateStr ? null : dateStr;
-    window.renderWeekList();
-  };
-
-  window.toggleWeek = function(offset) {
-    const wasOpen = window._selectedWeekOffset === offset;
-    window._selectedWeekOffset = wasOpen ? null : offset;
-    window._selectedDay = null;
-    // Smooth: just re-render (fast enough, no network calls)
-    window.renderWeekList();
-    // Scroll expanded week into view
-    if (!wasOpen) {
-      setTimeout(() => {
-        const rows = document.querySelectorAll('#week-list-container > div');
-        // Find the expanded one (has red border)
-        for (const row of rows) {
-          if (row.style.borderColor === 'rgb(229, 62, 62)' || row.style.border?.includes('#e53e3e')) {
-            row.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            break;
-          }
-        }
-      }, 50);
+    const datedSection = document.getElementById('sched-dated-section');
+    const datedContainer = document.getElementById('sched-dated-container');
+    if (datedJobs.length === 0) {
+      datedSection.style.display = tbdJobs.length > 0 ? 'none' : 'block';
+      datedContainer.innerHTML = tbdJobs.length > 0 ? '' : '<div class="crew-no-jobs">No scheduled jobs. Create a job and assign a schedule date.</div>';
+    } else {
+      datedSection.style.display = 'block';
+      const grouped = {};
+      datedJobs.forEach(j => {
+        if (!grouped[j.scheduleDay]) grouped[j.scheduleDay] = [];
+        grouped[j.scheduleDay].push(j);
+      });
+      datedContainer.innerHTML = Object.entries(grouped).map(([dateKey, dayJobs]) => {
+        const d = new Date(dateKey + 'T00:00:00');
+        const dateStr = d.toLocaleDateString('en-US', {weekday:'long',month:'short',day:'numeric',year:'numeric'});
+        return `<div class="crew-day-card">
+          <div class="crew-day-header">
+            <span class="crew-day-title">📅 ${dateStr}</span>
+            <span class="crew-day-count">${dayJobs.length} job${dayJobs.length!==1?'s':''}</span>
+          </div>
+          <div class="crew-jobs-container">${dayJobs.map(buildJobCard).join('')}</div>
+        </div>`;
+      }).join('');
     }
   };
-
-  window.renderWeekList = function() {
-    const container = document.getElementById('week-list-container');
-    if (!container) return;
-    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
-    // Show 8 weeks: 2 past + current + 5 future
-    const offsets = [-2,-1,0,1,2,3,4,5];
-    container.innerHTML = offsets.map(offset => {
-      const monday = getWeekStart(offset);
-      const sun = new Date(monday); sun.setDate(monday.getDate() + 6);
-      const weekStart = isoDate(monday);
-      const weekEnd = isoDate(sun);
-      const isThisWeek = offset === 0;
-      const isExpanded = window._selectedWeekOffset === offset;
-      const weekJobs = (allJobs||[]).filter(j => j.scheduleDay >= weekStart && j.scheduleDay <= weekEnd);
-      const jobCount = weekJobs.length;
-      const label = `${MONTHS[monday.getMonth()]} ${monday.getDate()} – ${sun.getDate()}, ${sun.getFullYear()}`;
-
-      // Build expanded content — all 7 days shown
-      let expandedHTML = '';
-      if (isExpanded) {
-        const filter = window._schedCrewFilter || 'all';
-        const allWeekJobs = (allJobs||[]).filter(j => jobMatchesCrew(j, filter) && j.scheduleDay >= weekStart && j.scheduleDay <= weekEnd);
-
-        // One row per day Mon–Sun
-        const isLight = document.body.classList.contains('light');
-        const borderClr = isLight ? '#e2e8f0' : '#1e1e1e';
-        const bgCard = isLight ? '#fff' : '#1a1a1a';
-        const bgToday = isLight ? 'rgba(229,62,62,0.06)' : 'rgba(229,62,62,0.08)';
-        const textDay = isLight ? '#111' : '#ccc';
-        const textNone = isLight ? '#999' : '#444';
-
-        const daysHTML = [0,1,2,3,4,5,6].map(i => {
-          const d = new Date(monday); d.setDate(monday.getDate() + i);
-          const ds = isoDate(d);
-          const isToday = isoDate(new Date()) === ds;
-          const dayJobs = allWeekJobs.filter(j => j.scheduleDay === ds);
-          const dayLabel = `${DAYS[d.getDay()]} · ${MONTHS[d.getMonth()]} ${d.getDate()}`;
-
-          return `<div style="margin-bottom:0;">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 6px;background:${isToday?bgToday:'transparent'};">
-              <span style="font-size:12px;font-weight:800;color:${isToday?'#e53e3e':textDay};text-transform:uppercase;letter-spacing:0.8px;">${dayLabel}${isToday?' 📍':''}</span>
-              <span style="font-size:11px;color:#888;">${dayJobs.length>0?dayJobs.length+' job'+(dayJobs.length!==1?'s':''):'—'}</span>
-            </div>
-            <div style="padding:0 10px ${dayJobs.length?'10px':'4px'};">
-              ${dayJobs.length ? dayJobs.map(buildJobCard).join('') : `<div style="font-size:12px;color:${textNone};padding:2px 4px 8px;font-style:italic;">No jobs scheduled</div>`}
-            </div>
-          </div>`;
-        }).join('');
-
-        const tbdJobs = (allJobs||[]).filter(j => jobMatchesCrew(j, filter) && !j.scheduleDay);
-        const tbdHTML = tbdJobs.length ? `<div style="padding:10px 14px 6px;">
-          <span style="font-size:12px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:0.8px;">📌 TBD · ${tbdJobs.length} job${tbdJobs.length!==1?'s':''}</span>
-          <div style="padding:6px 0 4px;">${tbdJobs.map(buildJobCard).join('')}</div>
-        </div>` : '';
-
-        expandedHTML = `<div style="border-top:1px solid ${borderClr};">${daysHTML}${tbdHTML}</div>`;
-      }
-
-      const _lm = document.body.classList.contains('light');
-      const _wBg = _lm ? '#fff' : '#1a1a1a';
-      const _wBorder = isExpanded ? '#e53e3e' : (isThisWeek ? (_lm?'#d1d5db':'#3a3a3a') : (_lm?'#e5e7eb':'#242424'));
-      const _hBg = isExpanded ? (_lm?'#fff5f5':'#1e0a0a') : 'transparent';
-      const _labelClr = isExpanded||isThisWeek ? '#e53e3e' : (_lm?'#1a1a1a':'#fff');
-      return `<div style="border-radius:12px;overflow:hidden;border:2px solid ${_wBorder};background:${_wBg};margin-bottom:2px;">
-        <div onclick="toggleWeek(${offset})" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;background:${_hBg};">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:15px;font-weight:800;color:${_labelClr};">${label}</span>
-            ${isThisWeek?'<span style="background:#e53e3e;color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;">THIS WEEK</span>':''}
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            ${jobCount>0?`<span style="background:${_lm?'#f1f5f9':'#2a2a2a'};color:${_lm?'#374151':'#aaa'};font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;">${jobCount} job${jobCount!==1?'s':''}</span>`:`<span style="color:${_lm?'#bbb':'#444'};font-size:11px;">No jobs</span>`}
-            <span style="color:#888;font-size:18px;">${isExpanded?'▾':'▸'}</span>
-          </div>
-        </div>
-        ${expandedHTML}
-      </div>`;
-    }).join('');
-  };
-
-  window.renderSchedule = function() {
-    window.renderWeekList();
-  };
-
-  // Compat stubs
-  window.shiftWeek = function(dir) {};
-  window.goToCurrentWeek = function() { window._selectedWeekOffset=0; window._selectedDay=null; window.renderWeekList(); };
-  window.selectDay = window.selectSchedDay;
-  function renderWeekStrip() { window.renderWeekList(); }
 
   // ── SCHEDULE TEXT (share) ─────────────────────────────────────────────────
   window.buildScheduleText = function() {
@@ -5139,12 +3845,6 @@ Cell: 516-306-3326`;
     document.getElementById('custom-fields-list').innerHTML = '';
     // Reset permits list with one empty row
     if (window.clearPermitChips) window.clearPermitChips();
-    const inspWrap2 = document.getElementById('f-schedule-inspection-wrap');
-    if (inspWrap2) inspWrap2.style.display = 'none';
-    const inspTime2 = document.getElementById('f-inspectionTime');
-    if (inspTime2) inspTime2.value = '';
-    const inspStatus2 = document.getElementById('f-inspectionStatus');
-    if (inspStatus2) inspStatus2.value = '';
     editingJobId = null;
     document.getElementById('modal-title').textContent = '+ New Job';
     document.getElementById('modal-subtitle').textContent = 'Fill in all the job details below';
@@ -5238,12 +3938,7 @@ Cell: 516-306-3326`;
     }, { passive: true });
 
     outer.addEventListener('touchmove', e => {
-      if (!locked) {
-        const dx = Math.abs(e.touches[0].clientX - startX);
-        const dy = Math.abs(e.touches[0].clientY - startY);
-        // Only lock horizontal if clearly swiping sideways (2:1 ratio, min 20px)
-        if (dx > 20 && dx > dy * 2) locked = true;
-      }
+      // Once we know it's a horizontal swipe, prevent vertical scroll bleed
       if (locked) e.preventDefault();
     }, { passive: false });
 
@@ -5254,11 +3949,11 @@ Cell: 516-306-3326`;
       const dt = Date.now() - startTime;
       const absDx = Math.abs(dx), absDy = Math.abs(dy);
 
-      // Must be clearly more horizontal than vertical (ratio 2:1)
-      if (absDy * 2 > absDx) return;
-      // Minimum swipe: 80px OR fast deliberate flick ≥60px in <200ms
-      const isFlick = absDx >= 60 && dt < 200;
-      if (absDx < 80 && !isFlick) return;
+      // Must be more horizontal than vertical
+      if (absDy > absDx) return;
+      // Minimum swipe: 40px OR fast flick ≥20px in <250ms
+      const isFlick = absDx >= 20 && dt < 250;
+      if (absDx < 40 && !isFlick) return;
 
       const cs = window._currentSection !== undefined ? window._currentSection : currentSection;
       if (dx < 0 && cs < SECTION_COUNT - 1) navTo(cs + 1);
@@ -5621,12 +4316,8 @@ Cell: 516-306-3326`;
     localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
     syncThemeBtn();
   }
-  // Default to dark mode — only apply light if explicitly saved
   if (localStorage.getItem('theme') === 'light') {
     document.body.classList.add('light');
-  } else {
-    document.body.classList.remove('light');
-    localStorage.setItem('theme', 'dark');
   }
   syncThemeBtn();
 
@@ -5827,53 +4518,6 @@ Cell: 516-306-3326`;
     </div>
   </div>
 </div>
-<!-- BACKUP & RESTORE PANEL -->
-<div id="backup-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:20000;overflow-y:auto;padding:20px 20px 100px;">
-  <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;max-width:500px;margin:auto;padding:28px;position:relative;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <div>
-        <div style="font-size:18px;font-weight:800;color:#fff;">💾 Backup & Restore</div>
-        <div style="font-size:11px;color:#666;margin-top:2px;">Admin only — nir@mamancontracting.com</div>
-      </div>
-      <button onclick="closeBackupPanel()" style="background:#2a2a2a;border:none;color:#aaa;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer;">×</button>
-    </div>
-
-    <!-- BACKUP SECTION -->
-    <div style="background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:16px;margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:800;color:#4ade80;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">📤 Export Backup</div>
-      <div style="font-size:13px;color:#aaa;margin-bottom:12px;">Downloads all jobs, permits, contacts, schedules as a JSON file. Save to your phone or computer.</div>
-      <div id="backup-status" style="font-size:12px;color:#888;margin-bottom:10px;min-height:16px;"></div>
-      <button onclick="exportBackup()" style="width:100%;padding:12px;background:#166534;border:1px solid #22c55e;border-radius:8px;color:#4ade80;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">
-        📥 Download Backup File
-      </button>
-    </div>
-
-    <!-- RESTORE SECTION -->
-    <div style="background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:16px;margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:800;color:#f59e0b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">📂 Restore from Backup</div>
-      <div style="font-size:13px;color:#aaa;margin-bottom:12px;">Upload a backup JSON file to restore all your data. ⚠️ This will ADD to existing data (not replace).</div>
-      <input type="file" id="restore-file-input" accept=".json" style="display:none" onchange="previewRestore(this)"/>
-      <button onclick="document.getElementById('restore-file-input').click()" style="width:100%;padding:12px;background:#1a1a00;border:1px solid #f59e0b;border-radius:8px;color:#f59e0b;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:8px;">
-        📁 Choose Backup File
-      </button>
-      <div id="restore-preview" style="display:none;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:8px;padding:12px;margin-bottom:8px;">
-        <div id="restore-preview-text" style="font-size:12px;color:#aaa;"></div>
-        <button onclick="confirmRestore()" style="width:100%;margin-top:10px;padding:10px;background:#451a00;border:1px solid #f59e0b;border-radius:8px;color:#fbbf24;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">
-          ⬆️ Restore This Backup
-        </button>
-      </div>
-      <div id="restore-status" style="font-size:12px;color:#888;min-height:16px;"></div>
-    </div>
-
-    <!-- LAST BACKUP INFO -->
-    <div style="background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:16px;">
-      <div style="font-size:12px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">⏰ Auto-Backup Schedule</div>
-      <div style="font-size:13px;color:#aaa;">Daily at <strong style="color:#fff;">6:00 PM</strong> — reminder sent via WhatsApp to download backup</div>
-      <div style="font-size:12px;color:#555;margin-top:6px;">Last backup: <span id="last-backup-time">Never</span></div>
-    </div>
-  </div>
-</div>
-
 <!-- Service Worker Registration -->
 <script>
 if ('serviceWorker' in navigator) {
