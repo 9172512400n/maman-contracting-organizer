@@ -5314,16 +5314,13 @@ Cell: 516-306-3326`
     if (!jobs.length) { text += 'No jobs scheduled.'; }
     else {
       jobs.forEach((j, i) => {
-        text += `${i+1}. ${j.address || '—'}\n`;
-        if (j.customerName) text += `   Customer: ${j.customerName}\n`;
-        if (j.phone) text += `   Phone: ${j.phone}\n`;
-        if (j.taskType || j.jobType) text += `   Work: ${j.taskType || j.jobType}\n`;
-        if (j.projectSize) text += `   Size: ${j.projectSize}\n`;
+        if (i > 0) text += '\n';
+        text += `${j.address || '—'}\n`;
+        if (j.projectSize) text += `Size: ${j.projectSize}\n`;
         const parking = j.altParkingDays ? `${j.altParkingDays}${j.altParkingTime ? ' ' + j.altParkingTime : ''}` : j.altParking;
-        if (parking) text += `   Alt Parking: ${parking}\n`;
-        if (j.permitNumber) text += `   Permit: ${j.permitNumber}\n`;
-        if (j.notes) text += `   Notes: ${j.notes}\n`;
-        text += '\n';
+        if (parking) text += `Alt Parking: ${parking}\n`;
+        if (j.permitNumber || j.permitCode) text += `Permit: ${j.permitNumber || j.permitCode}\n`;
+        if (j.notes) text += `Notes: ${j.notes}\n`;
       });
     }
     if (navigator.share) {
@@ -5933,30 +5930,21 @@ Cell: 516-306-3326`
     let text = `📋 MAMAN CONTRACTING — SCHEDULE REPORT\n\n`;
 
     const formatJob = j => {
-      const isA = j.jobType==='asphalt'||(j.crew&&j.crew.toLowerCase().includes('asphalt'));
-      const crew = crewLabel(j);
-      const pNum = j.permitNumber || j.permitCode;
       const lines = [];
-      // Main line
-      const main = [j.customerName, j.address].filter(Boolean).join(' — ');
-      if (main) lines.push(`• ${main}`);
-      // Details line
-      const details = [];
-      if (j.projectSize) details.push(`📐 ${j.projectSize}`);
-      if (j.altParkingDays) {
-        const pk = `🚫 No Parking: ${j.altParkingDays}${j.altParkingTime ? ' ' + j.altParkingTime : ''}`;
-        details.push(pk);
-      }
-      if (details.length) lines.push(`  ${details.join(' | ')}`);
-      // Crew/permit line
-      const crewPerm = [];
-      if (crew && crew !== '—') crewPerm.push(`👷 ${crew}`);
-      if (pNum) {
-        let p = `📋 Permit: ${pNum}`;
-        if (j.permitExpiry) p += ` (exp: ${fmtDate(j.permitExpiry)})`;
-        crewPerm.push(p);
-      }
-      if (crewPerm.length) lines.push(`  ${crewPerm.join(' | ')}`);
+      // Address
+      if (j.address) lines.push(j.address);
+      // Customer name (if different from address)
+      if (j.customerName && j.customerName !== j.address) lines.push(`Customer: ${j.customerName}`);
+      // Size
+      if (j.projectSize) lines.push(`Size: ${j.projectSize}`);
+      // Alt Parking
+      const parking = j.altParkingDays ? `${j.altParkingDays}${j.altParkingTime ? ' ' + j.altParkingTime : ''}` : j.altParking;
+      if (parking) lines.push(`Alt Parking: ${parking}`);
+      // Permit
+      const pNum = j.permitNumber || j.permitCode;
+      if (pNum) lines.push(`Permit: ${pNum}`);
+      // Notes
+      if (j.notes) lines.push(`Notes: ${j.notes}`);
       return lines.join('\n');
     };
 
