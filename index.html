@@ -545,9 +545,47 @@
       pointer-events: none;
     }
 
-    /* DOT INSPECTION */
+    /* ── PERMITS ACCORDION ──────────────────────────────────── */
+    .permit-addr-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; background: #1a1a1a; border-radius: 12px;
+      margin-bottom: 8px; cursor: pointer; border: 1.5px solid #2a2a2a;
+      transition: border-color 0.2s, background 0.2s; user-select: none;
+    }
+    .permit-addr-row:hover { background: #222; border-color: #3a3a3a; }
+    .permit-addr-row.expanded { border-color: #e53e3e; background: #1c1010; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    .permit-addr-text { font-size: 15px; font-weight: 800; color: #fff; flex: 1; min-width: 0; }
+    .permit-addr-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .permit-addr-count { font-size: 11px; font-weight: 700; color: #888; background: #2a2a2a; border-radius: 999px; padding: 2px 8px; }
+    .permit-addr-chevron { font-size: 16px; color: #888; transition: transform 0.25s; margin-left: 6px; }
+    .permit-addr-row.expanded .permit-addr-chevron { transform: rotate(180deg); color: #e53e3e; }
+    .permit-addr-body {
+      background: #141414; border: 1.5px solid #e53e3e; border-top: none;
+      border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
+      padding: 14px 14px 16px; margin-bottom: 12px;
+      display: none;
+    }
+    .permit-addr-body.open { display: block; }
+
+    /* Individual permit row inside accordion */
+    .permit-item {
+      background: #1a1a1a; border-radius: 10px; padding: 12px 14px;
+      border-left: 4px solid #e53e3e; margin-bottom: 10px;
+    }
+    .permit-item-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .permit-item-cb-wrap { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; cursor: pointer; }
+    .permit-item-cb-wrap input[type=checkbox] { width: 18px; height: 18px; accent-color: #4ade80; cursor: pointer; flex-shrink: 0; }
+    .permit-item-num { font-size: 14px; font-weight: 800; color: #fff; }
+    .permit-item-info { font-size: 12px; color: #aaa; display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .permit-item-info span { display: flex; align-items: center; gap: 3px; }
+    .permit-item-actions { display: flex; gap: 8px; border-top: 1px solid #2a2a2a; padding-top: 8px; }
+    .permit-item-actions button { flex: 1; padding: 7px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; border: 1px solid; }
+    .permit-edit-btn { background: #1e3a5f; border-color: #2d5a9e; color: #60a5fa; }
+    .permit-del-btn { background: #450a0a; border-color: #7f1d1d; color: #f87171; }
+
+    /* DOT INSPECTION (redesigned) */
     .dot-inspect-section {
-      margin-top: 14px; padding: 14px; background: #0f1f0f; border: 1px solid #1a3a1a;
+      margin-top: 14px; padding: 14px; background: #0a1a0a; border: 1.5px solid #1a3a1a;
       border-radius: 10px;
     }
     .dot-inspect-title { font-size: 11px; font-weight: 800; color: #4ade80; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
@@ -556,19 +594,30 @@
     .dot-inspect-field label { font-size: 10px; font-weight: 700; color: #4ade80; text-transform: uppercase; letter-spacing: 0.4px; }
     .dot-inspect-field input { padding: 9px 10px; background: #111; border: 1.5px solid #1a3a1a; border-radius: 7px; color: #fff; font-size: 13px; font-family: 'Inter', sans-serif; font-weight: 700; }
     .dot-inspect-field input:focus { outline: none; border-color: #4ade80; }
-    .dot-permit-check-list { margin-bottom: 10px; }
+
+    /* Bureau list */
+    .dot-bureau-title { font-size: 10px; font-weight: 800; color: #4ade80; text-transform: uppercase; letter-spacing: 0.5px; margin: 10px 0 6px; }
+    .dot-bureau-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+    .dot-bureau-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: #0d200d; border: 1.5px solid #1a3a1a; border-radius: 8px; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+    .dot-bureau-item:hover { border-color: #4ade80; background: #111f11; }
+    .dot-bureau-item.selected { border-color: #4ade80; background: #0f2e0f; }
+    .dot-bureau-item input[type=checkbox] { width: 16px; height: 16px; accent-color: #4ade80; cursor: pointer; flex-shrink: 0; }
+    .dot-bureau-item label { font-size: 12px; font-weight: 700; color: #ccc; cursor: pointer; flex: 1; }
+    .dot-bureau-item.selected label { color: #4ade80; }
+
     .dot-permit-check-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
     .dot-permit-check-item:hover { background: rgba(74,222,128,0.08); }
     .dot-permit-check-item input[type=checkbox] { width: 16px; height: 16px; accent-color: #4ade80; cursor: pointer; flex-shrink: 0; }
     .dot-permit-check-label { font-size: 13px; font-weight: 700; color: #e0e0e0; }
     .btn-notify-dot {
-      width: 100%; padding: 11px; background: #dc2626; border: none; border-radius: 8px;
-      color: #fff; font-size: 13px; font-weight: 800; cursor: pointer; font-family: 'Inter', sans-serif;
-      transition: background 0.2s, opacity 0.2s;
+      width: 100%; padding: 12px; background: #dc2626; border: none; border-radius: 8px;
+      color: #fff; font-size: 14px; font-weight: 800; cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: background 0.2s, opacity 0.2s; letter-spacing: 0.3px;
     }
-    .btn-notify-dot:disabled { background: #3a1a1a; color: #888; cursor: not-allowed; opacity: 0.6; }
+    .btn-notify-dot:disabled { background: #2a1a1a; color: #666; cursor: not-allowed; opacity: 0.55; }
     .btn-notify-dot:not(:disabled):hover { background: #b91c1c; }
-    .badge-dot-notified { display: inline-block; background: #14532d; color: #4ade80; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700; margin-left: 6px; }
+    .badge-dot-notified { display: inline-flex; align-items: center; gap: 4px; background: #14532d; color: #4ade80; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700; margin-left: 6px; }
+    .permit-notified-badge { display: inline-flex; align-items: center; gap: 3px; background: #14532d; color: #4ade80; border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; margin-left: 4px; }
 
     /* RESPONSIVE */
     @media (max-width: 600px) {
@@ -1165,17 +1214,11 @@ function doSignOut() {
         <!-- SECTION 2: PERMITS -->
         <div class="section" id="sec-permits">
           <div class="section-header">
-            <h2>Permits Management</h2>
+            <h2>Permits</h2>
             <button class="btn btn-primary" onclick="openPermitModal()">+ Add Permit</button>
           </div>
-          <div class="filters">
-            <input class="search-input" type="text" id="permit-search" placeholder="🔍  Search permits…" oninput="filterPermitsDirect()" style="flex:1;min-width:200px;"/>
-            <select class="filter-select" id="permit-status-filter" onchange="filterPermitsDirect()">
-              <option value="">All Statuses</option>
-              <option>Pending</option>
-              <option>Approved</option>
-              <option>Expired</option>
-            </select>
+          <div style="margin-bottom:14px;">
+            <input class="search-input" type="text" id="permit-search" placeholder="🔍  Search by address…" oninput="filterPermitsDirect()" style="width:100%;box-sizing:border-box;"/>
           </div>
           <div id="permits-cards-container">
             <div style="text-align:center;color:#555;padding:40px;">Loading permits…</div>
@@ -3115,28 +3158,57 @@ function doSignOut() {
   let allStandalonePermits = [];
   let permitsUnsubscribe = null;
 
+  // ── DOT BUREAUS ────────────────────────────────────────────────────────────
+  const DOT_BUREAUS = [
+    { id: 'brooklyn',      name: 'Brooklyn BPP',   email: 'Brooklynbpp@dot.nyc.gov' },
+    { id: 'manhattan',     name: 'Manhattan',       email: 'MNHIQA@dot.nyc.gov' },
+    { id: 'queens',        name: 'Queens BPP',      email: 'Queensbpp@dot.nyc.gov' },
+    { id: 'bronx',         name: 'Bronx BPP',       email: 'Bronxbpp@dot.nyc.gov' },
+    { id: 'staten_island', name: 'Staten Island',   email: 'Sibpp@dot.nyc.gov' },
+  ];
+
+  function detectBorough(address) {
+    const a = (address || '').toLowerCase();
+    // Check zip codes first (5-digit patterns)
+    const zipMatch = a.match(/\b(\d{5})\b/);
+    if (zipMatch) {
+      const zip = zipMatch[1];
+      if (zip.startsWith('112')) return 'brooklyn';
+      if (/^(113|114|116)/.test(zip)) return 'queens';
+      if (zip.startsWith('104')) return 'bronx';
+      if (zip.startsWith('103')) return 'staten_island';
+    }
+    // Check borough name keywords
+    if (a.includes('brooklyn')) return 'brooklyn';
+    if (a.includes('queens')) return 'queens';
+    if (a.includes('bronx')) return 'bronx';
+    if (/staten island|staten isl/.test(a)) return 'staten_island';
+    if (a.includes('manhattan')) return 'manhattan';
+    return 'manhattan'; // default
+  }
+
   function renderPermitsCards(permits) {
     const container = document.getElementById('permits-cards-container');
     if (!container) return;
 
-    const search = (document.getElementById('permit-search') ? document.getElementById('permit-search').value : '').toLowerCase();
-    const statusFilter = document.getElementById('permit-status-filter') ? document.getElementById('permit-status-filter').value : '';
+    const search = (document.getElementById('permit-search') ? document.getElementById('permit-search').value : '').toLowerCase().trim();
 
+    // Filter by address search only
     let filtered = permits.filter(p => {
-      const matchSearch = !search ||
-        (p.permitNumber||'').toLowerCase().includes(search) ||
-        (p.jobAddress||'').toLowerCase().includes(search) ||
-        (p.permitHolder||'').toLowerCase().includes(search);
-      const matchStatus = !statusFilter || (p.status||'') === statusFilter;
-      return matchSearch && matchStatus;
+      if (!search) return true;
+      return (p.jobAddress||'').toLowerCase().includes(search);
     });
 
     if (!filtered.length) {
-      container.innerHTML = '<div style="text-align:center;color:#555;padding:40px;">No permits found. Tap + Add Permit to get started.</div>';
+      if (permits.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:#555;padding:40px;">No permits yet. Tap + Add Permit to get started.</div>';
+      } else {
+        container.innerHTML = '<div style="text-align:center;color:#555;padding:40px;">No addresses match your search.</div>';
+      }
       return;
     }
 
-    // Group permits by job address for DOT inspection grouping
+    // Group permits by job address
     const groups = {};
     filtered.forEach(p => {
       const addr = (p.jobAddress || '').trim() || '__no_address__';
@@ -3158,7 +3230,7 @@ function doSignOut() {
       const days = p.expirationDate ? daysUntil(p.expirationDate) : null;
       if (days !== null) {
         if (days < 0) return '<span class="badge badge-red">Expired</span>';
-        if (days <= 4) return '<span class="badge badge-red">Expiring Soon</span><span class="badge badge-red" style="margin-left:4px;">⚠️ ' + days + 'd</span>';
+        if (days <= 4) return `<span class="badge badge-red">⚠️ ${days}d left</span>`;
         if (days < 30) return '<span class="badge badge-orange">Expiring Soon</span>';
         return '<span class="badge badge-green">Valid</span>';
       }
@@ -3166,85 +3238,142 @@ function doSignOut() {
       return `<span class="badge ${statusColors[sc]||'badge-yellow'}">${statusEmoji[sc]||''} ${sc}</span>`;
     }
 
-    container.innerHTML = Object.entries(groups).map(([addr, permits]) => {
-      // Use permit holder from first permit
-      const permitHolder = permits.find(p => p.permitHolder)?.permitHolder || '';
-      const displayAddr = addr === '__no_address__' ? '— No Address —' : addr;
-      // Unique group key (safe for HTML id)
-      const groupKey = btoa(encodeURIComponent(addr)).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
-      // DOT notified status — check if ANY permit in group is notified (show badge), or all
-      const dotNotified = permits.every(p => p.dotNotified);
-      const dotNotifiedAny = permits.some(p => p.dotNotified);
-      const notifiedBadge = dotNotifiedAny ? `<span class="badge-dot-notified">✅ DOT Notified</span>` : '';
+    // Build bureau HTML for a group
+    function buildBureauHtml(addr, groupKey) {
+      const detectedBorough = detectBorough(addr);
+      return DOT_BUREAUS.map(b => {
+        const isPreChecked = b.id === detectedBorough;
+        return `<label class="dot-bureau-item${isPreChecked ? ' selected' : ''}" id="bureau-lbl-${groupKey}-${b.id}" onclick="toggleBureau('${groupKey}','${b.id}')">
+          <input type="checkbox" class="dot-bureau-cb" id="bureau-cb-${groupKey}-${b.id}" data-group="${groupKey}" data-bureau-id="${b.id}" data-email="${b.email}" ${isPreChecked ? 'checked' : ''} onchange="dotUpdateBtn('${groupKey}')" onclick="event.stopPropagation()" />
+          <label for="bureau-cb-${groupKey}-${b.id}" style="pointer-events:none;margin:0;">${b.name}</label>
+          <span style="font-size:10px;color:#666;margin-left:auto;">${b.email}</span>
+        </label>`;
+      }).join('');
+    }
 
-      const permitCards = permits.map(p => {
-        const linkedJobHtml = p.linkedJobId ? (() => { const lj = allJobs.find(j=>j.id===p.linkedJobId); return lj ? `<div class="crew-job-row"><span class="label">🔗</span><span style="color:#60a5fa;font-weight:700;">${lj.customerName||lj.address||'Linked Job'}</span></div>` : ''; })() : '';
-        return `<div style="background:#111;border-radius:10px;padding:14px;border-left:4px solid #e53e3e;margin-bottom:10px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <label class="dot-permit-check-item" style="margin:0;flex:1;cursor:pointer;">
-              <input type="checkbox" class="dot-permit-cb" data-permit-id="${p.id}" data-permit-num="${(p.permitNumber||'').replace(/"/g,'&quot;')}" data-group="${groupKey}" onchange="dotUpdateBtn('${groupKey}')" />
-              <span class="dot-permit-check-label">#${p.permitNumber||'—'}</span>
+    // Build permit items HTML for a group
+    function buildPermitItemsHtml(groupPermits, groupKey) {
+      return groupPermits.map(p => {
+        const notifiedBadge = p.dotNotified ? '<span class="permit-notified-badge">✅ DOT Notified</span>' : '';
+        const linkedJobHtml = p.linkedJobId ? (() => {
+          const lj = allJobs ? allJobs.find(j => j.id === p.linkedJobId) : null;
+          return lj ? `<span>🔗 <span style="color:#60a5fa;font-weight:700;">${lj.customerName||lj.address||'Linked Job'}</span></span>` : '';
+        })() : '';
+        return `<div class="permit-item" id="permit-item-${p.id}">
+          <div class="permit-item-top">
+            <label class="permit-item-cb-wrap">
+              <input type="checkbox" class="dot-permit-cb" data-permit-id="${p.id}" data-permit-num="${(p.permitNumber||'').replace(/"/g,'&quot;')}" data-holder="${(p.permitHolder||'').replace(/"/g,'&quot;')}" data-group="${groupKey}" onchange="dotUpdateBtn('${groupKey}')" />
+              <span class="permit-item-num">#${p.permitNumber||'—'}</span>
             </label>
-            <div style="display:flex;gap:4px;align-items:center;">${permitExpBadge(p)}</div>
+            ${permitExpBadge(p)}
+            ${notifiedBadge}
           </div>
-          ${p.permitHolder ? `<div class="crew-job-row"><span class="label">👤</span><span>${p.permitHolder}</span></div>` : ''}
-          ${p.permitTypeCode ? `<div class="crew-job-row"><span class="label">🏷️</span><span>Type Code: ${p.permitTypeCode}</span></div>` : ''}
-          ${p.validFrom ? `<div class="crew-job-row"><span class="label">📅</span><span>Valid: ${fmtDate(p.validFrom)} → ${fmtDate(p.expirationDate)||'?'}</span></div>` : ''}
-          ${linkedJobHtml}
-          ${p.notes ? `<div class="crew-job-row"><span class="label">📝</span><span>${p.notes}</span></div>` : ''}
-          <div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid #2a2a2a;padding-top:10px;">
-            <button onclick="event.stopPropagation();openEditPermit('${p.id}')" style="flex:1;padding:7px;background:#1e3a5f;border:1px solid #2d5a9e;border-radius:8px;color:#60a5fa;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit</button>
-            <button onclick="event.stopPropagation();confirmDeletePermit('${p.id}','${(p.permitNumber||'this permit').replace(/'/g,"\\'")}',this)" style="flex:1;padding:7px;background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;color:#f87171;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Delete</button>
+          <div class="permit-item-info">
+            ${p.permitHolder ? `<span>👤 ${p.permitHolder}</span>` : ''}
+            ${p.permitTypeCode ? `<span>🏷️ ${p.permitTypeCode}</span>` : ''}
+            ${p.validFrom ? `<span>📅 ${fmtDate(p.validFrom)} → ${fmtDate(p.expirationDate)||'?'}</span>` : (p.expirationDate ? `<span>📅 Exp: ${fmtDate(p.expirationDate)}</span>` : '')}
+            ${linkedJobHtml}
+            ${p.notes ? `<span>📝 ${p.notes}</span>` : ''}
+          </div>
+          <div class="permit-item-actions">
+            <button class="permit-edit-btn" onclick="event.stopPropagation();openEditPermit('${p.id}')">✏️ Edit</button>
+            <button class="permit-del-btn" onclick="event.stopPropagation();confirmDeletePermit('${p.id}','${(p.permitNumber||'this permit').replace(/'/g,"\\'")}',this)">🗑️ Delete</button>
           </div>
         </div>`;
       }).join('');
+    }
 
-      return `<div class="crew-day-card" style="margin-bottom:14px;" id="permit-group-${groupKey}">
-        <div class="crew-day-header">
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:14px;font-weight:800;color:#fff;">📍 ${displayAddr} ${notifiedBadge}</div>
-            ${permitHolder ? `<div style="font-size:12px;color:#fff;font-weight:700;margin-top:3px;">👤 ${permitHolder}</div>` : ''}
-            <div style="font-size:11px;color:#ddd;font-weight:700;margin-top:2px;">${permits.length} permit${permits.length !== 1 ? 's' : ''}</div>
+    container.innerHTML = Object.entries(groups).map(([addr, groupPermits]) => {
+      const permitHolder = groupPermits.find(p => p.permitHolder)?.permitHolder || '';
+      const displayAddr = addr === '__no_address__' ? '— No Address —' : addr;
+      const groupKey = btoa(encodeURIComponent(addr)).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+      const dotNotifiedAny = groupPermits.some(p => p.dotNotified);
+      const notifiedBadge = dotNotifiedAny ? `<span class="badge-dot-notified">✅ DOT</span>` : '';
+      const permitCount = groupPermits.length;
+
+      return `<div id="permit-group-${groupKey}">
+        <div class="permit-addr-row" id="permit-addr-row-${groupKey}" onclick="togglePermitGroup('${groupKey}')">
+          <div class="permit-addr-text">📍 ${displayAddr} ${notifiedBadge}</div>
+          <div class="permit-addr-meta">
+            <span class="permit-addr-count">${permitCount} permit${permitCount !== 1 ? 's' : ''}</span>
+            <span class="permit-addr-chevron">▾</span>
           </div>
         </div>
-        <div class="crew-jobs-container" style="padding:12px 16px;">
-          ${permitCards}
+        <div class="permit-addr-body" id="permit-addr-body-${groupKey}">
+          ${buildPermitItemsHtml(groupPermits, groupKey)}
           <!-- DOT INSPECTION SECTION -->
           <div class="dot-inspect-section">
-            <div class="dot-inspect-title">🟢 DOT Milling Inspection</div>
+            <div class="dot-inspect-title">📧 DOT Milling Inspection Notification</div>
             <div class="dot-inspect-row">
               <div class="dot-inspect-field">
-                <label>📅 Inspection Date</label>
+                <label>📅 Day</label>
                 <input type="date" id="dot-date-${groupKey}" onchange="dotUpdateBtn('${groupKey}')" />
               </div>
               <div class="dot-inspect-field">
-                <label>⏰ Inspection Time</label>
+                <label>⏰ Time</label>
                 <input type="time" id="dot-time-${groupKey}" onchange="dotUpdateBtn('${groupKey}')" />
               </div>
             </div>
+            <div class="dot-bureau-title">🏛️ Select Bureau(s)</div>
+            <div class="dot-bureau-list">
+              ${buildBureauHtml(addr, groupKey)}
+            </div>
             <button class="btn-notify-dot" id="dot-btn-${groupKey}" disabled
-              onclick="sendDOTEmail('${groupKey}', '${displayAddr.replace(/'/g,"\\'")}', '${permitHolder.replace(/'/g,"\\'")}')">
+              onclick="sendDOTEmail('${groupKey}', '${displayAddr.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}', '${permitHolder.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">
               📧 Notify DOT
             </button>
           </div>
         </div>
       </div>`;
     }).join('');
+
+    // Initialize button states for all groups (check all mandatory fields)
+    Object.keys(groups).forEach(addr => {
+      const groupKey = btoa(encodeURIComponent(addr)).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+      dotUpdateBtn(groupKey);
+    });
   }
+
+  // Toggle accordion open/close
+  window.togglePermitGroup = function(groupKey) {
+    const row = document.getElementById('permit-addr-row-' + groupKey);
+    const body = document.getElementById('permit-addr-body-' + groupKey);
+    if (!row || !body) return;
+    const isOpen = body.classList.contains('open');
+    if (isOpen) {
+      body.classList.remove('open');
+      row.classList.remove('expanded');
+    } else {
+      body.classList.add('open');
+      row.classList.add('expanded');
+    }
+  };
+
+  // Toggle bureau checkbox + selected class
+  window.toggleBureau = function(groupKey, bureauId) {
+    const cb = document.getElementById(`bureau-cb-${groupKey}-${bureauId}`);
+    const lbl = document.getElementById(`bureau-lbl-${groupKey}-${bureauId}`);
+    if (!cb) return;
+    cb.checked = !cb.checked;
+    if (lbl) lbl.classList.toggle('selected', cb.checked);
+    dotUpdateBtn(groupKey);
+  };
 
   window.filterPermitsDirect = function() {
     renderPermitsCards(allStandalonePermits);
   };
 
-  // DOT inspection: enable/disable Notify button based on date+time+checked permits
+  // DOT inspection: enable/disable Notify button based on date+time+permits+bureaus
   window.dotUpdateBtn = function(groupKey) {
     const dateVal = (document.getElementById('dot-date-' + groupKey) || {}).value || '';
     const timeVal = (document.getElementById('dot-time-' + groupKey) || {}).value || '';
-    const checkboxes = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
-    const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+    const permitCbs = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
+    const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
+    const anyPermitChecked = Array.from(permitCbs).some(cb => cb.checked);
+    const anyBureauChecked = Array.from(bureauCbs).some(cb => cb.checked);
     const btn = document.getElementById('dot-btn-' + groupKey);
     if (btn) {
-      btn.disabled = !(dateVal && timeVal && anyChecked);
+      btn.disabled = !(dateVal && timeVal && anyPermitChecked && anyBureauChecked);
     }
   };
 
@@ -3274,24 +3403,32 @@ function doSignOut() {
     const dateVal = (document.getElementById('dot-date-' + groupKey) || {}).value || '';
     const timeVal = (document.getElementById('dot-time-' + groupKey) || {}).value || '';
 
-    if (!dateVal || !timeVal) {
-      window.showToast('Please enter both an inspection date and time before sending.', '#e53e3e');
+    // Get checked permits
+    const permitCbs = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
+    const checkedPermits = Array.from(permitCbs).filter(cb => cb.checked);
+
+    // Get checked bureaus
+    const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
+    const checkedBureaus = Array.from(bureauCbs).filter(cb => cb.checked);
+
+    // Validate all required fields
+    if (!checkedPermits.length || !dateVal || !timeVal || !checkedBureaus.length) {
+      window.showToast('Please select permits, date, time, and at least one bureau.', '#e53e3e');
       return;
     }
 
-    // Get checked permit numbers
-    const checkboxes = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
-    const checkedPermits = Array.from(checkboxes).filter(cb => cb.checked);
-    if (!checkedPermits.length) {
-      window.showToast('Please check at least one permit before sending.', '#e53e3e');
-      return;
-    }
     const permitNums = checkedPermits.map(cb => cb.dataset.permitNum).filter(Boolean);
     const permitIds = checkedPermits.map(cb => cb.dataset.permitId).filter(Boolean);
+    // Get permit holder from the first checked permit's data attribute (fallback to passed arg)
+    const resolvedHolder = checkedPermits[0].dataset.holder || permitHolder;
 
-    // Build email
+    // Bureau emails
+    const bureauEmails = checkedBureaus.map(cb => cb.dataset.email).filter(Boolean);
+
+    // Build email parts
     const permitNumStr = permitNums.map(n => '#' + n).join(', ');
-    const subject = encodeURIComponent(`${jobAddress} ${permitNumStr}`);
+    const toEmails = bureauEmails.join(',');
+    const subject = encodeURIComponent(`${jobAddress} #${permitNums.join(', #')}`);
     const body = encodeURIComponent(
 `Hi,
 
@@ -3300,7 +3437,7 @@ Please Schedule milling inspection for the above mentioned location
 Day: ${formatDOTDate(dateVal)}
 Time: ${formatDOTTime(timeVal)}
 
-Permit holder: ${permitHolder}
+Permit holder: ${resolvedHolder}
 Permit Number: ${permitNumStr}
 
 My contact information is below
@@ -3311,23 +3448,22 @@ Cell: 516-306-3326`
     );
 
     const bcc = encodeURIComponent('nir@mamancontracting.com');
-    const mailtoUrl = `mailto:?subject=${subject}&body=${body}&bcc=${bcc}`;
+    const mailtoUrl = `mailto:${toEmails}?subject=${subject}&body=${body}&bcc=${bcc}`;
     window.location.href = mailtoUrl;
 
     // Mark DOT notified in Firestore for each checked permit
+    const now = new Date().toISOString();
     try {
       await Promise.all(permitIds.map(async (pid) => {
         const permRef = doc(db, 'permits', pid);
-        await updateDoc(permRef, { dotNotified: true, dotNotifiedDate: new Date().toISOString() });
-        // Update local cache too
+        await updateDoc(permRef, { dotNotified: true, dotNotifiedDate: now });
         const localP = allStandalonePermits.find(x => x.id === pid);
-        if (localP) { localP.dotNotified = true; localP.dotNotifiedDate = new Date().toISOString(); }
+        if (localP) { localP.dotNotified = true; localP.dotNotifiedDate = now; }
       }));
     } catch(e) {
-      // REST fallback for each
+      // REST fallback
       try {
         await Promise.all(permitIds.map(async (pid) => {
-          const now = new Date().toISOString();
           await fetch(`https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents/permits/${pid}?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c&updateMask.fieldPaths=dotNotified&updateMask.fieldPaths=dotNotifiedDate`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -3339,7 +3475,6 @@ Cell: 516-306-3326`
       } catch(e2) { /* ignore */ }
     }
 
-    // Show toast and refresh
     window.showToast('✅ DOT notification sent!', '#4ade80');
     setTimeout(() => renderPermitsCards(allStandalonePermits), 500);
   };
