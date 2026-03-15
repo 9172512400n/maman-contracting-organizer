@@ -1,25 +1,35 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Jobs — allow read/write per document, never bulk list-delete
     match /jobs/{jobId} {
       allow read, write: if true;
     }
-    // Contacts
     match /contacts/{contactId} {
       allow read, write: if true;
     }
-    // Permits
     match /permits/{permitId} {
       allow read, write: if true;
     }
-    // Users
     match /users/{userId} {
       allow read, write: if true;
     }
-    // Activity log
     match /activity/{activityId} {
       allow read, write, delete: if true;
+    }
+    match /tasks/{taskId} {
+      allow read, write, delete: if true;
+    }
+    match /notifications/{notifId} {
+      allow read, write, delete: if true;
+    }
+    match /scheduleNotes/{noteId} {
+      allow read, write, delete: if true;
+    }
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+    match /userSignatures/{sigId} {
+      allow read, write: if true;
     }
   }
 }
