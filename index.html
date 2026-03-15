@@ -2964,7 +2964,8 @@ function doSignOut() {
 
   window.addTaskNote = async function(id) {
     const el = document.getElementById(`task-note-form-${id}`);
-    const ta = el && el.querySelector('textarea');
+    // Support both old querySelector pattern and new named textarea
+    const ta = document.getElementById(`task-note-ta-${id}`) || (el && el.querySelector('textarea'));
     const text = (ta && ta.value || '').trim();
     if (!text) { window.showToast('Note cannot be empty', '#f59e0b'); return; }
     const task = _allTasks.find(t => t.id === id);
@@ -2998,6 +2999,59 @@ function doSignOut() {
     const el = document.getElementById(`task-notes-thread-${id}`);
     if (!el) return;
     el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+
+  // ── ACCORDION / INLINE EDIT ─────────────────────────────────────────────────
+  let _expandedTaskId = null;
+
+  window.toggleTaskExpand = function(id) {
+    if (_expandedTaskId === id) {
+      _expandedTaskId = null;
+    } else {
+      _expandedTaskId = id;
+    }
+    renderTasks(_allTasks);
+  };
+
+  window.openTaskEdit = function(id) {
+    const task = _allTasks.find(t => t.id === id);
+    if (!task) return;
+    const editDiv = document.getElementById(`task-edit-form-${id}`);
+    if (!editDiv) return;
+    editDiv.style.display = editDiv.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.saveTaskEdit = async function(id) {
+    const task = _allTasks.find(t => t.id === id);
+    if (!task) return;
+    const titleEl = document.getElementById(`task-edit-title-${id}`);
+    const dateEl  = document.getElementById(`task-edit-date-${id}`);
+    const timeEl  = document.getElementById(`task-edit-time-${id}`);
+    const descEl  = document.getElementById(`task-edit-desc-${id}`);
+    const newTitle = (titleEl && titleEl.value.trim()) || task.title;
+    const newDate  = (dateEl && dateEl.value) || task.dueDate || '';
+    const newTime  = (timeEl && timeEl.value) || task.dueTime || '';
+    const newDesc  = (descEl && descEl.value.trim()) || '';
+    const body = {
+      fields: {
+        ...buildTaskFields(task),
+        title: { stringValue: newTitle },
+        dueDate: { stringValue: newDate },
+        dueTime: { stringValue: newTime },
+        description: { stringValue: newDesc }
+      }
+    };
+    try {
+      const r = await fetch(`${FS_BASE}/tasks/${id}?key=${API_KEY}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error('PATCH failed: ' + r.status);
+      window.showToast('Task updated ✏️', '#22c55e');
+      await loadTasks();
+    } catch(e) {
+      console.error('saveTaskEdit failed:', e);
+      window.showToast('Failed to save edit', '#e53e3e');
+    }
   };
 
   function buildTaskFields(task) {
@@ -3057,114 +3111,204 @@ function doSignOut() {
       return task.dueTime ? `${formatted} at ${task.dueTime}` : formatted;
     }
 
-    function taskCardStyle(task) {
+    function accentColor(task) {
       if (task.status === 'open') {
-        if (task.dueDate && task.dueDate < todayStr) return 'border-left:4px solid #e53e3e;';
-        if (task.dueDate === todayStr) return 'border-left:4px solid #f59e0b;';
-        return 'border-left:4px solid #4b5563;';
+        if (task.dueDate && task.dueDate < todayStr) return '#e53e3e';
+        if (task.dueDate === todayStr) return '#f59e0b';
+        return '#4b5563';
       }
-      if (task.status === 'done') return 'border-left:4px solid #4b5563;opacity:0.7;';
-      return 'border-left:4px solid #222;opacity:0.4;';
+      if (task.status === 'done') return '#16a34a';
+      return '#222';
     }
 
-    function taskBadge(task) {
+    function statusBadgeHtml(task) {
       if (task.status !== 'open') return '';
-      if (task.dueDate && task.dueDate < todayStr) return '<span style="font-size:10px;font-weight:700;color:#f87171;margin-left:6px;">⚠️ OVERDUE</span>';
-      if (task.dueDate === todayStr) return '<span style="font-size:10px;font-weight:700;color:#fbbf24;margin-left:6px;">📅 Today</span>';
+      if (task.dueDate && task.dueDate < todayStr)
+        return '<span style="font-size:10px;font-weight:700;color:#f87171;background:rgba(239,68,68,0.12);border-radius:4px;padding:1px 5px;margin-left:6px;">⚠️ OVERDUE</span>';
+      if (task.dueDate === todayStr)
+        return '<span style="font-size:10px;font-weight:700;color:#fbbf24;background:rgba(251,191,36,0.12);border-radius:4px;padding:1px 5px;margin-left:6px;">📅 Today</span>';
       return '';
     }
 
-    function renderNotes(task) {
+    function notesThreadHtml(task) {
       let notes = [];
       try { notes = JSON.parse(task.notes || '[]'); } catch(e) { notes = []; }
-      if (!notes.length) return '';
-      const thread = notes.map(n => {
-        const ts = n.addedAt ? (() => { try { return new Date(n.addedAt).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); } catch(e) { return n.addedAt; } })() : '';
-        return `<div style="border-left:2px solid #333;margin:4px 0;padding:4px 8px;">
-          <div style="font-size:12px;color:#d1d5db;">${n.text}</div>
-          <div style="font-size:10px;color:#555;margin-top:2px;">${n.addedByName || n.addedBy || 'Unknown'} · ${ts}</div>
+      if (!notes.length) return '<div style="font-size:11px;color:#4b5563;font-style:italic;">No notes yet.</div>';
+      return notes.map(n => {
+        const ts = n.addedAt ? (() => {
+          try { return new Date(n.addedAt).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); }
+          catch(e) { return n.addedAt; }
+        })() : '';
+        return `<div style="border-left:2px solid #2d3748;margin:5px 0;padding:5px 10px;background:#0d1117;border-radius:0 5px 5px 0;">
+          <div style="font-size:12px;color:#d1d5db;line-height:1.5;">${n.text}</div>
+          <div style="font-size:10px;color:#4b5563;margin-top:3px;">✍️ ${n.addedByName || n.addedBy || 'Unknown'} · ${ts}</div>
         </div>`;
       }).join('');
-      return `<div style="margin-top:4px;">
-        <button onclick="toggleTaskNotes('${task.id}')" style="background:none;border:none;color:#6b7280;font-size:11px;cursor:pointer;padding:2px 0;font-family:'Inter',sans-serif;">📎 ${notes.length} note${notes.length>1?'s':''}</button>
-        <div id="task-notes-thread-${task.id}" style="display:none;margin-top:4px;">${thread}</div>
-      </div>`;
     }
 
+    // ── OPEN TASK (accordion) ────────────────────────────────────────────────
     function renderOpenCard(task) {
+      const expanded = _expandedTaskId === task.id;
       const dueStr = formatDue(task);
-      const badge = taskBadge(task);
-      const style = taskCardStyle(task);
-      const adminDel = isAdmin ? `<button onclick="deleteTask('${task.id}')" title="Delete" style="background:none;border:none;color:#555;cursor:pointer;font-size:14px;padding:2px 4px;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#555'">🗑️</button>` : '';
-      return `<div class="notif-item" style="${style}padding-left:10px;margin-bottom:8px;">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
-          <div style="flex:1;">
-            <div style="font-weight:700;color:#e2e8f0;font-size:13px;">${task.title}${badge}</div>
-            ${dueStr ? `<div style="font-size:11px;color:#9ca3af;margin-top:1px;">📅 ${dueStr}</div>` : ''}
-            <div style="font-size:11px;color:#6b7280;margin-top:1px;">By ${task.createdByName || task.createdBy || '?'}</div>
-            ${task.description ? `<div style="font-size:12px;color:#9ca3af;margin-top:3px;">${task.description}</div>` : ''}
-            ${renderNotes(task)}
+      const badge = statusBadgeHtml(task);
+      const accent = accentColor(task);
+
+      // Collapsed row
+      const collapsedHtml = `
+        <div onclick="toggleTaskExpand('${task.id}')" style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;padding:9px 10px 9px 12px;border-left:4px solid ${accent};background:#111;border-radius:8px;margin-bottom:6px;transition:background 0.15s;" onmouseover="this.style.background='#181818'" onmouseout="this.style.background='#111'">
+          <div style="flex:1;min-width:0;">
+            <span style="font-weight:700;color:#e2e8f0;font-size:13px;">${task.title}</span>${badge}
+            ${dueStr ? `<span style="font-size:11px;color:#6b7280;margin-left:8px;">📅 ${dueStr}</span>` : ''}
           </div>
-          <div style="display:flex;flex-direction:row;gap:6px;align-items:center;flex-shrink:0;">
-            <button onclick="markTaskDone('${task.id}')" style="background:#052e16;border:1px solid #16a34a;border-radius:8px;color:#4ade80;font-size:12px;font-weight:700;padding:6px 10px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;">✅</button>
-            <button onclick="toggleTaskNoteForm('${task.id}')" style="background:#1a1a2e;border:1px solid #3b82f6;border-radius:8px;color:#60a5fa;font-size:12px;font-weight:700;padding:6px 10px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;">📝</button>
+          <span style="color:#4b5563;font-size:11px;flex-shrink:0;">${expanded ? '▲' : '▼'}</span>
+        </div>`;
+
+      if (!expanded) return collapsedHtml;
+
+      // Expanded detail panel
+      let notes = [];
+      try { notes = JSON.parse(task.notes || '[]'); } catch(e) { notes = []; }
+      const adminDel = isAdmin
+        ? `<button onclick="event.stopPropagation();deleteTask('${task.id}')" title="Permanently delete" style="background:#1a0505;border:1px solid #7f1d1d;border-radius:6px;color:#f87171;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Delete</button>`
+        : '';
+
+      const expandedHtml = `
+        <div style="border-left:4px solid ${accent};border-radius:0 8px 8px 0;background:#0f1117;margin-bottom:10px;padding:12px 14px;">
+          <!-- Header row -->
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;">
+            <div style="flex:1;">
+              <div style="font-weight:700;color:#e2e8f0;font-size:15px;margin-bottom:4px;">${task.title}${badge}</div>
+              ${dueStr ? `<div style="font-size:12px;color:#9ca3af;">📅 ${dueStr}</div>` : ''}
+              <div style="font-size:11px;color:#6b7280;margin-top:2px;">Created by ${task.createdByName || task.createdBy || '?'}</div>
+              ${task.description ? `<div style="font-size:12px;color:#9ca3af;margin-top:6px;padding:6px 8px;background:#161b22;border-radius:5px;line-height:1.5;">${task.description}</div>` : ''}
+            </div>
+            <button onclick="toggleTaskExpand('${task.id}')" style="background:none;border:none;color:#4b5563;font-size:16px;cursor:pointer;padding:0 0 0 8px;line-height:1;" title="Collapse">✕</button>
+          </div>
+
+          <!-- Notes thread -->
+          <div style="margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Notes ${notes.length ? '('+notes.length+')' : ''}</div>
+            ${notesThreadHtml(task)}
+          </div>
+
+          <!-- Add Note inline form -->
+          <div id="task-note-form-${task.id}" style="display:none;margin-bottom:10px;">
+            <textarea id="task-note-ta-${task.id}" placeholder="Write a note…" rows="2" style="width:100%;box-sizing:border-box;background:#1a1a2e;border:1px solid #3b82f6;border-radius:6px;color:#e2e8f0;font-size:12px;font-family:'Inter',sans-serif;padding:7px 10px;resize:vertical;outline:none;"></textarea>
+            <div style="display:flex;gap:6px;margin-top:5px;">
+              <button onclick="addTaskNote('${task.id}')" style="background:#1d4ed8;border:none;border-radius:5px;color:#fff;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:'Inter',sans-serif;">💾 Save Note</button>
+              <button onclick="document.getElementById('task-note-form-${task.id}').style.display='none'" style="background:#1f1f1f;border:1px solid #333;border-radius:5px;color:#888;font-size:11px;padding:5px 10px;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
+            </div>
+          </div>
+
+          <!-- Inline Edit form -->
+          <div id="task-edit-form-${task.id}" style="display:none;margin-bottom:10px;padding:10px;background:#0a1628;border:1px solid #1e3a5f;border-radius:7px;">
+            <div style="font-size:11px;font-weight:700;color:#60a5fa;margin-bottom:8px;">✏️ Edit Task</div>
+            <input id="task-edit-title-${task.id}" type="text" value="${(task.title||'').replace(/"/g,'&quot;')}" style="width:100%;box-sizing:border-box;background:#1a1a2e;border:1px solid #3b82f6;border-radius:6px;color:#e2e8f0;font-size:13px;font-family:'Inter',sans-serif;padding:7px 10px;outline:none;margin-bottom:7px;"/>
+            <div style="display:flex;gap:7px;margin-bottom:7px;">
+              <input id="task-edit-date-${task.id}" type="date" value="${task.dueDate||''}" style="flex:1;background:#1a1a2e;border:1px solid #333;border-radius:6px;color:#e2e8f0;font-size:12px;font-family:'Inter',sans-serif;padding:6px 10px;outline:none;"/>
+              <input id="task-edit-time-${task.id}" type="time" value="${task.dueTime||''}" style="flex:1;background:#1a1a2e;border:1px solid #333;border-radius:6px;color:#e2e8f0;font-size:12px;font-family:'Inter',sans-serif;padding:6px 10px;outline:none;"/>
+            </div>
+            <textarea id="task-edit-desc-${task.id}" rows="2" placeholder="Description (optional)" style="width:100%;box-sizing:border-box;background:#1a1a2e;border:1px solid #333;border-radius:6px;color:#e2e8f0;font-size:12px;font-family:'Inter',sans-serif;padding:7px 10px;resize:vertical;outline:none;margin-bottom:7px;">${task.description||''}</textarea>
+            <div style="display:flex;gap:6px;">
+              <button onclick="saveTaskEdit('${task.id}')" style="background:#1d4ed8;border:none;border-radius:5px;color:#fff;font-size:11px;font-weight:700;padding:5px 14px;cursor:pointer;font-family:'Inter',sans-serif;">💾 Save</button>
+              <button onclick="document.getElementById('task-edit-form-${task.id}').style.display='none'" style="background:#1f1f1f;border:1px solid #333;border-radius:5px;color:#888;font-size:11px;padding:5px 10px;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
+            </div>
+          </div>
+
+          <!-- Action buttons row -->
+          <div style="display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid #1f2937;padding-top:10px;">
+            <button onclick="openTaskEdit('${task.id}')" style="background:#0a1628;border:1px solid #3b82f6;border-radius:6px;color:#60a5fa;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit</button>
+            <button onclick="document.getElementById('task-note-form-${task.id}').style.display='block';document.getElementById('task-note-ta-${task.id}')&&document.getElementById('task-note-ta-${task.id}').focus()" style="background:#0a1628;border:1px solid #3b82f6;border-radius:6px;color:#60a5fa;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:'Inter',sans-serif;">📝 Add Note</button>
+            <button onclick="markTaskDone('${task.id}')" style="background:#052e16;border:1px solid #16a34a;border-radius:6px;color:#4ade80;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:'Inter',sans-serif;">✅ Mark Done</button>
+            <button onclick="closeTask('${task.id}')" style="background:#1a1208;border:1px solid #78350f;border-radius:6px;color:#fbbf24;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:'Inter',sans-serif;">🗂️ Close</button>
             ${adminDel}
           </div>
-        </div>
-        <div id="task-note-form-${task.id}" style="display:none;margin-top:8px;">
-          <textarea placeholder="Add a note…" rows="2" style="width:100%;box-sizing:border-box;background:#1a1a2e;border:1px solid #3b82f6;border-radius:6px;color:#e2e8f0;font-size:12px;font-family:'Inter',sans-serif;padding:6px 10px;resize:vertical;outline:none;"></textarea>
-          <div style="display:flex;gap:6px;margin-top:4px;">
-            <button onclick="addTaskNote('${task.id}')" style="background:#1d4ed8;border:none;border-radius:5px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;">💾 Save</button>
-            <button onclick="toggleTaskNoteForm('${task.id}')" style="background:#1f1f1f;border:1px solid #333;border-radius:5px;color:#888;font-size:11px;padding:4px 8px;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
-          </div>
-        </div>
-      </div>`;
+        </div>`;
+
+      return collapsedHtml + expandedHtml;
     }
 
+    // ── DONE TASK (accordion) ────────────────────────────────────────────────
     function renderDoneCard(task) {
+      const expanded = _expandedTaskId === task.id;
       const dueStr = formatDue(task);
-      return `<div class="notif-item" style="${taskCardStyle(task)}padding-left:10px;margin-bottom:6px;">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
-          <div style="flex:1;">
-            <div style="text-decoration:line-through;color:#6b7280;font-size:13px;">${task.title}</div>
-            ${dueStr ? `<div style="font-size:11px;color:#4b5563;margin-top:1px;">📅 ${dueStr}</div>` : ''}
-            <div style="font-size:11px;color:#4b5563;">Done by ${task.doneByName || task.doneBy || '?'}</div>
-            ${renderNotes(task)}
+      const doneTs = task.doneAt ? (() => {
+        try { return new Date(task.doneAt).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); }
+        catch(e) { return task.doneAt; }
+      })() : '';
+
+      const collapsedHtml = `
+        <div onclick="toggleTaskExpand('${task.id}')" style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;padding:8px 10px 8px 12px;border-left:4px solid #16a34a;background:#0a120a;border-radius:8px;margin-bottom:5px;opacity:0.75;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.75'">
+          <div style="flex:1;min-width:0;">
+            <span style="text-decoration:line-through;color:#6b7280;font-size:13px;">${task.title}</span>
+            ${dueStr ? `<span style="font-size:11px;color:#4b5563;margin-left:8px;">📅 ${dueStr}</span>` : ''}
           </div>
-          <button onclick="closeTask('${task.id}')" style="background:#1a1a2e;border:1px solid #4b5563;border-radius:5px;color:#9ca3af;font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;">Archive →</button>
-        </div>
-      </div>`;
+          <span style="color:#4b5563;font-size:11px;flex-shrink:0;">${expanded ? '▲' : '▼'}</span>
+        </div>`;
+
+      if (!expanded) return collapsedHtml;
+
+      let notes = [];
+      try { notes = JSON.parse(task.notes || '[]'); } catch(e) { notes = []; }
+
+      const expandedHtml = `
+        <div style="border-left:4px solid #16a34a;border-radius:0 8px 8px 0;background:#0a120a;margin-bottom:10px;padding:12px 14px;opacity:0.9;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div>
+              <div style="text-decoration:line-through;color:#6b7280;font-size:14px;font-weight:600;">${task.title}</div>
+              ${dueStr ? `<div style="font-size:11px;color:#4b5563;margin-top:2px;">📅 ${dueStr}</div>` : ''}
+              <div style="font-size:11px;color:#4b5563;margin-top:2px;">✅ Done by ${task.doneByName || task.doneBy || '?'}${doneTs ? ' · ' + doneTs : ''}</div>
+              ${task.description ? `<div style="font-size:12px;color:#4b5563;margin-top:5px;font-style:italic;">${task.description}</div>` : ''}
+            </div>
+            <button onclick="toggleTaskExpand('${task.id}')" style="background:none;border:none;color:#4b5563;font-size:16px;cursor:pointer;padding:0 0 0 8px;">✕</button>
+          </div>
+          ${notes.length ? `<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;color:#4b5563;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Notes (${notes.length})</div>${notesThreadHtml(task)}</div>` : ''}
+          <div style="border-top:1px solid #1a2e1a;padding-top:8px;">
+            <button onclick="closeTask('${task.id}')" style="background:#1a1208;border:1px solid #78350f;border-radius:6px;color:#fbbf24;font-size:11px;font-weight:700;padding:5px 14px;cursor:pointer;font-family:'Inter',sans-serif;">Close → Archive</button>
+          </div>
+        </div>`;
+
+      return collapsedHtml + expandedHtml;
     }
 
+    // ── CLOSED TASK ──────────────────────────────────────────────────────────
     function renderClosedCard(task) {
-      const adminDel = isAdmin ? `<button onclick="deleteTask('${task.id}')" title="Delete permanently" style="background:none;border:none;color:#333;cursor:pointer;font-size:13px;padding:2px 4px;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#333'">🗑️</button>` : '';
-      return `<div class="notif-item" style="${taskCardStyle(task)}padding-left:10px;margin-bottom:6px;">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+      const expanded = _expandedTaskId === task.id;
+      const adminDel = isAdmin
+        ? `<button onclick="event.stopPropagation();deleteTask('${task.id}')" title="Permanently delete" style="background:none;border:none;color:#333;cursor:pointer;font-size:13px;padding:2px 5px;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#333'">🗑️</button>`
+        : '';
+
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px 7px 12px;border-left:4px solid #222;background:#0a0a0a;border-radius:8px;margin-bottom:4px;opacity:0.45;">
           <div style="flex:1;font-style:italic;color:#4b5563;font-size:12px;">${task.title}</div>
           ${adminDel}
-        </div>
-      </div>`;
+        </div>`;
     }
 
     let html = '';
 
+    // Open tasks
     if (!openTasks.length) {
-      html += '<div class="notif-item"><div class="notif-title" style="color:#555;">No open tasks 🎉</div></div>';
+      html += '<div style="padding:10px 12px;color:#555;font-size:13px;">No open tasks 🎉</div>';
     } else {
       html += openTasks.map(renderOpenCard).join('');
     }
 
+    // Done tasks (collapsible section)
     if (doneTasks.length) {
-      html += `<div style="margin-top:10px;">
-        <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.textContent=this.textContent.startsWith('▼')?'▶ Done (${doneTasks.length})':'▼ Done (${doneTasks.length})';" style="background:none;border:none;color:#6b7280;font-size:12px;font-weight:700;cursor:pointer;padding:2px 0;font-family:'Inter',sans-serif;">▼ Done (${doneTasks.length})</button>
-        <div>${doneTasks.map(renderDoneCard).join('')}</div>
+      const doneId = 'tasks-done-section';
+      html += `<div style="margin-top:12px;">
+        <button onclick="(function(btn){var sec=document.getElementById('${doneId}');var open=sec.style.display!=='none';sec.style.display=open?'none':'block';btn.textContent=open?'▶ Done (${doneTasks.length})':'▼ Done (${doneTasks.length})'})(this)" style="background:none;border:none;color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;padding:3px 0;font-family:'Inter',sans-serif;letter-spacing:0.03em;">▼ Done (${doneTasks.length})</button>
+        <div id="${doneId}">${doneTasks.map(renderDoneCard).join('')}</div>
       </div>`;
     }
 
+    // Closed tasks (collapsible section)
     if (closedTasks.length) {
-      html += `<div style="margin-top:10px;">
-        <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.textContent=this.textContent.startsWith('▼')?'▶ Closed (${closedTasks.length})':'▼ Closed (${closedTasks.length})';" style="background:none;border:none;color:#4b5563;font-size:12px;font-weight:700;cursor:pointer;padding:2px 0;font-family:'Inter',sans-serif;">▼ Closed (${closedTasks.length})</button>
-        <div>${closedTasks.map(renderClosedCard).join('')}</div>
+      const closedId = 'tasks-closed-section';
+      html += `<div style="margin-top:12px;">
+        <button onclick="(function(btn){var sec=document.getElementById('${closedId}');var open=sec.style.display!=='none';sec.style.display=open?'none':'block';btn.textContent=open?'▶ Closed (${closedTasks.length})':'▼ Closed (${closedTasks.length})'})(this)" style="background:none;border:none;color:#6b7280;font-size:12px;font-weight:700;cursor:pointer;padding:3px 0;font-family:'Inter',sans-serif;letter-spacing:0.03em;">▼ Closed (${closedTasks.length})</button>
+        <div id="${closedId}" style="display:none;">${closedTasks.map(renderClosedCard).join('')}</div>
       </div>`;
     }
 
