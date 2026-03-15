@@ -1221,29 +1221,7 @@ function doSignOut() {
             <button class="filter-pill" data-filter="blocked" onclick="setJobFilter('blocked',this)">🚫 Blocked</button>
             <button class="filter-pill" data-filter="On Hold" onclick="setJobFilter('On Hold',this)">On Hold</button>
           </div>
-          <div class="panel" style="overflow-x:auto;">
-            <table>
-              <thead>
-                <tr>
-                  <th>Job Address</th>
-                  <th>Customer</th>
-                  <th>Task Type</th>
-                  <th>Alt. Parking</th>
-                  <th>Project Size</th>
-                  <th>Crew</th>
-                  <th>Schedule Day</th>
-                  <th>Completion Day</th>
-                  <th>Status</th>
-                  <th>Permit #</th>
-                  <th>Permit Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="jobs-tbody">
-                <tr><td colspan="12" style="text-align:center;color:#555;padding:20px;">Loading jobs…</td></tr>
-              </tbody>
-            </table>
-          </div>
+          <div id="jobs-cards-container" style="display:flex;flex-direction:column;gap:10px;padding:0;"></div>
         </div>
 
         <!-- SECTION 2: PERMITS -->
@@ -2310,75 +2288,148 @@ function doSignOut() {
     renderJobsTable(filtered);
   };
 
+  function taskTypePill(j) {
+    if (j.jobType === 'asphalt' || (j.taskType || '').toLowerCase().includes('asphalt')) {
+      return '<span style="background:#7c2d12;color:#fb923c;border:1px solid #c2410c;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;white-space:nowrap;">🟠 Asphalt</span>';
+    }
+    if (j.jobType === 'concrete' || (j.taskType || '').toLowerCase().includes('concrete')) {
+      return '<span style="background:#1e3a5f;color:#60a5fa;border:1px solid #2d5a9e;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;white-space:nowrap;">🔵 Concrete</span>';
+    }
+    if (j.taskType) {
+      return `<span style="background:#1f2937;color:#9ca3af;border:1px solid #374151;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;white-space:nowrap;">${j.taskType}</span>`;
+    }
+    return '';
+  }
+
   function renderJobsTable(jobs) {
-    const tbody = document.getElementById('jobs-tbody');
+    const container = document.getElementById('jobs-cards-container');
     if (!jobs.length) {
-      tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#555;padding:24px;">No jobs found.</td></tr>';
+      container.innerHTML = '<div style="text-align:center;color:#555;padding:40px 20px;">No jobs found.</div>';
       return;
     }
-    tbody.innerHTML = jobs.map(j => {
+    container.innerHTML = jobs.map(j => {
       const parking = j.altParkingDays
         ? j.altParkingDays + (j.altParkingTime ? ' · ' + j.altParkingTime : '')
-        : '—';
-      const permitNum = j.permitNumber || j.permitCode || '—';
-      const completedMark = j.status === 'Completed' ? '✅ ' : '';
-      return `<tr class="clickable-row" onclick="openEditJob('${j.id}')">
-        <td>${completedMark}${j.address || '—'}</td>
-        <td>
-          <div style="font-weight:600;color:#fff;">${j.customerName || '—'}</div>
-          <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
-            ${j.phone ? `<a href="tel:${j.phone}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;background:#1a3a2a;border:1px solid #22c55e;color:#4ade80;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;">📞 ${j.phone}</a>` : ''}
-            ${j.email ? `<a href="mailto:${j.email}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;background:#1e3a5f;border:1px solid #2d5a9e;color:#60a5fa;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;">✉️ Email</a>` : ''}
+        : null;
+      const permitNum = j.permitNumber || j.permitCode || null;
+      const isCompleted = j.status === 'Completed';
+      const typePill = taskTypePill(j);
+      const safeId = j.id;
+
+      return `
+        <div class="job-card" id="jcard-${safeId}" onclick="toggleJobCard('${safeId}')"
+          style="background:#1a1a1a;border-radius:12px;border-left:4px solid #e53e3e;padding:14px 16px;cursor:pointer;user-select:none;position:relative;">
+          <!-- COLLAPSED HEADER -->
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:16px;font-weight:700;color:#fff;line-height:1.3;word-break:break-word;">
+                ${isCompleted ? '✅ ' : ''}${j.address || '—'}
+              </div>
+              <div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                ${typePill}
+                <span style="color:#9ca3af;font-size:13px;">${j.customerName || '—'}</span>
+              </div>
+            </div>
+            <div style="color:#555;font-size:18px;flex-shrink:0;margin-top:2px;transition:transform 0.2s;" id="jcard-chevron-${safeId}">›</div>
           </div>
-        </td>
-        <td>${j.taskType ? `${j.taskType}` : '—'}</td>
-        <td>${parking}</td>
-        <td>${j.projectSize || '—'}</td>
-        <td>${crewBadge(j)}</td>
-        <td>${fmtDate(j.scheduleDay)}</td>
-        <td>${j.status === 'Completed' ? fmtDate(j.completionDay) : '—'}</td>
-        <td>${statusBadge(j.status)}</td>
-        <td>${permitNum}</td>
-        <td>${permitStatusBadge(j)}</td>
-        <td style="white-space:nowrap;">
-          <button onclick="event.stopPropagation();shareJob('${j.id}')"
-            title="Share Job"
-            style="background:#1e3a5f;border:1px solid #2d5a9e;color:#60a5fa;padding:5px 8px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-right:4px;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-          </button>
-          <button onclick="event.stopPropagation();addJobToSchedule('${j.id}')"
-            title="Add to Schedule"
-            style="background:#1a3a2a;border:1px solid #22c55e;color:#4ade80;padding:5px 8px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-right:4px;">
-            📅
-          </button>
-          <button onclick="event.stopPropagation();showDeleteConfirm('${j.id}')"
-            style="background:#450a0a;border:1px solid #7f1d1d;color:#f87171;padding:5px 8px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
-            🗑️
-          </button>
-        </td>
-      </tr>`;
+          <!-- EXPANDED DETAILS -->
+          <div id="jcard-detail-${safeId}" style="display:none;margin-top:14px;border-top:1px solid #2a2a2a;padding-top:14px;">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <!-- Contact -->
+              <div>
+                <div style="color:#6b7280;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Contact</div>
+                <div style="font-weight:600;color:#e5e7eb;margin-bottom:4px;">${j.customerName || '—'}</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  ${j.phone ? `<a href="tel:${j.phone}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;background:#1a3a2a;border:1px solid #22c55e;color:#4ade80;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">📞 ${j.phone}</a>` : ''}
+                  ${j.email ? `<a href="mailto:${j.email}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;background:#1e3a5f;border:1px solid #2d5a9e;color:#60a5fa;padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none;">✉️ ${j.email}</a>` : ''}
+                </div>
+              </div>
+              <!-- Job Info -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div style="background:#111;border-radius:8px;padding:10px;">
+                  <div style="color:#6b7280;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Task Type</div>
+                  <div style="color:#e5e7eb;font-size:13px;margin-top:3px;">${j.taskType || '—'}</div>
+                </div>
+                <div style="background:#111;border-radius:8px;padding:10px;">
+                  <div style="color:#6b7280;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Crew</div>
+                  <div style="color:#e5e7eb;font-size:13px;margin-top:3px;">${crewLabel(j) || '—'}</div>
+                </div>
+                <div style="background:#111;border-radius:8px;padding:10px;">
+                  <div style="color:#6b7280;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Project Size</div>
+                  <div style="color:#e5e7eb;font-size:13px;margin-top:3px;">${j.projectSize ? j.projectSize + ' SF' : '—'}</div>
+                </div>
+                <div style="background:#111;border-radius:8px;padding:10px;">
+                  <div style="color:#6b7280;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Status</div>
+                  <div style="margin-top:3px;">${statusBadge(j.status)}</div>
+                </div>
+                <div style="background:#111;border-radius:8px;padding:10px;">
+                  <div style="color:#6b7280;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Schedule Day</div>
+                  <div style="color:#e5e7eb;font-size:13px;margin-top:3px;">${fmtDate(j.scheduleDay)}</div>
+                </div>
+                <div style="background:#111;border-radius:8px;padding:10px;">
+                  <div style="color:#6b7280;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Completion Day</div>
+                  <div style="color:#e5e7eb;font-size:13px;margin-top:3px;">${isCompleted ? fmtDate(j.completionDay) : '—'}</div>
+                </div>
+              </div>
+              ${parking ? `
+              <div style="background:#2d1111;border:1px solid #7f1d1d;border-radius:8px;padding:10px;">
+                <div style="color:#6b7280;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">🚗 Alt. Parking</div>
+                <div style="color:#f87171;font-size:13px;font-weight:600;margin-top:3px;">${parking}</div>
+              </div>` : ''}
+              ${permitNum ? `
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div style="background:#111;border-radius:8px;padding:10px;">
+                  <div style="color:#6b7280;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Permit #</div>
+                  <div style="color:#e5e7eb;font-size:13px;margin-top:3px;">${permitNum}</div>
+                </div>
+                <div style="background:#111;border-radius:8px;padding:10px;">
+                  <div style="color:#6b7280;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Permit Status</div>
+                  <div style="margin-top:3px;">${permitStatusBadge(j)}</div>
+                </div>
+              </div>` : ''}
+              ${j.notes ? `
+              <div style="background:#111;border-radius:8px;padding:10px;">
+                <div style="color:#6b7280;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Notes</div>
+                <div style="color:#d1d5db;font-size:13px;line-height:1.5;">${j.notes}</div>
+              </div>` : ''}
+              <!-- Action Buttons -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
+                <button onclick="event.stopPropagation();openEditJob('${safeId}')"
+                  style="background:#1a2a3a;border:1.5px solid #3b82f6;color:#60a5fa;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
+                  ✏️ Edit
+                </button>
+                <button onclick="event.stopPropagation();showDeleteConfirm('${safeId}')"
+                  style="background:#450a0a;border:1.5px solid #7f1d1d;color:#f87171;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
+                  🗑️ Delete
+                </button>
+                <button onclick="event.stopPropagation();addJobToSchedule('${safeId}')"
+                  style="background:#1a3a2a;border:1.5px solid #22c55e;color:#4ade80;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
+                  📅 Schedule
+                </button>
+                <button onclick="event.stopPropagation();shareJob('${safeId}')"
+                  style="background:#1e3a5f;border:1.5px solid #2d5a9e;color:#60a5fa;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
+                  📤 Share
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>`;
     }).join('');
-
-    attachSwipeHandlers();
   }
 
-  // ── SWIPE TO DELETE ────────────────────────────────────────────────────────
-  function attachSwipeHandlers() {
-    const rows = document.querySelectorAll('#jobs-tbody tr.clickable-row');
-    rows.forEach(row => {
-      let startX = 0;
-      row.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
-      row.addEventListener('touchmove', e => {
-        const diff = startX - e.touches[0].clientX;
-        if (diff > 40) {
-          document.querySelectorAll('#jobs-tbody tr.swiped').forEach(r => { if (r !== row) r.classList.remove('swiped'); });
-          row.classList.add('swiped');
-        } else if (diff < -20) {
-          row.classList.remove('swiped');
-        }
-      }, { passive: true });
-    });
-  }
+  window.toggleJobCard = function(jobId) {
+    const detail = document.getElementById('jcard-detail-' + jobId);
+    const chevron = document.getElementById('jcard-chevron-' + jobId);
+    if (!detail) return;
+    const isOpen = detail.style.display !== 'none';
+    // Close all open cards first
+    document.querySelectorAll('[id^="jcard-detail-"]').forEach(el => { el.style.display = 'none'; });
+    document.querySelectorAll('[id^="jcard-chevron-"]').forEach(el => { el.style.transform = ''; el.style.color = '#555'; });
+    if (!isOpen) {
+      detail.style.display = 'block';
+      if (chevron) { chevron.style.transform = 'rotate(90deg)'; chevron.style.color = '#e53e3e'; }
+    }
+  };
 
   // ── DELETE CONFIRM ─────────────────────────────────────────────────────────
   window.showDeleteConfirm = function(jobId) {
