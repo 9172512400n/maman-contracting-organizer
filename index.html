@@ -4801,28 +4801,30 @@ Cell: 516-306-3326`
   }
 
   window.saveScheduleNote = async function(iso, noteText) {
-    if (!noteText || !noteText.trim()) return;
+    if (!noteText || !noteText.trim()) {
+      window.schedHideNoteInput && window.schedHideNoteInput(iso);
+      return;
+    }
     const note = noteText.trim();
-    const body = {
-      fields: {
-        note: { stringValue: note },
-        date: { stringValue: iso },
-        updatedAt: { stringValue: new Date().toISOString() }
-      }
-    };
+    const FSKEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
+    const FSBASE = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
+    // Update local cache immediately — don't wait for network
+    window.scheduleNotes[iso] = { note, date: iso, updatedAt: new Date().toISOString() };
+    window.schedHideNoteInput && window.schedHideNoteInput(iso);
+    renderSchedule();
+    window.showToast && window.showToast('📝 Note saved!', '#4ade80');
+    // Save to Firestore in background (non-blocking)
     try {
-      await fetch(`${FS_BASE}/scheduleNotes/${iso}?key=${API_KEY}`, {
+      fetch(`${FSBASE}/scheduleNotes/${iso}?key=${FSKEY}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify({ fields: {
+          note: { stringValue: note },
+          date: { stringValue: iso },
+          updatedAt: { stringValue: new Date().toISOString() }
+        }})
       });
-      window.scheduleNotes[iso] = { note, date: iso, updatedAt: new Date().toISOString() };
-      renderSchedule();
-      window.showToast && window.showToast('📝 Note saved!', '#4ade80');
-    } catch(e) {
-      console.error('saveScheduleNote failed:', e);
-      window.showToast && window.showToast('❌ Failed to save note', '#e53e3e');
-    }
+    } catch(e) { console.warn('saveScheduleNote background save failed:', e); }
   };
 
   window.deleteScheduleNote = async function(iso) {
