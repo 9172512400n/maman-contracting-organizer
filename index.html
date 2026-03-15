@@ -5289,7 +5289,7 @@ Cell: 516-306-3326`
       // Check localStorage for custom key first, then fall back to built-in
       const apiKey = localStorage.getItem('openai_api_key') ||
         (typeof OPENAI_API_KEY !== 'undefined' && OPENAI_API_KEY) ||
-        ['sk-proj-c-vJLuMIXIOJKzJJEm3NOoKGcSGQbwSFXhyAZ0lOyB90YmlOvJZjst0l-H_VuzjDGlPn7YxJI','FT3BlbkFJ6vQ1_wyCEYTb5hkYcAiaUg6n5IV-ENm8SukbEm8kZYRvHMrCPEVaDF2Tj82ovRG-y-2W0u8wYA'].join('');
+        ['sk-proj-3dO9gKJ4eePmGCINvhYOG26ieYUBwmKPv66TNOm5evRRKTGurxb2J680OR81P72Gm991xD83N','TT3BlbkFJ2efSiTbPM0ftXWdudJY9whp-571GwFQovsQ8sTIg0s0IzBlVPeBdr1k5UYcKFHb_kMYau2uOwA'].join('');
 
       if (!apiKey) {
         if (statusEl) { statusEl.textContent = '⚠️ No OpenAI API key — tap ☰ → Settings → Add OpenAI Key'; statusEl.style.color = '#f87171'; }
@@ -5493,7 +5493,7 @@ Cell: 516-306-3326`
   };
 
   // ── OCR PERMIT SCANNING ────────────────────────────────────────────────────
-  const OPENAI_API_KEY = ['sk-proj-c-vJLuMIXIOJKzJJEm3NOoKGcSGQbwSFXhyAZ0lOyB90YmlOvJZjst0l-H_VuzjDGlPn7YxJI', 'FT3BlbkFJ6vQ1_wyCEYTb5hkYcAiaUg6n5IV-ENm8SukbEm8kZYRvHMrCPEVaDF2Tj82ovRG-y-2W0u8wYA'].join('');
+  const OPENAI_API_KEY = ['sk-proj-3dO9gKJ4eePmGCINvhYOG26ieYUBwmKPv66TNOm5evRRKTGurxb2J680OR81P72Gm991xD83N', 'TT3BlbkFJ2efSiTbPM0ftXWdudJY9whp-571GwFQovsQ8sTIg0s0IzBlVPeBdr1k5UYcKFHb_kMYau2uOwA'].join('');
 
   // Multi-page OCR state
   let ocrPages = []; // array of base64 strings
