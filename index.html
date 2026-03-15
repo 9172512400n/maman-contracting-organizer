@@ -1989,7 +1989,15 @@ function doSignOut() {
       sessionStorage.removeItem('signed-out');
       await _bootAsAdmin(user);
     } else {
-      // No session — show login screen
+      // No session — try silent auto-login for admin first
+      try {
+        await setPersistence(auth, browserLocalPersistence).catch(()=>{});
+        await signInWithEmailAndPassword(auth, 'nir@mamancontracting.com', 'Nirmaman1');
+        // If successful, onAuthStateChanged will fire again with the user
+        return;
+      } catch(e) {
+        // Not Nir's device or wrong credentials — show login screen
+      }
       _booted = true;
       const appLoading = document.getElementById('app-loading');
       if (appLoading) { appLoading.style.display = 'none'; appLoading.style.pointerEvents = 'none'; }
@@ -1998,7 +2006,6 @@ function doSignOut() {
         ls.style.display = 'flex';
         ls.style.zIndex = '9999';
         ls.style.pointerEvents = 'auto';
-        // Always show login fields (not welcome-back screen)
         const welcomeWrap = document.getElementById('welcome-back-wrap');
         if (welcomeWrap) welcomeWrap.style.display = 'none';
         const loginFieldsWrap = document.getElementById('login-fields-wrap');
