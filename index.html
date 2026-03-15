@@ -1006,14 +1006,36 @@ function enterApp() {
   if (window._enterAppCallback) window._enterAppCallback();
 }
 
-// Global permit modal helpers — safe fallbacks before module loads
-window._openPermitModal = function() {
+// Global permit modal helpers — always available (module-independent)
+window.openPermitModal = window.openPermitModal || function() {
   var modal = document.getElementById('permit-modal');
   if (modal) { modal.style.display = 'block'; document.body.style.overflow = 'hidden'; }
 };
-window._closePermitModal = function() {
+window.closePermitModal = window.closePermitModal || function() {
   var modal = document.getElementById('permit-modal');
   if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
+};
+window.openAddPermitForAddress = window.openAddPermitForAddress || function(addr) {
+  window.openPermitModal();
+  if (addr) { setTimeout(function() { var el = document.getElementById('pm-jobAddress'); if (el) el.value = addr; }, 200); }
+};
+window.scanPermitForAddress = window.scanPermitForAddress || function(addr) {
+  var input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*,application/pdf'; input.capture = 'environment';
+  input.style.display = 'none';
+  input.onchange = function() {
+    var file = input.files[0];
+    if (!file) return;
+    window.openPermitModal();
+    if (addr) { setTimeout(function() { var el = document.getElementById('pm-jobAddress'); if(el) el.value = addr; }, 200); }
+    setTimeout(function() {
+      if (window.handleScanInputForAddress) { window.handleScanInputForAddress(input, addr); }
+      else if (window.handlePermitFiles) { window.handlePermitFiles(input); }
+    }, 300);
+    document.body.removeChild(input);
+  };
+  document.body.appendChild(input);
+  input.click();
 };
 
 function toggleUserMenu() {
