@@ -1487,11 +1487,21 @@ function doSignOut() {
               </div>
             </div>
 
-            <!-- Section 3: Clear -->
-            <button onclick="clearSFCalc()"
-              style="width:100%;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.3px;">
-              🗑️ Clear All
-            </button>
+            <!-- Section 3: Share + Clear -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+              <button onclick="clearSFCalc()"
+                style="padding:13px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">
+                🗑️ Clear
+              </button>
+              <button onclick="shareSFCalcText()"
+                style="padding:13px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">
+                📱 Text
+              </button>
+              <button onclick="shareSFCalcEmail()"
+                style="padding:13px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">
+                ✉️ Email
+              </button>
+            </div>
           </div>
         </div>
 
@@ -5442,8 +5452,8 @@ Office: 631-651-1815`
     lines.forEach(line => {
       const trimmed = line.trim();
       if (!trimmed) return;
-      // Supports: 10x10, 10'x10', 10 x 10, 10X10, 10' x 10', etc.
-      const match = trimmed.match(/^([\d.]+)\s*'?\s*[xX]\s*([\d.]+)\s*'?$/);
+      // Supports: 10x10, 10'x10', 10 x 10, 10X10, 10×10, 10' x 10', etc.
+      const match = trimmed.match(/^([\d.]+)\s*'?\s*[xX×\*]\s*([\d.]+)\s*'?$/);
       if (match) {
         const a = parseFloat(match[1]);
         const b = parseFloat(match[2]);
@@ -5468,6 +5478,33 @@ Office: 631-651-1815`
       costDisplay.textContent = '—';
       costDisplay.style.color = '#4ade80';
     }
+  };
+
+  function getSFCalcText() {
+    const measurements = (document.getElementById('sf-measurements').value || '').trim();
+    const totalSF = document.getElementById('sf-total-display').textContent;
+    const price = document.getElementById('sf-price-per-sf').value;
+    const totalCost = document.getElementById('sf-total-cost').textContent;
+    let text = `Maman Contracting — SF & Price Estimate\n\nMeasurements:\n${measurements}\n\nTotal SF: ${totalSF}`;
+    if (price) text += `\nPrice per SF: $${price}\nTotal Cost: ${totalCost}`;
+    return text;
+  }
+
+  window.shareSFCalcText = function() {
+    const text = getSFCalcText();
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    if (navigator.share) {
+      navigator.share({ title: 'SF Estimate', text }).catch(() => window.open(waUrl, '_blank'));
+    } else {
+      window.open(waUrl, '_blank');
+    }
+  };
+
+  window.shareSFCalcEmail = function() {
+    const text = getSFCalcText();
+    const subject = encodeURIComponent('Maman Contracting — SF & Price Estimate');
+    const body = encodeURIComponent(text);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
 
   window.clearSFCalc = function() {
