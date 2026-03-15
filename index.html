@@ -1011,6 +1011,14 @@ function toggleUserMenu() {
   if (!dd) return;
   var isOpen = dd.style.display === 'block';
   dd.style.display = isOpen ? 'none' : 'block';
+  // Update PIN button labels based on current state
+  if (!isOpen) {
+    var pinSet = typeof hasPIN === 'function' && hasPIN();
+    var lbl = document.getElementById('pin-setup-label');
+    var removeBtn = document.getElementById('pin-remove-btn');
+    if (lbl) lbl.textContent = pinSet ? 'Change PIN' : 'Set Up PIN Login';
+    if (removeBtn) removeBtn.style.display = pinSet ? 'flex' : 'none';
+  }
 }
 // Close dropdown when clicking outside
 document.addEventListener('click', function(e) {
@@ -1379,10 +1387,10 @@ function doSignOut() {
             <button onclick="openEmailSignatureModal();toggleUserMenu();" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#eee;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
               <span style="font-size:16px;">✍️</span> My Signature
             </button>
-            <button onclick="toggleUserMenu();_pinSetupFirst='';showPINScreen('setup')" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#60a5fa;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
-              <span style="font-size:16px;">🔐</span> ${hasPIN && hasPIN() ? 'Change PIN' : 'Set Up PIN Login'}
+            <button id="pin-setup-btn" onclick="toggleUserMenu();_pinSetupFirst='';showPINScreen('setup')" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#60a5fa;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:16px;">🔐</span> <span id="pin-setup-label">Set Up PIN Login</span>
             </button>
-            <button onclick="localStorage.removeItem('app_pin_hash');toggleUserMenu();window.showToast&&window.showToast('PIN removed','#4ade80')" style="display:${hasPIN && hasPIN() ? 'flex' : 'none'};width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#f87171;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;align-items:center;gap:10px;">
+            <button id="pin-remove-btn" onclick="localStorage.removeItem('app_pin_hash');toggleUserMenu();window.showToast&&window.showToast('PIN removed','#4ade80');document.getElementById('pin-setup-label').textContent='Set Up PIN Login';document.getElementById('pin-remove-btn').style.display='none'" style="display:none;width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#f87171;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;align-items:center;gap:10px;">
               <span style="font-size:16px;">🗑️</span> Remove PIN
             </button>
             <button onclick="toggleTheme();toggleUserMenu();" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#eee;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
