@@ -2123,7 +2123,8 @@ function doSignOut() {
       // Jobs
       const jobs = await restFetch('jobs');
       allJobs = jobs.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
-      renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); renderSchedule(); checkPermitExpiry();
+      renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); checkPermitExpiry();
+      loadScheduleNotes().then(() => renderSchedule());
     } catch(e) { console.error('jobs load failed:', e); }
     try {
       // Activity
@@ -4601,6 +4602,7 @@ Office: 631-651-1815`
                 <button onclick="schedExportDay('${selDay}')" style="background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:'Inter',sans-serif;">📤 Export</button>
               </div>
             </div>
+            ${buildDayNoteHTML(selDay)}
             ${selJobs.length ? selJobs.map(j => buildScheduleAddrCard(j)).join('') : '<div style="color:#555;font-size:14px;font-weight:700;padding:16px 0;text-align:center;">— No jobs scheduled —</div>'}`;
         }
       }
