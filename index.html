@@ -1869,7 +1869,7 @@ function doSignOut() {
     <div class="persons-section">
       <div class="persons-section-title">
         <span>👤 People</span>
-        <span style="font-size:10px;color:#555;">at least 1 required</span>
+        <span style="font-size:10px;color:#555;">optional</span>
       </div>
       <div id="persons-list"></div>
       <button class="btn-add-person" onclick="addPersonRow()">➕ Add Person</button>
@@ -4096,11 +4096,6 @@ function doSignOut() {
   };
 
   window.removePersonRow = function(rowId) {
-    const list = document.getElementById('persons-list');
-    if (list.querySelectorAll('.person-row').length <= 1) {
-      window.showToast('At least one person is required.', '#f59e0b');
-      return;
-    }
     const row = document.getElementById(rowId);
     if (row) row.remove();
   };
@@ -4151,11 +4146,7 @@ function doSignOut() {
       role: (row.querySelector('.person-role-input') || {}).value?.trim() || '',
     })).filter(p => p.name || p.phone);
 
-    // Allow saving even without persons (just warn if truly empty)
-    if (persons.length === 0) {
-      const ok = confirm('No people added — save contact without a person?');
-      if (!ok) return;
-    }
+    // People section is optional — no validation required
 
     const btn = document.getElementById('save-contact-btn');
     btn.disabled = true; btn.textContent = 'Saving…';
