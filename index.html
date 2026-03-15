@@ -3303,6 +3303,12 @@ function doSignOut() {
         </div>
         <div class="permit-addr-body" id="permit-addr-body-${groupKey}">
           ${buildPermitItemsHtml(groupPermits, groupKey)}
+          <!-- PER-ADDRESS ACTION BUTTONS -->
+          <div class="permit-addr-actions" style="display:flex;gap:10px;padding:10px 12px 2px 12px;flex-wrap:wrap;">
+            <button class="btn btn-primary" style="flex:1;min-width:130px;font-size:13px;padding:10px 12px;" onclick="event.stopPropagation();openAddPermitForAddress(${JSON.stringify(addr === '__no_address__' ? '' : addr)})">+ Add Permit</button>
+            <button class="btn" style="flex:1;min-width:130px;font-size:13px;padding:10px 12px;background:#1a2a3a;border:1.5px solid #3b82f6;color:#60a5fa;" onclick="event.stopPropagation();scanPermitForAddress(${JSON.stringify(addr === '__no_address__' ? '' : addr)})">📷 Scan Permit</button>
+            <input type="file" id="scan-input-${groupKey}" accept="image/*,application/pdf" capture="environment" style="display:none;" onchange="handleScanInputForAddress(this, ${JSON.stringify(addr === '__no_address__' ? '' : addr)})" />
+          </div>
           <!-- DOT INSPECTION SECTION -->
           <div class="dot-inspect-section">
             <div class="dot-inspect-title">📧 DOT Milling Inspection Notification</div>
@@ -3572,6 +3578,113 @@ Office: 631-651-1815`
     populateJobDropdown('');
     document.getElementById('permit-modal').style.display = 'block';
     document.body.style.overflow = 'hidden';
+  };
+
+  // Open the permit modal pre-filled with a specific address
+  window.openAddPermitForAddress = function(address) {
+    openPermitModal();
+    if (address) {
+      const addrEl = document.getElementById('pm-jobAddress');
+      if (addrEl) addrEl.value = address;
+    }
+  };
+
+  // Trigger file picker for per-address OCR scan
+  window.scanPermitForAddress = function(address) {
+    // Find the hidden input by looking for any scan-input whose address matches
+    // We'll use a shared approach: set a pending address then trigger the input
+    window._pendingScanAddress = address;
+    // Create a temporary file input and trigger it
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,application/pdf';
+    input.capture = 'environment';
+    input.style.display = 'none';
+    input.onchange = function() { handleScanInputForAddress(this, address); document.body.removeChild(input); };
+    document.body.appendChild(input);
+    input.click();
+  };
+
+  // Handle the file selected by scanPermitForAddress
+  window.handleScanInputForAddress = async function(input, cardAddress) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Open the modal immediately (blank) with address pre-filled
+    openPermitModal();
+    if (cardAddress) {
+      const addrEl = document.getElementById('pm-jobAddress');
+      if (addrEl) addrEl.value = cardAddress;
+    }
+
+    const statusEl = document.getElementById('ocr-status');
+    if (statusEl) { statusEl.textContent = '⏳ Scanning permit…'; statusEl.style.color = '#f59e0b'; }
+
+    try {
+      // Convert file to base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const mimeType = file.type || 'image/jpeg';
+      const apiKey = (typeof OPENAI_API_KEY !== 'undefined' && OPENAI_API_KEY) ? OPENAI_API_KEY : '';
+
+      if (!apiKey) {
+        if (statusEl) { statusEl.textContent = '⚠️ No OpenAI API key — fill in manually'; statusEl.style.color = '#f87171'; }
+        window.showToast('❌ Scan failed — please fill in manually', '#e53e3e');
+        return;
+      }
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          max_tokens: 500,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: 'This is an NYC DOT permit document. Extract ONLY these fields as JSON: { "permitNumber": "", "validFrom": "", "expirationDate": "", "permitHolder": "", "permitTypeCode": "", "jobAddress": "", "notes": "" }. permitTypeCode = number only. jobAddress = house number + street name only. validFrom and expirationDate in YYYY-MM-DD format. notes = any other relevant info. Return ONLY valid JSON, no markdown.' },
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } }
+            ]
+          }]
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || 'API error ' + response.status);
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || '';
+      const cleaned = content.replace(/```json?\n?/gi, '').replace(/```/g, '').trim();
+      const extracted = JSON.parse(cleaned);
+
+      // Fill form fields (but keep card address, not extracted address)
+      if (extracted.permitNumber) document.getElementById('pm-permitNumber').value = extracted.permitNumber;
+      if (extracted.permitTypeCode) document.getElementById('pm-permitTypeCode').value = extracted.permitTypeCode;
+      if (extracted.validFrom) document.getElementById('pm-validFrom').value = extracted.validFrom;
+      if (extracted.expirationDate) document.getElementById('pm-expirationDate').value = extracted.expirationDate;
+      if (extracted.permitHolder) document.getElementById('pm-permitHolder').value = extracted.permitHolder;
+      if (extracted.notes) document.getElementById('pm-notes').value = extracted.notes;
+      // Only use extracted address if card address is empty
+      if (!cardAddress && extracted.jobAddress) {
+        document.getElementById('pm-jobAddress').value = extracted.jobAddress;
+      }
+
+      if (statusEl) { statusEl.textContent = '✅ Permit scanned — review and save'; statusEl.style.color = '#4ade80'; }
+      window.showToast('✅ Permit scanned — review and save', '#16a34a');
+
+    } catch(err) {
+      if (statusEl) { statusEl.textContent = '❌ Scan failed: ' + err.message; statusEl.style.color = '#f87171'; }
+      window.showToast('❌ Scan failed — please fill in manually', '#e53e3e');
+    }
+
+    input.value = '';
   };
 
   window.openEditPermit = function(permitId) {
