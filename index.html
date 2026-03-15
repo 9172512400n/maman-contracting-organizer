@@ -1272,6 +1272,35 @@ function doSignOut() {
               </div>
             </div>
 
+            <!-- TASKS & REMINDERS PANEL -->
+            <div class="panel" id="tasks-panel" style="border:1.5px solid #16a34a;background:rgba(22,163,74,0.04);margin-bottom:14px;">
+              <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;color:#4ade80;">
+                <span>✅ Tasks &amp; Reminders</span>
+                <button id="add-task-btn" onclick="toggleAddTaskForm()" style="background:#052e16;border:1px solid #16a34a;border-radius:6px;color:#4ade80;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;">+ Add Task</button>
+              </div>
+              <!-- Inline Add Task Form -->
+              <div id="add-task-form" style="display:none;margin-bottom:12px;background:#0a1a0a;border:1px solid #16a34a;border-radius:8px;padding:12px;">
+                <div style="margin-bottom:8px;">
+                  <input id="task-title-input" type="text" placeholder="Task title (required)" style="width:100%;box-sizing:border-box;background:#1a1a2e;border:1px solid #16a34a;border-radius:6px;color:#e2e8f0;font-size:13px;font-family:'Inter',sans-serif;padding:8px 10px;outline:none;"/>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:8px;">
+                  <input id="task-due-date-input" type="date" style="flex:1;background:#1a1a2e;border:1px solid #333;border-radius:6px;color:#e2e8f0;font-size:13px;font-family:'Inter',sans-serif;padding:7px 10px;outline:none;"/>
+                  <input id="task-due-time-input" type="time" style="flex:1;background:#1a1a2e;border:1px solid #333;border-radius:6px;color:#e2e8f0;font-size:13px;font-family:'Inter',sans-serif;padding:7px 10px;outline:none;"/>
+                </div>
+                <div style="margin-bottom:8px;">
+                  <textarea id="task-desc-input" placeholder="Description (optional)" rows="2" style="width:100%;box-sizing:border-box;background:#1a1a2e;border:1px solid #333;border-radius:6px;color:#e2e8f0;font-size:13px;font-family:'Inter',sans-serif;padding:8px 10px;resize:vertical;outline:none;"></textarea>
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button onclick="addTask()" style="background:#16a34a;border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:700;padding:6px 16px;cursor:pointer;font-family:'Inter',sans-serif;">💾 Save Task</button>
+                  <button onclick="toggleAddTaskForm()" style="background:#1f1f1f;border:1px solid #333;border-radius:6px;color:#888;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
+                </div>
+              </div>
+              <!-- Tasks List -->
+              <div id="tasks-list-panel">
+                <div class="notif-item"><div class="notif-title" style="color:#555;">Loading tasks…</div></div>
+              </div>
+            </div>
+
             <!-- ACTIVITY PANEL -->
             <div class="panel">
               <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
@@ -2213,6 +2242,10 @@ function doSignOut() {
       await loadNotifications();
     } catch(e) { console.error('notifications load failed:', e); }
     try {
+      // Tasks & Reminders
+      await loadTasks();
+    } catch(e) { console.error('tasks load failed:', e); }
+    try {
       // Activity
       const acts = await restFetch('activity', 20);
       const items = acts.sort((a,b) => (b.timestamp||'') > (a.timestamp||'') ? 1 : -1).slice(0,10);
@@ -2773,8 +2806,349 @@ function doSignOut() {
     }).join('');
   }
 
+  // ── TASKS & REMINDERS ─────────────────────────────────────────────────────
+  let _allTasks = [];
+
+  window.toggleAddTaskForm = function() {
+    const form = document.getElementById('add-task-form');
+    if (!form) return;
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    if (form.style.display === 'block') {
+      const ti = document.getElementById('task-title-input');
+      if (ti) ti.focus();
+    }
+  };
+
+  window.addTask = async function() {
+    const title = (document.getElementById('task-title-input')?.value || '').trim();
+    if (!title) { window.showToast('Task title is required', '#f59e0b'); return; }
+    const dueDate = document.getElementById('task-due-date-input')?.value || '';
+    const dueTime = document.getElementById('task-due-time-input')?.value || '';
+    const description = (document.getElementById('task-desc-input')?.value || '').trim();
+    const now = new Date().toISOString();
+    const userEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
+    const userName = (currentUser && (currentUser.displayName || currentUser.email)) || 'Nir Maman';
+    const body = {
+      fields: {
+        title: { stringValue: title },
+        dueDate: { stringValue: dueDate },
+        dueTime: { stringValue: dueTime },
+        description: { stringValue: description },
+        createdBy: { stringValue: userEmail },
+        createdByName: { stringValue: userName },
+        createdAt: { stringValue: now },
+        status: { stringValue: 'open' },
+        notes: { stringValue: '[]' }
+      }
+    };
+    try {
+      const r = await fetch(`${FS_BASE}/tasks?key=${API_KEY}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error('POST failed: ' + r.status);
+      window.showToast('Task added! ✅', '#22c55e');
+      // Reset form
+      ['task-title-input','task-due-date-input','task-due-time-input','task-desc-input'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+      document.getElementById('add-task-form').style.display = 'none';
+      await loadTasks();
+    } catch(e) {
+      console.error('addTask failed:', e);
+      window.showToast('Failed to save task', '#e53e3e');
+    }
+  };
+
+  window.markTaskDone = async function(id) {
+    const now = new Date().toISOString();
+    const userEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
+    const userName = (currentUser && (currentUser.displayName || currentUser.email)) || 'Nir Maman';
+    const task = _allTasks.find(t => t.id === id);
+    if (!task) return;
+    const body = {
+      fields: {
+        ...buildTaskFields(task),
+        status: { stringValue: 'done' },
+        doneBy: { stringValue: userEmail },
+        doneByName: { stringValue: userName },
+        doneAt: { stringValue: now }
+      }
+    };
+    try {
+      const r = await fetch(`${FS_BASE}/tasks/${id}?key=${API_KEY}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error('PATCH failed: ' + r.status);
+      window.showToast('Task marked done ✅', '#22c55e');
+      await loadTasks();
+    } catch(e) {
+      console.error('markTaskDone failed:', e);
+      window.showToast('Failed to update task', '#e53e3e');
+    }
+  };
+
+  window.closeTask = async function(id) {
+    const now = new Date().toISOString();
+    const userEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
+    const task = _allTasks.find(t => t.id === id);
+    if (!task) return;
+    const body = {
+      fields: {
+        ...buildTaskFields(task),
+        status: { stringValue: 'closed' },
+        closedBy: { stringValue: userEmail },
+        closedAt: { stringValue: now }
+      }
+    };
+    try {
+      const r = await fetch(`${FS_BASE}/tasks/${id}?key=${API_KEY}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error('PATCH failed: ' + r.status);
+      window.showToast('Task archived →', '#16a34a');
+      await loadTasks();
+    } catch(e) {
+      console.error('closeTask failed:', e);
+      window.showToast('Failed to archive task', '#e53e3e');
+    }
+  };
+
+  window.deleteTask = async function(id) {
+    if (!window._isAdmin) { window.showToast('Admin only', '#e53e3e'); return; }
+    if (!confirm('Permanently delete this task?')) return;
+    try {
+      const r = await fetch(`${FS_BASE}/tasks/${id}?key=${API_KEY}`, { method: 'DELETE' });
+      if (!r.ok) throw new Error('DELETE failed: ' + r.status);
+      window.showToast('Task deleted 🗑️', '#22c55e');
+      await loadTasks();
+    } catch(e) {
+      console.error('deleteTask failed:', e);
+      window.showToast('Failed to delete task', '#e53e3e');
+    }
+  };
+
+  window.toggleTaskNoteForm = function(id) {
+    const el = document.getElementById(`task-note-form-${id}`);
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    if (el.style.display === 'block') {
+      const ta = el.querySelector('textarea');
+      if (ta) ta.focus();
+    }
+  };
+
+  window.addTaskNote = async function(id) {
+    const el = document.getElementById(`task-note-form-${id}`);
+    const ta = el && el.querySelector('textarea');
+    const text = (ta && ta.value || '').trim();
+    if (!text) { window.showToast('Note cannot be empty', '#f59e0b'); return; }
+    const task = _allTasks.find(t => t.id === id);
+    if (!task) return;
+    const now = new Date().toISOString();
+    const userName = (currentUser && (currentUser.displayName || currentUser.email)) || 'Nir Maman';
+    const userEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
+    let notes = [];
+    try { notes = JSON.parse(task.notes || '[]'); } catch(e) { notes = []; }
+    notes.push({ text, addedBy: userEmail, addedByName: userName, addedAt: now });
+    const body = {
+      fields: {
+        ...buildTaskFields(task),
+        notes: { stringValue: JSON.stringify(notes) }
+      }
+    };
+    try {
+      const r = await fetch(`${FS_BASE}/tasks/${id}?key=${API_KEY}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error('PATCH failed: ' + r.status);
+      window.showToast('Note added 📝', '#22c55e');
+      await loadTasks();
+    } catch(e) {
+      console.error('addTaskNote failed:', e);
+      window.showToast('Failed to save note', '#e53e3e');
+    }
+  };
+
+  window.toggleTaskNotes = function(id) {
+    const el = document.getElementById(`task-notes-thread-${id}`);
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+
+  function buildTaskFields(task) {
+    return {
+      title: { stringValue: task.title || '' },
+      dueDate: { stringValue: task.dueDate || '' },
+      dueTime: { stringValue: task.dueTime || '' },
+      description: { stringValue: task.description || '' },
+      createdBy: { stringValue: task.createdBy || '' },
+      createdByName: { stringValue: task.createdByName || '' },
+      createdAt: { stringValue: task.createdAt || '' },
+      status: { stringValue: task.status || 'open' },
+      doneBy: { stringValue: task.doneBy || '' },
+      doneByName: { stringValue: task.doneByName || '' },
+      doneAt: { stringValue: task.doneAt || '' },
+      closedBy: { stringValue: task.closedBy || '' },
+      closedAt: { stringValue: task.closedAt || '' },
+      notes: { stringValue: task.notes || '[]' }
+    };
+  }
+
+  async function loadTasks() {
+    try {
+      const data = await restFetch('tasks');
+      _allTasks = data.sort((a, b) => {
+        // Sort open tasks by dueDate asc, then done/closed by createdAt desc
+        if (a.status === 'open' && b.status !== 'open') return -1;
+        if (a.status !== 'open' && b.status === 'open') return 1;
+        if (a.dueDate && b.dueDate) return a.dueDate > b.dueDate ? 1 : -1;
+        return (b.createdAt || '') > (a.createdAt || '') ? 1 : -1;
+      });
+      renderTasks(_allTasks);
+      updateBellBadge();
+    } catch(e) {
+      console.error('loadTasks failed:', e);
+      const el = document.getElementById('tasks-list-panel');
+      if (el) el.innerHTML = '<div class="notif-item"><div class="notif-title" style="color:#555;">Failed to load tasks.</div></div>';
+    }
+  }
+
+  function renderTasks(tasks) {
+    const el = document.getElementById('tasks-list-panel');
+    if (!el) return;
+    const isAdmin = window._isAdmin;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().slice(0, 10);
+
+    const openTasks = tasks.filter(t => t.status === 'open');
+    const doneTasks = tasks.filter(t => t.status === 'done');
+    const closedTasks = tasks.filter(t => t.status === 'closed');
+
+    function formatDue(task) {
+      if (!task.dueDate) return '';
+      const d = new Date(task.dueDate + 'T00:00:00');
+      const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return task.dueTime ? `${formatted} at ${task.dueTime}` : formatted;
+    }
+
+    function taskCardStyle(task) {
+      if (task.status === 'open') {
+        if (task.dueDate && task.dueDate < todayStr) return 'border-left:4px solid #e53e3e;';
+        if (task.dueDate === todayStr) return 'border-left:4px solid #f59e0b;';
+        return 'border-left:4px solid #4b5563;';
+      }
+      if (task.status === 'done') return 'border-left:4px solid #4b5563;opacity:0.7;';
+      return 'border-left:4px solid #222;opacity:0.4;';
+    }
+
+    function taskBadge(task) {
+      if (task.status !== 'open') return '';
+      if (task.dueDate && task.dueDate < todayStr) return '<span style="font-size:10px;font-weight:700;color:#f87171;margin-left:6px;">⚠️ OVERDUE</span>';
+      if (task.dueDate === todayStr) return '<span style="font-size:10px;font-weight:700;color:#fbbf24;margin-left:6px;">📅 Today</span>';
+      return '';
+    }
+
+    function renderNotes(task) {
+      let notes = [];
+      try { notes = JSON.parse(task.notes || '[]'); } catch(e) { notes = []; }
+      if (!notes.length) return '';
+      const thread = notes.map(n => {
+        const ts = n.addedAt ? (() => { try { return new Date(n.addedAt).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); } catch(e) { return n.addedAt; } })() : '';
+        return `<div style="border-left:2px solid #333;margin:4px 0;padding:4px 8px;">
+          <div style="font-size:12px;color:#d1d5db;">${n.text}</div>
+          <div style="font-size:10px;color:#555;margin-top:2px;">${n.addedByName || n.addedBy || 'Unknown'} · ${ts}</div>
+        </div>`;
+      }).join('');
+      return `<div style="margin-top:4px;">
+        <button onclick="toggleTaskNotes('${task.id}')" style="background:none;border:none;color:#6b7280;font-size:11px;cursor:pointer;padding:2px 0;font-family:'Inter',sans-serif;">📎 ${notes.length} note${notes.length>1?'s':''}</button>
+        <div id="task-notes-thread-${task.id}" style="display:none;margin-top:4px;">${thread}</div>
+      </div>`;
+    }
+
+    function renderOpenCard(task) {
+      const dueStr = formatDue(task);
+      const badge = taskBadge(task);
+      const style = taskCardStyle(task);
+      const adminDel = isAdmin ? `<button onclick="deleteTask('${task.id}')" title="Delete" style="background:none;border:none;color:#555;cursor:pointer;font-size:14px;padding:2px 4px;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#555'">🗑️</button>` : '';
+      return `<div class="notif-item" style="${style}padding-left:10px;margin-bottom:8px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+          <div style="flex:1;">
+            <div style="font-weight:700;color:#e2e8f0;font-size:13px;">${task.title}${badge}</div>
+            ${dueStr ? `<div style="font-size:11px;color:#9ca3af;margin-top:1px;">📅 ${dueStr}</div>` : ''}
+            <div style="font-size:11px;color:#6b7280;margin-top:1px;">By ${task.createdByName || task.createdBy || '?'}</div>
+            ${task.description ? `<div style="font-size:12px;color:#9ca3af;margin-top:3px;">${task.description}</div>` : ''}
+            ${renderNotes(task)}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+            <button onclick="markTaskDone('${task.id}')" style="background:#052e16;border:1px solid #16a34a;border-radius:5px;color:#4ade80;font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;font-family:'Inter',sans-serif;">✅ Done</button>
+            <button onclick="toggleTaskNoteForm('${task.id}')" style="background:#1a1a2e;border:1px solid #3b82f6;border-radius:5px;color:#60a5fa;font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;font-family:'Inter',sans-serif;">📝 Note</button>
+            ${adminDel}
+          </div>
+        </div>
+        <div id="task-note-form-${task.id}" style="display:none;margin-top:8px;">
+          <textarea placeholder="Add a note…" rows="2" style="width:100%;box-sizing:border-box;background:#1a1a2e;border:1px solid #3b82f6;border-radius:6px;color:#e2e8f0;font-size:12px;font-family:'Inter',sans-serif;padding:6px 10px;resize:vertical;outline:none;"></textarea>
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            <button onclick="addTaskNote('${task.id}')" style="background:#1d4ed8;border:none;border-radius:5px;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;">💾 Save</button>
+            <button onclick="toggleTaskNoteForm('${task.id}')" style="background:#1f1f1f;border:1px solid #333;border-radius:5px;color:#888;font-size:11px;padding:4px 8px;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function renderDoneCard(task) {
+      const dueStr = formatDue(task);
+      return `<div class="notif-item" style="${taskCardStyle(task)}padding-left:10px;margin-bottom:6px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+          <div style="flex:1;">
+            <div style="text-decoration:line-through;color:#6b7280;font-size:13px;">${task.title}</div>
+            ${dueStr ? `<div style="font-size:11px;color:#4b5563;margin-top:1px;">📅 ${dueStr}</div>` : ''}
+            <div style="font-size:11px;color:#4b5563;">Done by ${task.doneByName || task.doneBy || '?'}</div>
+            ${renderNotes(task)}
+          </div>
+          <button onclick="closeTask('${task.id}')" style="background:#1a1a2e;border:1px solid #4b5563;border-radius:5px;color:#9ca3af;font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;">Archive →</button>
+        </div>
+      </div>`;
+    }
+
+    function renderClosedCard(task) {
+      const adminDel = isAdmin ? `<button onclick="deleteTask('${task.id}')" title="Delete permanently" style="background:none;border:none;color:#333;cursor:pointer;font-size:13px;padding:2px 4px;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#333'">🗑️</button>` : '';
+      return `<div class="notif-item" style="${taskCardStyle(task)}padding-left:10px;margin-bottom:6px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+          <div style="flex:1;font-style:italic;color:#4b5563;font-size:12px;">${task.title}</div>
+          ${adminDel}
+        </div>
+      </div>`;
+    }
+
+    let html = '';
+
+    if (!openTasks.length) {
+      html += '<div class="notif-item"><div class="notif-title" style="color:#555;">No open tasks 🎉</div></div>';
+    } else {
+      html += openTasks.map(renderOpenCard).join('');
+    }
+
+    if (doneTasks.length) {
+      html += `<div style="margin-top:10px;">
+        <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.textContent=this.textContent.startsWith('▼')?'▶ Done (${doneTasks.length})':'▼ Done (${doneTasks.length})';" style="background:none;border:none;color:#6b7280;font-size:12px;font-weight:700;cursor:pointer;padding:2px 0;font-family:'Inter',sans-serif;">▼ Done (${doneTasks.length})</button>
+        <div>${doneTasks.map(renderDoneCard).join('')}</div>
+      </div>`;
+    }
+
+    if (closedTasks.length) {
+      html += `<div style="margin-top:10px;">
+        <button onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.textContent=this.textContent.startsWith('▼')?'▶ Closed (${closedTasks.length})':'▼ Closed (${closedTasks.length})';" style="background:none;border:none;color:#4b5563;font-size:12px;font-weight:700;cursor:pointer;padding:2px 0;font-family:'Inter',sans-serif;">▼ Closed (${closedTasks.length})</button>
+        <div>${closedTasks.map(renderClosedCard).join('')}</div>
+      </div>`;
+    }
+
+    el.innerHTML = html;
+  }
+  // ── END TASKS ──────────────────────────────────────────────────────────────
+
   function updateBellBadge() {
-    // Count unread push notifications + unread permit alerts
+    // Count unread push notifications + unread permit alerts + overdue/today tasks
     const unreadNotifs = _allNotifications.filter(n => n.read === false).length;
     // Permit expiry count is already handled by checkPermitExpiry — combine
     const badge = document.getElementById('notif-badge');
@@ -2785,7 +3159,10 @@ function doSignOut() {
     // Get permit count from badge text if shown
     const alertsBadge = document.getElementById('alerts-count-badge');
     const permitCount = alertsBadge && alertsBadge.style.display !== 'none' ? parseInt(alertsBadge.textContent || '0') : 0;
-    const total = unreadNotifs + permitCount;
+    // Tasks: overdue + due today
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const urgentTasks = _allTasks.filter(t => t.status === 'open' && t.dueDate && t.dueDate <= todayStr).length;
+    const total = unreadNotifs + permitCount + urgentTasks;
     if (total > 0) {
       badge.textContent = total;
       badge.style.display = 'flex';
