@@ -1250,7 +1250,7 @@ function doSignOut() {
             <div class="panel">
               <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
                 <span>📋 Activity</span>
-                <button onclick="clearAllNotifications()" style="background:#450a0a;border:1px solid #7f1d1d;border-radius:6px;color:#f87171;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Clear</button>
+                <button id="clear-activity-btn" onclick="clearAllNotifications()" style="background:#450a0a;border:1px solid #7f1d1d;border-radius:6px;color:#f87171;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;display:none;">🗑️ Clear</button>
               </div>
               <div id="activity-log-panel">
                 <div class="notif-item"><div class="notif-title" style="color:#555;">Loading…</div></div>
@@ -1986,6 +1986,9 @@ function doSignOut() {
     if (dropEmail) dropEmail.textContent = displayEmail;
     if (dropBigAvatar) dropBigAvatar.textContent = initials;
     if (dropNameEl) dropNameEl.textContent = displayName;
+    // Show Clear Activity button only for admin
+    const clearActivityBtn = document.getElementById('clear-activity-btn');
+    if (clearActivityBtn) clearActivityBtn.style.display = isAdmin ? 'inline-block' : 'none';
 
     try { startListeners(); } catch(e) { console.error('startListeners error:', e); }
       // Load contacts directly (REST, paginated) — always runs regardless of SDK status
@@ -3797,6 +3800,7 @@ Cell: 516-306-3326`
   };
 
   window.clearAllNotifications = async function() {
+    if (!window._isAdmin) { window.showToast('Only admin can clear activity', '#e53e3e'); return; }
     const el = document.getElementById('activity-log-panel');
     if (!el) return;
     // Show inline confirm overlay
