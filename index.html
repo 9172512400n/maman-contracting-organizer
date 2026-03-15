@@ -842,10 +842,167 @@ function navTo(idx) {
   if (typeof window._navTo === 'function' && window._navTo !== navTo) window._navTo(idx);
 }
 
+// ── PIN Smart Login ──────────────────────────────────────────────────────
+var _pinBuffer = '';
+var _pinMode = ''; // 'setup' | 'verify' | ''
+
+function getPINHash(pin) {
+  // Simple deterministic hash (not crypto but adequate for local UX lock)
+  var hash = 0;
+  for (var i = 0; i < pin.length; i++) { hash = ((hash << 5) - hash) + pin.charCodeAt(i); hash |= 0; }
+  return 'pin_' + Math.abs(hash).toString(36) + pin.length;
+}
+
+function hasPIN() { return !!localStorage.getItem('app_pin_hash'); }
+
+function showPINScreen(mode) {
+  _pinMode = mode;
+  _pinBuffer = '';
+  var overlay = document.getElementById('pin-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'pin-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#111;z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;font-family:Inter,sans-serif;';
+    overlay.innerHTML = `
+      <div style="font-size:28px;margin-bottom:8px;">🔐</div>
+      <div id="pin-title" style="font-size:18px;font-weight:800;color:#fff;margin-bottom:6px;">Enter PIN</div>
+      <div id="pin-subtitle" style="font-size:13px;color:#666;margin-bottom:24px;">Enter your 4-digit code to unlock</div>
+      <div id="pin-dots" style="display:flex;gap:16px;margin-bottom:24px;">
+        ${[0,1,2,3].map(i => `<div id="pin-dot-${i}" style="width:16px;height:16px;border-radius:50%;border:2px solid #333;background:transparent;transition:background 0.15s;"></div>`).join('')}
+      </div>
+      <div id="pin-error" style="color:#f87171;font-size:13px;margin-bottom:16px;min-height:18px;"></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:260px;width:100%;">
+        ${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k => `<button onclick="pinKey('${k}')" style="padding:18px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:12px;color:#fff;font-size:22px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;${k==='' ? 'opacity:0;pointer-events:none;' : ''}">${k}</button>`).join('')}
+      </div>
+      <button id="pin-biometric-btn" onclick="tryBiometric()" style="display:none;margin-top:20px;padding:10px 24px;background:transparent;border:1px solid #333;border-radius:10px;color:#60a5fa;font-size:14px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">👆 Use Face ID / Touch ID</button>
+      <button onclick="showFullLogin()" style="margin-top:14px;background:none;border:none;color:#555;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;">Sign in with password instead</button>
+    `;
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+  var title = document.getElementById('pin-title');
+  var sub = document.getElementById('pin-subtitle');
+  if (mode === 'setup') {
+    if (title) title.textContent = 'Set Your PIN';
+    if (sub) sub.textContent = 'Choose a 4-digit code to unlock the app';
+  } else {
+    if (title) title.textContent = 'Enter PIN';
+    if (sub) sub.textContent = 'Enter your 4-digit code to unlock';
+  }
+  updatePINDots();
+  // Check for biometric support
+  if (window.PublicKeyCredential && mode === 'verify') {
+    document.getElementById('pin-biometric-btn').style.display = 'inline-block';
+  }
+}
+
+function hidePINScreen() {
+  var overlay = document.getElementById('pin-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function updatePINDots() {
+  for (var i = 0; i < 4; i++) {
+    var dot = document.getElementById('pin-dot-' + i);
+    if (dot) {
+      dot.style.background = i < _pinBuffer.length ? '#e53e3e' : 'transparent';
+      dot.style.borderColor = i < _pinBuffer.length ? '#e53e3e' : '#333';
+    }
+  }
+}
+
+window.pinKey = function(k) {
+  if (k === '⌫') {
+    _pinBuffer = _pinBuffer.slice(0, -1);
+    updatePINDots();
+    return;
+  }
+  if (k === '' || _pinBuffer.length >= 4) return;
+  _pinBuffer += String(k);
+  updatePINDots();
+  if (_pinBuffer.length === 4) {
+    setTimeout(function() { processPIN(); }, 120);
+  }
+};
+
+var _pinSetupFirst = '';
+function processPIN() {
+  var errEl = document.getElementById('pin-error');
+  if (_pinMode === 'setup') {
+    if (!_pinSetupFirst) {
+      _pinSetupFirst = _pinBuffer;
+      _pinBuffer = '';
+      updatePINDots();
+      var sub = document.getElementById('pin-subtitle');
+      if (sub) sub.textContent = 'Enter the same code again to confirm';
+      return;
+    }
+    if (_pinBuffer === _pinSetupFirst) {
+      localStorage.setItem('app_pin_hash', getPINHash(_pinBuffer));
+      _pinSetupFirst = '';
+      hidePINScreen();
+      window.showToast && window.showToast('✅ PIN saved! You can now use it to unlock.', '#16a34a', 3000);
+    } else {
+      if (errEl) errEl.textContent = '❌ Codes don\'t match. Try again.';
+      _pinBuffer = ''; _pinSetupFirst = '';
+      updatePINDots();
+    }
+  } else {
+    var stored = localStorage.getItem('app_pin_hash');
+    if (getPINHash(_pinBuffer) === stored) {
+      hidePINScreen();
+      enterApp();
+    } else {
+      if (errEl) errEl.textContent = '❌ Wrong PIN. Try again.';
+      _pinBuffer = '';
+      updatePINDots();
+      setTimeout(function() { if (errEl) errEl.textContent = ''; }, 2000);
+    }
+  }
+}
+
+window.tryBiometric = async function() {
+  // Use WebAuthn / platform authenticator for Face ID/Touch ID
+  try {
+    const cred = await navigator.credentials.get({
+      publicKey: {
+        challenge: new Uint8Array(32),
+        timeout: 60000,
+        userVerification: 'required',
+        rpId: window.location.hostname
+      }
+    });
+    if (cred) { hidePINScreen(); enterApp(); }
+  } catch(e) {
+    var errEl = document.getElementById('pin-error');
+    if (errEl) errEl.textContent = 'Biometric failed — use PIN';
+  }
+};
+
+function showFullLogin() {
+  hidePINScreen();
+  var ls = document.getElementById('login-screen');
+  if (ls) { ls.style.display = 'flex'; ls.style.opacity = '1'; ls.style.pointerEvents = 'auto'; }
+}
+
 function enterApp() {
   localStorage.setItem('entered-app', 'true');
   var ls = document.getElementById('login-screen');
   if (ls) { ls.style.display = 'none'; ls.style.opacity = '0'; ls.style.pointerEvents = 'none'; }
+  hidePINScreen();
+
+  // Offer PIN setup if not already set
+  if (!hasPIN()) {
+    setTimeout(function() {
+      if (window.showToast) window.showToast('💡 Tip: Set up a 4-digit PIN for faster login', '#1d4ed8', 5000);
+      setTimeout(function() {
+        if (confirm('Set up a 4-digit PIN for quick access next time?')) {
+          _pinSetupFirst = '';
+          showPINScreen('setup');
+        }
+      }, 1500);
+    }, 2000);
+  }
   if (window._enterAppCallback) window._enterAppCallback();
 }
 
@@ -1221,6 +1378,12 @@ function doSignOut() {
             <div style="padding:8px 14px 4px;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.8px;">Account</div>
             <button onclick="openEmailSignatureModal();toggleUserMenu();" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#eee;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
               <span style="font-size:16px;">✍️</span> My Signature
+            </button>
+            <button onclick="toggleUserMenu();_pinSetupFirst='';showPINScreen('setup')" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#60a5fa;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:16px;">🔐</span> ${hasPIN && hasPIN() ? 'Change PIN' : 'Set Up PIN Login'}
+            </button>
+            <button onclick="localStorage.removeItem('app_pin_hash');toggleUserMenu();window.showToast&&window.showToast('PIN removed','#4ade80')" style="display:${hasPIN && hasPIN() ? 'flex' : 'none'};width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#f87171;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;align-items:center;gap:10px;">
+              <span style="font-size:16px;">🗑️</span> Remove PIN
             </button>
             <button onclick="toggleTheme();toggleUserMenu();" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#eee;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
               <span style="font-size:16px;" id="dropdown-theme-icon">🌙</span> Toggle Theme
@@ -1879,12 +2042,13 @@ function doSignOut() {
         <textarea id="f-notes" placeholder="Add any notes or special instructions…" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;min-height:80px;resize:vertical;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
       </div>
 
-      <!-- PERMIT UPLOAD -->
+      <!-- PERMIT UPLOAD (multiple files) -->
       <div style="grid-column:1/-1;background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:16px;">
-        <div style="font-size:12px;font-weight:700;color:#e53e3e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">📋 Permit Document</div>
-        <input type="file" accept=".pdf,.jpg,.png" id="permit-upload" style="display:none" onchange="handleFile(this,'permit-preview')"/>
-        <div onclick="document.getElementById('permit-upload').click()" style="border:2px dashed #2a2a2a;border-radius:8px;padding:18px;text-align:center;cursor:pointer;color:#555;font-size:13px;" onmouseover="this.style.borderColor='#e53e3e'" onmouseout="this.style.borderColor='#2a2a2a'">📄 Click to upload permit (PDF or image)</div>
-        <div id="permit-preview" style="margin-top:8px;font-size:12px;color:#4ade80;display:none;"></div>
+        <div style="font-size:12px;font-weight:700;color:#e53e3e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">📋 Permit Documents (multiple allowed)</div>
+        <input type="file" accept=".pdf,.jpg,.png,.jpeg" id="permit-upload" multiple style="display:none" onchange="window.handlePermitFiles(this)"/>
+        <div onclick="document.getElementById('permit-upload').click()" style="border:2px dashed #2a2a2a;border-radius:8px;padding:18px;text-align:center;cursor:pointer;color:#555;font-size:13px;" onmouseover="this.style.borderColor='#e53e3e'" onmouseout="this.style.borderColor='#2a2a2a'">📄 Tap to upload permits — select multiple at once</div>
+        <div id="permit-preview" style="margin-top:8px;font-size:12px;color:#4ade80;"></div>
+        <div id="permit-docs-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px;"></div>
       </div>
 
       <!-- JOB PHOTOS -->
@@ -2063,6 +2227,19 @@ function doSignOut() {
     if (appLoading) { appLoading.style.display = 'none'; appLoading.style.pointerEvents = 'none'; try { appLoading.remove(); } catch(e){} }
     const ls3 = document.getElementById('login-screen');
     if (ls3) { ls3.style.display = 'none'; ls3.style.pointerEvents = 'none'; ls3.style.zIndex = '-1'; }
+
+    // If PIN is set, show PIN unlock screen before entering the app
+    if (typeof hasPIN === 'function' && hasPIN() && !window._pinUnlocked) {
+      window._pendingBootUser = firebaseUser;
+      window._enterAppCallback = function() {
+        window._pinUnlocked = true;
+        window._enterAppCallback = null;
+        _bootAsAdmin(window._pendingBootUser);
+      };
+      if (typeof showPINScreen === 'function') showPINScreen('verify');
+      return;
+    }
+    window._pinUnlocked = false; // reset for next session
 
     // Use real Firebase user if provided, otherwise fall back to Nir (legacy)
     const fbUser = firebaseUser || { email: ADMIN_EMAIL, uid: 'nir-admin', displayName: 'Nir Maman' };
@@ -4462,7 +4639,15 @@ function doSignOut() {
             ${p.validFrom ? `<span>📅 ${fmtDate(p.validFrom)} → ${fmtDate(p.expirationDate)||'?'}</span>` : (p.expirationDate ? `<span>📅 Exp: ${fmtDate(p.expirationDate)}</span>` : '')}
             ${linkedJobHtml}
             ${p.notes ? `<span>📝 ${p.notes}</span>` : ''}
-            ${p.docUrl ? `<span>📄 <a href="${p.docUrl}" target="_blank" onclick="event.stopPropagation()" style="color:#60a5fa;font-weight:700;">View Doc</a> · <span onclick="event.stopPropagation();navigator.share&&navigator.share({url:'${p.docUrl}',title:'Permit Doc'})" style="color:#4ade80;cursor:pointer;font-weight:700;">📤 Share</span></span>` : ''}
+            ${(() => {
+              const docs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [{url: p.docUrl, name: 'Permit Doc'}] : []);
+              if (!docs.length) return '';
+              return docs.map((d, i) => {
+                const url = typeof d === 'string' ? d : d.url;
+                const name = typeof d === 'string' ? `Doc ${i+1}` : (d.name || `Doc ${i+1}`);
+                return `<span>📄 <a href="${url}" target="_blank" onclick="event.stopPropagation()" style="color:#60a5fa;font-weight:700;">${name}</a> · <span onclick="event.stopPropagation();navigator.share&&navigator.share({url:'${url}',title:'${name}'})" style="color:#4ade80;cursor:pointer;font-weight:700;">📤</span></span>`;
+              }).join('<br>');
+            })()}
           </div>
           <div class="permit-item-actions">
             <button class="permit-edit-btn" onclick="event.stopPropagation();openEditPermit('${p.id}')">✏️ Edit</button>
@@ -4517,6 +4702,7 @@ function doSignOut() {
             <div class="dot-bureau-list">
               ${buildBureauHtml(addr, groupKey)}
             </div>
+            <div id="dot-expired-msg-${groupKey}" style="display:none;background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;color:#f87171;margin-bottom:8px;">⚠️ This permit has expired. Please upload a renewal to schedule inspection.</div>
             <button class="btn-notify-dot" id="dot-btn-${groupKey}" disabled
               onclick="sendDOTEmail('${groupKey}', '${displayAddr.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}', '${permitHolder.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">
               📧 Notify DOT
@@ -4534,6 +4720,8 @@ function doSignOut() {
 
     // Restore previously open groups so re-renders don't collapse them
     restoreOpenPermitGroups();
+    // Init swipe-to-archive on all permit group cards
+    setTimeout(() => window.initPermitSwipe && window.initPermitSwipe(), 100);
   }
 
   // Toggle accordion open/close
@@ -4566,6 +4754,66 @@ function doSignOut() {
       if (row) row.classList.add('expanded');
     });
   }
+
+  // ── Swipe to Archive on Permit Groups ──────────────────────────────────
+  window.initPermitSwipe = function() {
+    document.querySelectorAll('[id^="permit-group-"]').forEach(card => {
+      if (card._swipeInit) return;
+      card._swipeInit = true;
+      let startX = 0, startY = 0, dx = 0;
+      const row = card.querySelector('[id^="permit-addr-row-"]');
+      if (!row) return;
+      const groupKey = row.id.replace('permit-addr-row-', '');
+
+      // Create swipe action overlay
+      const swipeBtn = document.createElement('div');
+      swipeBtn.style.cssText = 'position:absolute;right:0;top:0;bottom:0;width:90px;background:#16a34a;display:flex;align-items:center;justify-content:center;border-radius:0 12px 12px 0;transform:translateX(100%);transition:transform 0.2s;cursor:pointer;z-index:10;font-size:12px;font-weight:800;color:#fff;flex-direction:column;gap:3px;';
+      swipeBtn.innerHTML = '<span style="font-size:20px;">📁</span><span>Archive</span>';
+      swipeBtn.onclick = () => {
+        const permits = allStandalonePermits.filter(p => (p.jobAddress || p.jobAddress === '') && btoa(encodeURIComponent(p.jobAddress||'__no_address__')).replace(/[^a-zA-Z0-9]/g,'').slice(0,20) === groupKey);
+        if (permits.length) {
+          if (confirm(`Archive all ${permits.length} permit(s) for this address?`)) {
+            permits.forEach(p => window.archivePermit(p.id));
+          }
+        }
+        row.style.transform = '';
+      };
+
+      card.style.position = 'relative';
+      card.style.overflow = 'hidden';
+      card.appendChild(swipeBtn);
+
+      row.addEventListener('touchstart', e => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        dx = 0;
+      }, {passive: true});
+
+      row.addEventListener('touchmove', e => {
+        dx = e.touches[0].clientX - startX;
+        const dy = Math.abs(e.touches[0].clientY - startY);
+        if (Math.abs(dx) < dy) return;
+        if (dx < -10) {
+          const clamp = Math.max(dx, -90);
+          row.style.transform = `translateX(${clamp}px)`;
+          swipeBtn.style.transform = `translateX(${Math.max(100 + clamp/90*100, 0)}%)`;
+        } else if (dx > 0) {
+          row.style.transform = '';
+          swipeBtn.style.transform = 'translateX(100%)';
+        }
+      }, {passive: true});
+
+      row.addEventListener('touchend', () => {
+        if (dx < -60) {
+          row.style.transform = 'translateX(-90px)';
+          swipeBtn.style.transform = 'translateX(0%)';
+        } else {
+          row.style.transform = '';
+          swipeBtn.style.transform = 'translateX(100%)';
+        }
+      }, {passive: true});
+    });
+  };
 
   // Toggle bureau checkbox + selected class
   window.toggleBureau = function(groupKey, bureauId) {
@@ -4611,12 +4859,39 @@ function doSignOut() {
     const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
     const anyBureauChecked = Array.from(bureauCbs).some(cb => cb.checked);
     const btn = document.getElementById('dot-btn-' + groupKey);
+
+    // Check if any permit in this group is expired
+    const today = new Date(); today.setHours(0,0,0,0);
+    const groupPermits = allStandalonePermits.filter(p => {
+      const gk = btoa(encodeURIComponent(p.jobAddress||'__no_address__')).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+      return gk === groupKey;
+    });
+    const checkedPermitIds = Array.from(document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`))
+      .filter(cb => cb.checked).map(cb => cb.dataset.permitId);
+    const hasExpiredChecked = groupPermits.some(p => {
+      if (checkedPermitIds.length && !checkedPermitIds.includes(p.id)) return false;
+      if (!p.expirationDate) return false;
+      return new Date(p.expirationDate) < today;
+    });
+
+    const expiredMsg = document.getElementById('dot-expired-msg-' + groupKey);
     if (btn) {
-      const ready = !!(dateVal && timeVal && anyBureauChecked);
-      btn.disabled = !ready;
-      btn.style.opacity = ready ? '1' : '0.45';
-      btn.style.background = ready ? '#16a34a' : '';
-      btn.style.cursor = ready ? 'pointer' : 'not-allowed';
+      if (hasExpiredChecked) {
+        btn.disabled = true;
+        btn.style.opacity = '0.45';
+        btn.style.background = '';
+        btn.style.cursor = 'not-allowed';
+        btn.title = 'Cannot schedule — one or more permits are expired';
+        if (expiredMsg) expiredMsg.style.display = 'block';
+      } else {
+        const ready = !!(dateVal && timeVal && anyBureauChecked);
+        btn.disabled = !ready;
+        btn.style.opacity = ready ? '1' : '0.45';
+        btn.style.background = ready ? '#16a34a' : '';
+        btn.style.cursor = ready ? 'pointer' : 'not-allowed';
+        btn.title = '';
+        if (expiredMsg) expiredMsg.style.display = 'none';
+      }
     }
   };
 
@@ -5037,17 +5312,27 @@ Cell: 516-306-3326`
     document.getElementById('ocr-status').textContent = '';
     const _ocrPrev2 = document.getElementById('ocr-preview-img'); if (_ocrPrev2) _ocrPrev2.style.display = 'none';
     document.getElementById('ocr-pages-preview').style.display = 'none';
-    // Show existing doc if available
+    // Show existing docs if available
     window._uploadedPermitDocUrl = p.docUrl || '';
+    const existingDocs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [{url: p.docUrl, name: 'Permit Doc'}] : []);
+    window._uploadedPermitDocUrls = existingDocs;
     const prevEl = document.getElementById('permit-preview');
+    const docsListEl = document.getElementById('permit-docs-list');
+    if (docsListEl) {
+      docsListEl.innerHTML = existingDocs.map((d, i) => {
+        const url = typeof d === 'string' ? d : d.url;
+        const name = typeof d === 'string' ? `Doc ${i+1}` : (d.name || `Doc ${i+1}`);
+        return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #1a1a1a;font-size:12px;"><span style="color:#4ade80;">✅</span> <a href="${url}" target="_blank" style="color:#60a5fa;font-weight:700;flex:1;">${name}</a> <span onclick="navigator.share&&navigator.share({url:'${url}',title:'${name}'})" style="color:#4ade80;cursor:pointer;">📤</span></div>`;
+      }).join('');
+    }
     if (prevEl) {
-      if (p.docUrl) {
-        const fname = decodeURIComponent(p.docUrl.split('/').pop().split('?')[0]).replace(/^\d+_/, '');
+      if (existingDocs.length) {
         prevEl.style.display = 'block';
-        prevEl.innerHTML = `📄 <a href="${p.docUrl}" target="_blank" style="color:#4ade80;font-weight:700;">${fname}</a> — <span style="color:#60a5fa;cursor:pointer;" onclick="navigator.share&&navigator.share({url:'${p.docUrl}',title:'Permit Doc'})">📤 Share</span>`;
+        prevEl.textContent = `✅ ${existingDocs.length} document(s) saved`;
+        prevEl.style.color = '#4ade80';
       } else {
         prevEl.style.display = 'none';
-        prevEl.innerHTML = '';
+        prevEl.textContent = '';
       }
     }
     populateJobDropdown(p.linkedJobId || '');
@@ -5059,6 +5344,14 @@ Cell: 516-306-3326`
     document.getElementById('permit-modal').style.display = 'none';
     document.body.style.overflow = '';
     editingPermitId = null;
+    window._uploadedPermitDocUrl = '';
+    window._uploadedPermitDocUrls = [];
+    const docsList = document.getElementById('permit-docs-list');
+    if (docsList) docsList.innerHTML = '';
+    const prev = document.getElementById('permit-preview');
+    if (prev) { prev.textContent = ''; prev.style.display = 'none'; }
+    const inp = document.getElementById('permit-upload');
+    if (inp) inp.value = '';
   };
 
   window.savePermit = async function() {
@@ -5099,6 +5392,7 @@ Cell: 516-306-3326`
       notes: document.getElementById('pm-notes').value.trim(),
       linkedJobId: document.getElementById('pm-linked-job')?.value || '',
       docUrl: window._uploadedPermitDocUrl || '',
+      docUrls: window._uploadedPermitDocUrls || (window._uploadedPermitDocUrl ? [window._uploadedPermitDocUrl] : []),
     };
 
     try {
@@ -6654,27 +6948,42 @@ Cell: 516-306-3326`
     return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}?alt=media&token=${data.downloadTokens}`;
   }
 
-  // Track uploaded permit doc URL
+  // Track uploaded permit doc URLs (multiple)
   window._uploadedPermitDocUrl = '';
+  window._uploadedPermitDocUrls = [];
+
+  // Handle multiple permit file uploads
+  window.handlePermitFiles = async function(input) {
+    const files = Array.from(input.files);
+    if (!files.length) return;
+    const preview = document.getElementById('permit-preview');
+    const docsList = document.getElementById('permit-docs-list');
+    if (preview) { preview.textContent = `⏳ Uploading ${files.length} file(s)…`; preview.style.display = 'block'; preview.style.color = '#f59e0b'; }
+    if (docsList) docsList.innerHTML = '';
+    window._uploadedPermitDocUrls = [];
+    window._uploadedPermitDocUrl = '';
+
+    for (const file of files) {
+      const rowEl = document.createElement('div');
+      rowEl.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #1a1a1a;font-size:12px;';
+      rowEl.textContent = `⏳ ${file.name}`;
+      if (docsList) docsList.appendChild(rowEl);
+      try {
+        const path = 'permits/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const url = await uploadToStorage(file, path);
+        window._uploadedPermitDocUrls.push({ name: file.name, url });
+        if (!window._uploadedPermitDocUrl) window._uploadedPermitDocUrl = url;
+        rowEl.innerHTML = `<span style="color:#4ade80;">✅</span> <a href="${url}" target="_blank" style="color:#60a5fa;font-weight:700;flex:1;">${file.name}</a> <span onclick="navigator.share&&navigator.share({url:'${url}',title:'${file.name}'})" style="color:#4ade80;cursor:pointer;">📤</span>`;
+      } catch(e) {
+        rowEl.innerHTML = `<span style="color:#f87171;">❌ ${file.name} — ${e.message}</span>`;
+      }
+    }
+    if (preview) { preview.textContent = `✅ ${window._uploadedPermitDocUrls.length} of ${files.length} uploaded`; preview.style.color = '#4ade80'; }
+  };
 
   async function handleFile(input, previewId) {
-    const preview = document.getElementById(previewId);
-    const file = input.files[0];
-    if (!file) return;
-    preview.style.display = 'block';
-    preview.textContent = '⏳ Uploading ' + file.name + '…';
-    preview.style.color = '#f59e0b';
-    try {
-      const path = 'permits/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const url = await uploadToStorage(file, path);
-      window._uploadedPermitDocUrl = url;
-      preview.innerHTML = `✅ <a href="${url}" target="_blank" style="color:#4ade80;font-weight:700;">${file.name}</a> — <span style="color:#60a5fa;cursor:pointer;" onclick="navigator.share&&navigator.share({url:'${url}',title:'${file.name}'})">📤 Share</span>`;
-      preview.style.color = '#4ade80';
-    } catch(e) {
-      preview.textContent = '❌ Upload failed: ' + e.message;
-      preview.style.color = '#f87171';
-      window._uploadedPermitDocUrl = '';
-    }
+    // Legacy single file handler — now delegates to handlePermitFiles
+    await window.handlePermitFiles(input);
   }
 
   function handleFiles(input, previewId) {
