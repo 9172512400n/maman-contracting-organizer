@@ -4374,7 +4374,9 @@ function doSignOut() {
     // Build permit items HTML for a group
     function buildPermitItemsHtml(groupPermits, groupKey) {
       return groupPermits.map(p => {
-        const notifiedBadge = p.dotNotified ? '<span class="permit-notified-badge">✅ DOT Notified</span>' : '';
+        const notifiedBadge = p.dotNotified
+          ? `<span class="permit-notified-badge" onclick="event.stopPropagation();toggleDotNotified('${p.id}',false)" title="Tap to uncheck DOT Notified" style="cursor:pointer;">✅ DOT Notified ✕</span>`
+          : `<span onclick="event.stopPropagation();toggleDotNotified('${p.id}',true)" style="cursor:pointer;display:inline-flex;align-items:center;gap:3px;background:#1a2a1a;color:#555;border:1px solid #2a2a2a;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:4px;" title="Mark DOT Notified">☐ DOT Notify</span>`;
         const linkedJobHtml = p.linkedJobId ? (() => {
           const lj = allJobs ? allJobs.find(j => j.id === p.linkedJobId) : null;
           return lj ? `<span>🔗 <span style="color:#60a5fa;font-weight:700;">${lj.customerName||lj.address||'Linked Job'}</span></span>` : '';
@@ -4713,6 +4715,29 @@ Cell: 516-306-3326`
   };
 
   // Archive permit to History
+  // Toggle DOT Notified on/off
+  window.toggleDotNotified = async function(permitId, setNotified) {
+    const API_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
+    const FS_BASE = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
+    const now = new Date().toISOString();
+    try {
+      await fetch(`${FS_BASE}/permits/${permitId}?key=${API_KEY}&updateMask.fieldPaths=dotNotified&updateMask.fieldPaths=dotNotifiedDate`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: {
+          dotNotified: { booleanValue: setNotified },
+          dotNotifiedDate: { stringValue: setNotified ? now : '' }
+        }})
+      });
+      allStandalonePermits = allStandalonePermits.map(p =>
+        p.id === permitId ? { ...p, dotNotified: setNotified, dotNotifiedDate: setNotified ? now : '' } : p
+      );
+      window.filterPermitsDirect();
+      window.showToast(setNotified ? '✅ DOT Notified marked' : '☐ DOT Notified cleared', '#4ade80');
+    } catch(e) {
+      window.showToast('Failed to update DOT status', '#e53e3e');
+    }
+  };
+
   window.archivePermit = async function(permitId) {
     const API_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
     const FS_BASE = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
