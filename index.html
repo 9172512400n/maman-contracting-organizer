@@ -1298,6 +1298,7 @@ function doSignOut() {
   <div class="drawer-footer">
     <div style="height:1px;background:#2a2a2a;margin:4px 16px;"></div>
     <div class="drawer-item" onclick="openDOTEmailSettings(); closeDrawer();" style="color:rgba(255,255,255,0.6);"><span class="di" style="font-size:18px;">🏛️</span><span>DOT Bureau Emails</span></div>
+    <div class="drawer-item" onclick="openOpenAIKeySettings(); closeDrawer();" style="color:rgba(255,255,255,0.6);"><span class="di" style="font-size:18px;">🤖</span><span>OCR / AI Key</span></div>
     <div class="drawer-item" onclick="toggleTheme(); closeDrawer();" id="theme-drawer-item" style="color:rgba(255,255,255,0.6);"><span class="di" style="font-size:18px;">🌙</span><span id="theme-drawer-label">Night / Day Mode</span></div>
     <div class="drawer-item" onclick="doSignOut()" style="color:#f87171;"><span class="di">🚪</span><span>Sign Out</span></div>
   </div>
@@ -4506,6 +4507,28 @@ function doSignOut() {
     document.body.appendChild(overlay);
   };
 
+  // OpenAI Key Settings
+  window.openOpenAIKeySettings = function() {
+    const current = localStorage.getItem('openai_api_key') || '';
+    const overlay = document.createElement('div');
+    overlay.id = 'openai-key-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.innerHTML = `<div style="background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:16px;padding:24px;max-width:420px;width:100%;font-family:Inter,sans-serif;">
+      <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px;">🤖 OpenAI API Key</div>
+      <div style="font-size:12px;color:#666;margin-bottom:16px;">Required for permit OCR scanning. Get your key at platform.openai.com</div>
+      <input type="password" id="openai-key-input" value="${current}" placeholder="sk-proj-..." 
+        style="width:100%;padding:11px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:Inter,sans-serif;box-sizing:border-box;margin-bottom:14px;"
+        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <div style="display:flex;gap:10px;">
+        <button onclick="const k=document.getElementById('openai-key-input').value.trim();if(k){localStorage.setItem('openai_api_key',k);document.getElementById('openai-key-overlay').remove();window.showToast&&window.showToast('✅ API key saved — OCR is ready','#4ade80');}else{window.showToast&&window.showToast('Please enter a key','#e53e3e');}" style="flex:1;padding:12px;background:#e53e3e;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">💾 Save</button>
+        <button onclick="document.getElementById('openai-key-overlay').remove()" style="flex:1;padding:12px;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Cancel</button>
+        ${current ? `<button onclick="localStorage.removeItem('openai_api_key');document.getElementById('openai-key-overlay').remove();window.showToast&&window.showToast('Key removed','#4ade80')" style="padding:12px 16px;background:transparent;border:1px solid #555;border-radius:10px;color:#f87171;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Remove</button>` : ''}
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+    setTimeout(() => document.getElementById('openai-key-input')?.focus(), 100);
+  };
+
   window.saveDOTEmailSettings = function() {
     const overrides = {};
     DOT_BUREAUS_DEFAULT.forEach(b => {
@@ -5247,13 +5270,14 @@ Cell: 516-306-3326`
       });
 
       const mimeType = file.type || 'image/jpeg';
-      const apiKey = (typeof OPENAI_API_KEY !== 'undefined' && OPENAI_API_KEY)
-        ? OPENAI_API_KEY
-        : ['sk-proj-c-vJLuMIXIOJKzJJEm3NOoKGcSGQbwSFXhyAZ0lOyB90YmlOvJZjst0l-H_VuzjDGlPn7YxJI','FT3BlbkFJ6vQ1_wyCEYTb5hkYcAiaUg6n5IV-ENm8SukbEm8kZYRvHMrCPEVaDF2Tj82ovRG-y-2W0u8wYA'].join('');
+      // Check localStorage for custom key first, then fall back to built-in
+      const apiKey = localStorage.getItem('openai_api_key') ||
+        (typeof OPENAI_API_KEY !== 'undefined' && OPENAI_API_KEY) ||
+        ['sk-proj-c-vJLuMIXIOJKzJJEm3NOoKGcSGQbwSFXhyAZ0lOyB90YmlOvJZjst0l-H_VuzjDGlPn7YxJI','FT3BlbkFJ6vQ1_wyCEYTb5hkYcAiaUg6n5IV-ENm8SukbEm8kZYRvHMrCPEVaDF2Tj82ovRG-y-2W0u8wYA'].join('');
 
       if (!apiKey) {
-        if (statusEl) { statusEl.textContent = '⚠️ No OpenAI API key — fill in manually'; statusEl.style.color = '#f87171'; }
-        window.showToast('❌ Scan failed — please fill in manually', '#e53e3e');
+        if (statusEl) { statusEl.textContent = '⚠️ No OpenAI API key — tap ☰ → Settings → Add OpenAI Key'; statusEl.style.color = '#f87171'; }
+        window.showToast('❌ No API key — go to ☰ Settings to add one', '#e53e3e');
         return;
       }
 
@@ -5305,8 +5329,9 @@ Cell: 516-306-3326`
       window.showToast('✅ Permit scanned — review and save', '#16a34a');
 
     } catch(err) {
-      if (statusEl) { statusEl.textContent = '❌ Scan failed: ' + err.message; statusEl.style.color = '#f87171'; }
-      window.showToast('❌ Scan failed — please fill in manually', '#e53e3e');
+      const msg = err.name === 'AbortError' ? 'Scan timed out — try again' : (err.message.includes('401') ? 'Invalid API key — update in ☰ Settings' : err.message);
+      if (statusEl) { statusEl.textContent = '❌ ' + msg; statusEl.style.color = '#f87171'; }
+      window.showToast('❌ ' + msg, '#e53e3e');
     }
 
     input.value = '';
