@@ -368,6 +368,35 @@
     .crew-empty-day { padding: 16px; text-align: center; font-size: 12px; color: #444; }
     .crew-no-jobs { text-align: center; padding: 40px; color: #555; font-size: 14px; }
 
+    /* SCHEDULE — ADDRESS CARDS */
+    .sched-addr-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 14px; margin-bottom: 10px; overflow: hidden; cursor: pointer; transition: border-color 0.15s; }
+    .sched-addr-card:hover, .sched-addr-card:active { border-color: #555; }
+    .sched-addr-card.expanded { border-color: #e53e3e; }
+    .sched-addr-header { display: flex; align-items: center; justify-content: space-between; padding: 16px; gap: 12px; }
+    .sched-addr-main { flex: 1; min-width: 0; }
+    .sched-addr-street { font-size: 16px; font-weight: 800; color: #fff; line-height: 1.3; }
+    .sched-addr-customer { font-size: 13px; font-weight: 700; color: #aaa; margin-top: 3px; }
+    .sched-addr-chevron { font-size: 20px; color: #555; flex-shrink: 0; transition: transform 0.2s; line-height: 1; }
+    .sched-addr-card.expanded .sched-addr-chevron { transform: rotate(180deg); color: #e53e3e; }
+    .sched-addr-body { display: none; border-top: 1px solid #2a2a2a; padding: 16px; }
+    .sched-addr-card.expanded .sched-addr-body { display: block; }
+    .sched-detail-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+    .sched-detail-label { font-size: 12px; font-weight: 800; color: #888; min-width: 80px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.3px; padding-top: 1px; }
+    .sched-detail-value { font-size: 14px; font-weight: 700; color: #fff; flex: 1; }
+    .sched-no-jobs { text-align: center; padding: 48px 20px; font-size: 15px; font-weight: 800; color: #555; }
+
+    /* SCHEDULE — Light mode */
+    body.light .week-day-card { background: #fff; border-color: #e2e8f0; }
+    body.light .week-day-card .wd-name { color: #999; }
+    body.light .week-day-card .wd-date { color: #555; }
+    body.light .week-day-card.today .wd-name, body.light .week-day-card.today .wd-date { color: #fff; }
+    body.light .sched-addr-card { background: #fff; border-color: #e2e8f0; }
+    body.light .sched-addr-street { color: #111; }
+    body.light .sched-addr-customer { color: #555; }
+    body.light .sched-addr-body { border-top-color: #e2e8f0; }
+    body.light .sched-detail-value { color: #111; }
+    body.light .sched-no-jobs { color: #aaa; }
+
     /* USERS */
     .user-list { display: flex; flex-direction: column; gap: 10px; }
     .user-card { background: #1a1a1a; border-radius: 10px; padding: 16px; display: flex; align-items: center; gap: 14px; border: 1px solid #2a2a2a; }
@@ -1232,30 +1261,35 @@ function doSignOut() {
             <h2>Schedule</h2>
             <div style="display:flex;gap:8px;align-items:center;">
               <button id="sched-add-job-btn" class="btn btn-primary" onclick="openJobModalWithCrew()" style="padding:8px 14px;font-size:13px;display:none;">+ Add Job</button>
-              <button onclick="smartShare(event,'sched-share-btn')" id="sched-share-btn"
-                style="background:rgba(255,255,255,0.08);border:none;border-radius:8px;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"
-                title="Share Schedule">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="8 6 12 2 16 6"/>
-                  <line x1="12" y1="2" x2="12" y2="15"/>
-                  <path d="M20 14v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/>
-                </svg>
+              <button onclick="exportDaySchedule()"
+                style="background:#e53e3e;border:none;border-radius:8px;padding:0 14px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-size:13px;font-weight:800;color:#fff;font-family:'Inter',sans-serif;flex-shrink:0;"
+                title="Export Week Schedule">📤 Export
               </button>
             </div>
           </div>
-          <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+
+          <!-- Crew filter pills -->
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
             <button class="crew-pill active" data-crew="all" onclick="setCrewFilter('all',this)">All Crews</button>
             <button class="crew-pill" data-crew="asphalt" onclick="setCrewFilter('asphalt',this)">🟠 Asphalt</button>
             <button class="crew-pill" data-crew="concrete" onclick="setCrewFilter('concrete',this)">🔵 Concrete</button>
           </div>
-          <div id="sched-tbd-section" style="margin-bottom:24px;">
-            <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📌 Date TBD</div>
+
+          <!-- Week picker -->
+          <div id="sched-week-picker" style="display:flex;align-items:center;gap:10px;margin-bottom:20px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:10px 14px;"></div>
+
+          <!-- All days expanded -->
+          <div id="sched-days-container"></div>
+
+          <!-- TBD section -->
+          <div id="sched-tbd-section" style="margin-top:8px;display:none;">
+            <div style="font-size:12px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #2a2a2a;">📌 Date TBD</div>
             <div id="sched-tbd-container"></div>
           </div>
-          <div id="sched-dated-section">
-            <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">📅 Scheduled Jobs</div>
-            <div id="sched-dated-container"></div>
-          </div>
+
+          <!-- Legacy containers (kept for compatibility) -->
+          <div id="sched-dated-section" style="display:none;"><div id="sched-dated-container"></div></div>
+          <div id="sched-day-list" style="display:none;"></div>
         </div>
 
         <!-- SECTION 4: CONTACTS -->
@@ -4268,50 +4302,223 @@ Office: 631-651-1815`
     </div>`;
   }
 
+  // ── SCHEDULE — 2-LEVEL: Week picker + all days expanded ──────────────────
+  window._schedWeekOffset = 0; // 0 = current week, -1 = prev, +1 = next
+
+  function toLocalISO(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth()+1).padStart(2,'0');
+    const d = String(date.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function getMondayOfWeek(referenceDate, offsetWeeks) {
+    const d = new Date(referenceDate);
+    const dow = d.getDay(); // 0=Sun
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - ((dow + 6) % 7) + offsetWeeks * 7);
+    monday.setHours(0,0,0,0);
+    return monday;
+  }
+
+  function getWeekDays(monday) {
+    return Array.from({length: 7}, (_, i) => {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + i);
+      return day;
+    });
+  }
+
+  window.schedChangeWeek = function(delta) {
+    window._schedWeekOffset = (window._schedWeekOffset || 0) + delta;
+    renderSchedule();
+  };
+
   window.renderSchedule = function() {
     const filter = window._schedCrewFilter || 'all';
     const jobs = allJobs.filter(j => jobMatchesCrew(j, filter));
     const tbdJobs = jobs.filter(j => !j.scheduleDay);
-    const datedJobs = jobs.filter(j => !!j.scheduleDay).sort((a,b) => a.scheduleDay.localeCompare(b.scheduleDay));
 
-    const tbdSection = document.getElementById('sched-tbd-section');
-    const tbdContainer = document.getElementById('sched-tbd-container');
-    if (tbdJobs.length === 0) {
-      tbdSection.style.display = 'none';
-    } else {
-      tbdSection.style.display = 'block';
-      tbdContainer.innerHTML = `<div class="crew-day-card">
-        <div class="crew-day-header">
-          <span class="crew-day-title">📌 Date TBD</span>
-          <span class="crew-day-count">${tbdJobs.length} job${tbdJobs.length!==1?'s':''}</span>
-        </div>
-        <div class="crew-jobs-container">${tbdJobs.map(buildJobCard).join('')}</div>
-      </div>`;
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const todayISO = toLocalISO(today);
+    const offset = window._schedWeekOffset || 0;
+    const monday = getMondayOfWeek(today, offset);
+    const weekDays = getWeekDays(monday);
+    const sunday = weekDays[6];
+
+    // ── Week picker header ──
+    const weekPicker = document.getElementById('sched-week-picker');
+    if (weekPicker) {
+      const fmtShort = d => d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+      const fmtYear = d => d.getFullYear();
+      const label = `${fmtShort(monday)} – ${fmtShort(sunday)}, ${fmtYear(sunday)}`;
+      weekPicker.innerHTML = `
+        <button onclick="schedChangeWeek(-1)" style="background:transparent;border:1.5px solid #2a2a2a;border-radius:8px;width:36px;height:36px;cursor:pointer;color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Inter',sans-serif;">&lt;</button>
+        <span style="font-size:14px;font-weight:800;color:#fff;text-align:center;flex:1;">${label}</span>
+        <button onclick="schedChangeWeek(1)" style="background:transparent;border:1.5px solid #2a2a2a;border-radius:8px;width:36px;height:36px;cursor:pointer;color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Inter',sans-serif;">&gt;</button>`;
     }
 
-    const datedSection = document.getElementById('sched-dated-section');
-    const datedContainer = document.getElementById('sched-dated-container');
-    if (datedJobs.length === 0) {
-      datedSection.style.display = tbdJobs.length > 0 ? 'none' : 'block';
-      datedContainer.innerHTML = tbdJobs.length > 0 ? '' : '<div class="crew-no-jobs">No scheduled jobs. Create a job and assign a schedule date.</div>';
-    } else {
-      datedSection.style.display = 'block';
-      const grouped = {};
-      datedJobs.forEach(j => {
-        if (!grouped[j.scheduleDay]) grouped[j.scheduleDay] = [];
-        grouped[j.scheduleDay].push(j);
-      });
-      datedContainer.innerHTML = Object.entries(grouped).map(([dateKey, dayJobs]) => {
-        const d = new Date(dateKey + 'T00:00:00');
-        const dateStr = d.toLocaleDateString('en-US', {weekday:'long',month:'short',day:'numeric',year:'numeric'});
-        return `<div class="crew-day-card">
-          <div class="crew-day-header">
-            <span class="crew-day-title">📅 ${dateStr}</span>
-            <span class="crew-day-count">${dayJobs.length} job${dayJobs.length!==1?'s':''}</span>
-          </div>
-          <div class="crew-jobs-container">${dayJobs.map(buildJobCard).join('')}</div>
+    // ── Day sections ──
+    const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    const container = document.getElementById('sched-days-container');
+    if (container) {
+      container.innerHTML = weekDays.map((d, i) => {
+        const iso = toLocalISO(d);
+        const isToday = iso === todayISO;
+        const dayLabel = d.toLocaleDateString('en-US', {weekday:'long', month:'short', day:'numeric'});
+        const dayJobs = jobs.filter(j => j.scheduleDay === iso);
+        const headerStyle = isToday
+          ? 'color:#e53e3e;font-size:15px;font-weight:900;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e53e3e;'
+          : 'color:#aaa;font-size:14px;font-weight:800;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #2a2a2a;';
+        const jobsHtml = dayJobs.length
+          ? dayJobs.map(j => buildScheduleAddrCard(j)).join('')
+          : `<div style="color:#444;font-size:13px;font-weight:700;padding:10px 0 4px;font-style:italic;">— No jobs —</div>`;
+        return `<div style="margin-bottom:24px;">
+          <div style="${headerStyle}">${isToday ? '● ' : ''}${dayLabel}</div>
+          ${jobsHtml}
         </div>`;
       }).join('');
+    }
+
+    // ── TBD section ──
+    const tbdSection = document.getElementById('sched-tbd-section');
+    const tbdContainer = document.getElementById('sched-tbd-container');
+    if (tbdSection && tbdContainer) {
+      if (tbdJobs.length === 0) {
+        tbdSection.style.display = 'none';
+      } else {
+        tbdSection.style.display = 'block';
+        tbdContainer.innerHTML = tbdJobs.map(j => buildScheduleAddrCard(j)).join('');
+      }
+    }
+  };
+
+  function buildScheduleAddrCard(j) {
+    const isAsphalt = j.jobType === 'asphalt' || (j.crew && j.crew.toLowerCase().includes('asphalt'));
+    const accentColor = isAsphalt ? '#fb923c' : '#60a5fa';
+    const parking = j.altParkingDays ? `${j.altParkingDays}${j.altParkingTime ? ' · ' + j.altParkingTime : ''}` : null;
+    const crewName = crewLabel(j);
+
+    let permitStr = null;
+    if (Array.isArray(j.permits) && j.permits.length) {
+      const lines = j.permits.filter(p => p.number || p.code).map(p => {
+        let line = p.number || p.code;
+        if (p.code && p.number) line = `${p.code} · ${p.number}`;
+        if (p.expiry) line += ` · exp ${fmtDate(p.expiry)}`;
+        return line;
+      });
+      if (lines.length) permitStr = lines.join(', ');
+    }
+    if (!permitStr && (j.permitNumber || j.permitCode)) {
+      permitStr = j.permitNumber || j.permitCode;
+      if (j.permitExpiry) permitStr += ` · exp ${fmtDate(j.permitExpiry)}`;
+    }
+
+    const customRows = Array.isArray(j.customFields)
+      ? j.customFields.filter(cf => cf.label || cf.value).map(cf =>
+          `<div class="sched-detail-row"><span class="sched-detail-label">${cf.label || '—'}</span><span class="sched-detail-value">${cf.value || ''}</span></div>`
+        ).join('')
+      : '';
+
+    const detailRows = [
+      j.phone ? `<div class="sched-detail-row"><span class="sched-detail-label">Phone</span><span class="sched-detail-value"><a href="tel:${j.phone}" onclick="event.stopPropagation()" style="color:#4ade80;font-weight:800;text-decoration:none;">📞 ${j.phone}</a></span></div>` : '',
+      j.email ? `<div class="sched-detail-row"><span class="sched-detail-label">Email</span><span class="sched-detail-value"><a href="mailto:${j.email}" onclick="event.stopPropagation()" style="color:#60a5fa;font-weight:800;text-decoration:none;">✉️ ${j.email}</a></span></div>` : '',
+      j.taskType ? `<div class="sched-detail-row"><span class="sched-detail-label">Work</span><span class="sched-detail-value">${j.taskType}</span></div>` : '',
+      j.projectSize ? `<div class="sched-detail-row"><span class="sched-detail-label">Size</span><span class="sched-detail-value">${j.projectSize}</span></div>` : '',
+      parking ? `<div class="sched-detail-row"><span class="sched-detail-label">Alt Parking</span><span class="sched-detail-value" style="color:#e53e3e;font-weight:800;">${parking}</span></div>` : '',
+      j.notes ? `<div class="sched-detail-row"><span class="sched-detail-label">Notes</span><span class="sched-detail-value">${j.notes}</span></div>` : '',
+      crewName && crewName !== '—' ? `<div class="sched-detail-row"><span class="sched-detail-label">Crew</span><span class="sched-detail-value">${isAsphalt ? '🟠' : '🔵'} ${crewName}</span></div>` : '',
+      permitStr ? `<div class="sched-detail-row"><span class="sched-detail-label">Permit</span><span class="sched-detail-value" style="color:#fbbf24;">${permitStr}</span></div>` : '',
+      `<div class="sched-detail-row"><span class="sched-detail-label">Status</span><span class="sched-detail-value">${statusBadge(j.status)}</span></div>`,
+      customRows,
+    ].filter(Boolean).join('');
+
+    return `<div class="sched-addr-card" id="sched-card-${j.id}" onclick="toggleSchedCard('${j.id}')">
+      <div class="sched-addr-header">
+        <div class="sched-addr-main">
+          <div class="sched-addr-street" style="border-left:3px solid ${accentColor};padding-left:10px;">${j.address || '(No address)'}</div>
+          ${j.customerName ? `<div class="sched-addr-customer">${j.customerName}</div>` : ''}
+        </div>
+        <span class="sched-addr-chevron">⌄</span>
+      </div>
+      <div class="sched-addr-body">
+        ${detailRows}
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid #2a2a2a;display:flex;gap:10px;flex-wrap:wrap;">
+          <button onclick="event.stopPropagation();openEditJob('${j.id}')" style="background:#e53e3e;border:none;border-radius:8px;padding:10px 18px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit Job</button>
+          <button onclick="event.stopPropagation();exportSingleJob('${j.id}')" style="background:#1a3a2a;border:1px solid #22c55e;border-radius:8px;padding:10px 18px;color:#4ade80;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📤 Share</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  window.toggleSchedCard = function(jobId) {
+    const card = document.getElementById('sched-card-' + jobId);
+    if (!card) return;
+    card.classList.toggle('expanded');
+  };
+
+  window.exportSingleJob = function(jobId) {
+    const j = allJobs.find(x => x.id === jobId);
+    if (!j) return;
+    const parking = j.altParkingDays ? `${j.altParkingDays}${j.altParkingTime ? ' ' + j.altParkingTime : ''}` : '—';
+    const text = [
+      'Maman Contracting — Job Details',
+      '',
+      `Address: ${j.address || '—'}`,
+      `Customer: ${j.customerName || '—'}`,
+      `Phone: ${j.phone || '—'}`,
+      `Work: ${j.taskType || j.jobType || '—'}`,
+      `Size: ${j.projectSize || '—'}`,
+      `Alt Parking: ${parking}`,
+      `Notes: ${j.notes || '—'}`,
+      `Status: ${j.status || '—'}`,
+    ].join('\n');
+    if (navigator.share) {
+      navigator.share({ title: j.address || 'Job', text }).catch(()=>{});
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+  };
+
+  window.exportDaySchedule = function() {
+    // Export current week's schedule
+    const filter = window._schedCrewFilter || 'all';
+    const jobs = allJobs.filter(j => jobMatchesCrew(j, filter));
+    const today = new Date();
+    const offset = window._schedWeekOffset || 0;
+    const monday = getMondayOfWeek(today, offset);
+    const weekDays = getWeekDays(monday);
+    const sunday = weekDays[6];
+    const weekLabel = `${monday.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${sunday.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+
+    let text = `Maman Contracting — Schedule\n${weekLabel}\n\n`;
+    let anyJob = false;
+    weekDays.forEach(d => {
+      const iso = toLocalISO(d);
+      const dayJobs = jobs.filter(j => j.scheduleDay === iso);
+      if (!dayJobs.length) return;
+      anyJob = true;
+      const dayLabel = d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+      text += `${dayLabel}\n`;
+      dayJobs.forEach((j, idx) => {
+        const parking = j.altParkingDays ? `${j.altParkingDays}${j.altParkingTime ? ' ' + j.altParkingTime : ''}` : null;
+        text += `  ${idx+1}. ${j.address || '—'}\n`;
+        if (j.customerName) text += `     Customer: ${j.customerName}\n`;
+        if (j.phone) text += `     Phone: ${j.phone}\n`;
+        if (j.taskType) text += `     Work: ${j.taskType}\n`;
+        if (j.projectSize) text += `     Size: ${j.projectSize}\n`;
+        if (parking) text += `     Alt Parking: ${parking}\n`;
+        if (j.notes) text += `     Notes: ${j.notes}\n`;
+      });
+      text += '\n';
+    });
+    if (!anyJob) text += 'No jobs scheduled this week.\n';
+
+    if (navigator.share) {
+      navigator.share({ title: 'Schedule', text: text.trim() }).catch(()=>{});
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text.trim())}`, '_blank');
     }
   };
 
