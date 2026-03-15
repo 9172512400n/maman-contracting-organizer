@@ -694,11 +694,12 @@ function doLogin() {
   var btn = document.getElementById('login-btn');
   if (errEl) { errEl.style.color = '#f87171'; errEl.textContent = ''; }
   if (!email || !pass) { if (errEl) errEl.textContent = 'Please enter email and password.'; return; }
-  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Signing in…'; }
 
   // Try Firebase SDK first, fall back to REST if module not loaded yet
   var attempts = 0;
   var tryLogin = function() {
+    if (attempts > 5 && btn) btn.textContent = '⏳ Connecting…';
     if (window._firebaseSignIn) {
       window._firebaseSignIn(email, pass).catch(function(e) {
         if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
