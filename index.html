@@ -2862,10 +2862,15 @@ function doSignOut() {
       }
     };
     try {
-      const r = await fetch(`${FS_BASE}/tasks?key=${API_KEY}`, {
+      const _fsBase = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
+      const _apiKey = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
+      const r = await fetch(`${_fsBase}/tasks?key=${_apiKey}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
       });
-      if (!r.ok) throw new Error('POST failed: ' + r.status);
+      if (!r.ok) {
+        const errText = await r.text();
+        throw new Error('POST failed: ' + r.status + ' ' + errText);
+      }
       window.showToast('Task added! ✅', '#22c55e');
       // Reset form
       ['task-title-input','task-due-date-input','task-due-time-input','task-desc-input'].forEach(id => {
