@@ -705,8 +705,8 @@ function doLogin() {
         if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
         if (errEl) errEl.textContent = e.code === 'auth/invalid-credential' ? 'Wrong email or password.' : 'Error: ' + e.message;
       });
-    } else if (attempts++ < 30) {
-      setTimeout(tryLogin, 200);
+    } else if (attempts++ < 5) {
+      setTimeout(tryLogin, 150);
     } else {
       // Module timeout - try REST API directly
       fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c', {
@@ -4395,9 +4395,118 @@ Office: 631-651-1815`
     }
   };
 
+  // ── Schedule Day Notes ──────────────────────────────────────────────────
+  window.scheduleNotes = {};
+
+  async function loadScheduleNotes() {
+    try {
+      const url = `${FS_BASE}/scheduleNotes?key=${API_KEY}&pageSize=100`;
+      const r = await fetch(url);
+      const data = await r.json();
+      window.scheduleNotes = {};
+      if (data.documents) {
+        data.documents.forEach(doc => {
+          const parsed = parseDoc(doc);
+          if (parsed.date) window.scheduleNotes[parsed.date] = parsed;
+        });
+      }
+    } catch(e) { console.warn('scheduleNotes load failed:', e); }
+  }
+
+  window.saveScheduleNote = async function(iso, noteText) {
+    if (!noteText || !noteText.trim()) return;
+    const note = noteText.trim();
+    const body = {
+      fields: {
+        note: { stringValue: note },
+        date: { stringValue: iso },
+        updatedAt: { stringValue: new Date().toISOString() }
+      }
+    };
+    try {
+      await fetch(`${FS_BASE}/scheduleNotes/${iso}?key=${API_KEY}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      window.scheduleNotes[iso] = { note, date: iso, updatedAt: new Date().toISOString() };
+      renderSchedule();
+      window.showToast && window.showToast('📝 Note saved!', '#4ade80');
+    } catch(e) {
+      console.error('saveScheduleNote failed:', e);
+      window.showToast && window.showToast('❌ Failed to save note', '#e53e3e');
+    }
+  };
+
+  window.deleteScheduleNote = async function(iso) {
+    try {
+      await fetch(`${FS_BASE}/scheduleNotes/${iso}?key=${API_KEY}`, { method: 'DELETE' });
+      delete window.scheduleNotes[iso];
+      renderSchedule();
+      window.showToast && window.showToast('🗑️ Note removed', '#aaa');
+    } catch(e) {
+      console.error('deleteScheduleNote failed:', e);
+    }
+  };
+
+  window.schedShowNoteInput = function(iso) {
+    const existing = window.scheduleNotes[iso];
+    const el = document.getElementById('sched-note-input-' + iso);
+    if (!el) return;
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <input id="sched-note-text-${iso}" type="text" value="${existing ? existing.note.replace(/"/g,'&quot;') : ''}"
+          placeholder="e.g. No work — weather, Holiday, Available..."
+          style="flex:1;background:#1a1a1a;border:1.5px solid #3a3a3a;border-radius:8px;color:#fff;font-size:13px;padding:8px 10px;font-family:'Inter',sans-serif;outline:none;"
+          onkeydown="if(event.key==='Enter')window.schedSaveNoteInput('${iso}')"
+        />
+        <button onclick="window.schedSaveNoteInput('${iso}')" style="background:#16a34a;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:8px 12px;cursor:pointer;font-family:'Inter',sans-serif;">Save</button>
+        <button onclick="window.schedHideNoteInput('${iso}')" style="background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:13px;font-weight:700;padding:8px 10px;cursor:pointer;font-family:'Inter',sans-serif;">✕</button>
+      </div>`;
+    const inp = document.getElementById('sched-note-text-' + iso);
+    if (inp) setTimeout(() => inp.focus(), 50);
+  };
+
+  window.schedSaveNoteInput = async function(iso) {
+    const inp = document.getElementById('sched-note-text-' + iso);
+    if (!inp) return;
+    await window.saveScheduleNote(iso, inp.value);
+  };
+
+  window.schedHideNoteInput = function(iso) {
+    const el = document.getElementById('sched-note-input-' + iso);
+    if (el) el.innerHTML = '';
+  };
+
+  function buildDayNoteHTML(iso) {
+    const noteObj = window.scheduleNotes[iso];
+    if (noteObj) {
+      const noteText = noteObj.note;
+      const isAvailable = /available/i.test(noteText);
+      const pillBg = isAvailable ? '#14532d' : '#451a03';
+      const pillBorder = isAvailable ? '#16a34a' : '#d97706';
+      const pillColor = isAvailable ? '#4ade80' : '#fbbf24';
+      const pillIcon = isAvailable ? '✅' : '⚠️';
+      return `<div style="margin-bottom:8px;">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:${pillBg};border:1.5px solid ${pillBorder};border-radius:20px;padding:5px 12px;cursor:pointer;" onclick="window.schedShowNoteInput('${iso}')">
+          <span style="font-size:13px;">${pillIcon}</span>
+          <span style="font-size:12px;font-weight:700;color:${pillColor};">${noteText}</span>
+          <span style="font-size:11px;color:#666;margin-left:2px;">✎</span>
+        </div>
+        <button onclick="window.deleteScheduleNote('${iso}')" title="Delete note" style="background:transparent;border:none;color:#555;font-size:14px;cursor:pointer;padding:0 4px;vertical-align:middle;">🗑️</button>
+        <div id="sched-note-input-${iso}"></div>
+      </div>`;
+    } else {
+      return `<div style="margin-bottom:4px;">
+        <button onclick="window.schedShowNoteInput('${iso}')" style="background:transparent;border:1px solid #333;border-radius:12px;color:#555;font-size:12px;font-weight:600;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;">+ Add Note</button>
+        <div id="sched-note-input-${iso}"></div>
+      </div>`;
+    }
+  }
+
   window.schedChangeWeek = function(delta) {
     window._schedWeekOffset = (window._schedWeekOffset || 0) + delta;
-    renderSchedule();
+    loadScheduleNotes().then(() => renderSchedule());
   };
 
   window.renderSchedule = function() {
@@ -4474,6 +4583,7 @@ Office: 631-651-1815`
                   <button onclick="schedExportDay('${iso}')" style="background:#3a1a1a;border:1px solid #e53e3e;border-radius:7px;color:#f87171;font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:'Inter',sans-serif;">📤</button>
                 </div>
               </div>
+              ${buildDayNoteHTML(iso)}
               ${dayJobs.length ? dayJobs.map(j => buildScheduleAddrCard(j)).join('') : '<div style="color:#444;font-size:13px;font-style:italic;padding:4px 0 8px;">— No jobs —</div>'}
             </div>`;
           }).join('');
