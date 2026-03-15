@@ -3573,7 +3573,7 @@ Office: 631-651-1815`
     document.getElementById('pm-expirationDate').value = '';
     document.getElementById('pm-status').value = 'Pending';
     document.getElementById('ocr-status').textContent = '';
-    document.getElementById('ocr-preview-img').style.display = 'none';
+    const _ocrPrev = document.getElementById('ocr-preview-img'); if (_ocrPrev) _ocrPrev.style.display = 'none';
     document.getElementById('ocr-pages-preview').style.display = 'none';
     populateJobDropdown('');
     document.getElementById('permit-modal').style.display = 'block';
@@ -3701,7 +3701,7 @@ Office: 631-651-1815`
     document.getElementById('pm-status').value = p.status || 'Pending';
     document.getElementById('pm-notes').value = p.notes || '';
     document.getElementById('ocr-status').textContent = '';
-    document.getElementById('ocr-preview-img').style.display = 'none';
+    const _ocrPrev2 = document.getElementById('ocr-preview-img'); if (_ocrPrev2) _ocrPrev2.style.display = 'none';
     document.getElementById('ocr-pages-preview').style.display = 'none';
     populateJobDropdown(p.linkedJobId || '');
     document.getElementById('permit-modal').style.display = 'block';
