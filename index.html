@@ -4409,12 +4409,10 @@ function doSignOut() {
     const dateVal = (document.getElementById('dot-date-' + groupKey) || {}).value || '';
     const timeVal = (document.getElementById('dot-time-' + groupKey) || {}).value || '';
     const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
-    const permitCbs = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
     const anyBureauChecked = Array.from(bureauCbs).some(cb => cb.checked);
-    const anyPermitChecked = Array.from(permitCbs).some(cb => cb.checked);
     const btn = document.getElementById('dot-btn-' + groupKey);
     if (btn) {
-      const ready = !!(dateVal && timeVal && anyBureauChecked && anyPermitChecked);
+      const ready = !!(dateVal && timeVal && anyBureauChecked);
       btn.disabled = !ready;
       btn.style.opacity = ready ? '1' : '0.45';
       btn.style.background = ready ? '#16a34a' : '';
