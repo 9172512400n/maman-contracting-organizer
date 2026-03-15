@@ -2236,18 +2236,17 @@ function doSignOut() {
     const ls3 = document.getElementById('login-screen');
     if (ls3) { ls3.style.display = 'none'; ls3.style.pointerEvents = 'none'; ls3.style.zIndex = '-1'; }
 
-    // If PIN is set, show PIN unlock screen before entering the app
-    if (typeof hasPIN === 'function' && hasPIN() && !window._pinUnlocked) {
+    // If PIN is set, show PIN unlock screen — only once per browser session
+    if (typeof hasPIN === 'function' && hasPIN() && !sessionStorage.getItem('pin_unlocked_this_session')) {
       window._pendingBootUser = firebaseUser;
       window._enterAppCallback = function() {
-        window._pinUnlocked = true;
+        sessionStorage.setItem('pin_unlocked_this_session', '1');
         window._enterAppCallback = null;
         _bootAsAdmin(window._pendingBootUser);
       };
       if (typeof showPINScreen === 'function') showPINScreen('verify');
       return;
     }
-    window._pinUnlocked = false; // reset for next session
 
     // Use real Firebase user if provided, otherwise fall back to Nir (legacy)
     const fbUser = firebaseUser || { email: ADMIN_EMAIL, uid: 'nir-admin', displayName: 'Nir Maman' };
