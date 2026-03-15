@@ -4313,22 +4313,64 @@ Office: 631-651-1815`
       customFields:   collectCustomFields(),
     };
 
+    const FS_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
+    const FS_BASE = `https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents`;
+
+    // Convert jobData to Firestore REST fields format
+    function toFSFields(obj) {
+      const fields = {};
+      Object.entries(obj).forEach(([k,v]) => {
+        if (v === null || v === undefined) return;
+        if (typeof v === 'boolean') fields[k] = {booleanValue: v};
+        else if (typeof v === 'number') fields[k] = {integerValue: v};
+        else if (Array.isArray(v)) fields[k] = {stringValue: JSON.stringify(v)};
+        else fields[k] = {stringValue: String(v)};
+      });
+      return fields;
+    }
+
     try {
+      const sdkReady = typeof updateDoc !== 'undefined' && typeof addDoc !== 'undefined' && typeof db !== 'undefined';
+      const userEmail = currentUser ? currentUser.email : 'nir@mamancontracting.com';
+
       if (editingJobId) {
-        await updateDoc(doc(db, 'jobs', editingJobId), { ...jobData, updatedBy: currentUser.email, updatedAt: serverTimestamp() });
-        await addDoc(collection(db, 'activity'), { action: 'Updated job', jobAddress: jobData.address || '', doneBy: currentUser.email, timestamp: serverTimestamp() });
+        if (sdkReady) {
+          await updateDoc(doc(db, 'jobs', editingJobId), { ...jobData, updatedBy: userEmail, updatedAt: serverTimestamp() });
+        } else {
+          await fetch(`${FS_BASE}/jobs/${editingJobId}?key=${FS_KEY}`, {
+            method: 'PATCH', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({fields: toFSFields({...jobData, updatedBy: userEmail})})
+          });
+        }
+        // Update in local array immediately
+        const idx = allJobs.findIndex(j => j.id === editingJobId);
+        if (idx >= 0) allJobs[idx] = {...allJobs[idx], ...jobData};
         window.showToast('✅ Job updated!');
       } else {
-        await addDoc(collection(db, 'jobs'), { ...jobData, createdBy: currentUser.email, createdAt: serverTimestamp() });
-        await addDoc(collection(db, 'activity'), { action: 'Created job', jobAddress: jobData.address || '', doneBy: currentUser.email, timestamp: serverTimestamp() });
+        let newId;
+        if (sdkReady) {
+          const ref = await addDoc(collection(db, 'jobs'), { ...jobData, createdBy: userEmail, createdAt: serverTimestamp() });
+          newId = ref.id;
+        } else {
+          const r = await fetch(`${FS_BASE}/jobs?key=${FS_KEY}`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({fields: toFSFields({...jobData, createdBy: userEmail})})
+          });
+          const d = await r.json();
+          newId = d.name ? d.name.split('/').pop() : Date.now().toString();
+        }
+        // Add to local array immediately
+        allJobs.unshift({...jobData, id: newId});
         window.showToast('✅ Job saved!');
       }
-      // Auto-save contact
-      await upsertContact(jobData);
+      renderJobsTable(allJobs);
+      updateStats(allJobs);
+      try { await upsertContact(jobData); } catch(ce) {}
       closeJobModal();
       window.clearJobForm();
     } catch(e) {
-      window.showToast('Error: ' + e.message, '#e53e3e');
+      window.showToast('Error saving: ' + e.message, '#e53e3e');
+      console.error('saveJob error:', e);
     } finally {
       btn.disabled = false;
       btn.textContent = editingJobId ? '💾 Update Job' : '💾 Save Job';
