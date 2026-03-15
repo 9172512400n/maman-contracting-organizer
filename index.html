@@ -2459,21 +2459,28 @@ function doSignOut() {
 
   window.deleteJobById = async function(jobId) {
     const j = allJobs.find(x => x.id === jobId);
-    if (!j) return;
+    if (!j) { window.showToast('Job not found', '#e53e3e'); return; }
     deletedJobData = { ...j };
     try {
-      await deleteDoc(doc(db, 'jobs', jobId));
-      await addDoc(collection(db, 'activity'), {
-        action: 'Deleted job', jobAddress: j.address || '(no address)',
-        doneBy: currentUser ? currentUser.email : 'unknown', timestamp: serverTimestamp()
-      });
+      // Try Firebase SDK first
+      if (typeof deleteDoc !== 'undefined' && typeof doc !== 'undefined' && typeof db !== 'undefined') {
+        await deleteDoc(doc(db, 'jobs', jobId));
+      } else {
+        // Fallback to REST
+        const res = await fetch(`https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents/jobs/${jobId}?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c`, { method: 'DELETE' });
+        if (!res.ok && res.status !== 404) throw new Error('Delete failed: ' + res.status);
+      }
+      // Remove from local array and re-render immediately
+      allJobs = allJobs.filter(x => x.id !== jobId);
+      renderJobsTable(allJobs);
+      updateStats(allJobs);
       const undoBtn = document.getElementById('undo-btn');
-      undoBtn.style.display = 'inline-block';
+      if (undoBtn) undoBtn.style.display = 'inline-block';
       window.showToast('🗑️ Job deleted. Tap ↩️ to undo (30s)', '#374151', 5000);
       if (undoTimer) clearTimeout(undoTimer);
       undoTimer = setTimeout(() => {
         deletedJobData = null;
-        undoBtn.style.display = 'none';
+        if (undoBtn) undoBtn.style.display = 'none';
       }, 30000);
     } catch(e) {
       window.showToast('Error deleting job: ' + e.message, '#e53e3e');
