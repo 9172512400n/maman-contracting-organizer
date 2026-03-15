@@ -23,7 +23,7 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent !important; }
     body { font-family: 'Inter', sans-serif; background: #111; color: #f0f0f0; display: flex; min-height: 100vh; transition: background 0.3s, color 0.3s; }
 
     /* LOGIN SCREEN */
@@ -3328,6 +3328,7 @@ function doSignOut() {
   function renderPermitsCards(permits) {
     const container = document.getElementById('permits-cards-container');
     if (!container) return;
+    const _savedScroll = window.scrollY; // save scroll before re-render
 
     const search = (document.getElementById('permit-search') ? document.getElementById('permit-search').value : '').toLowerCase().trim();
 
@@ -3498,6 +3499,8 @@ function doSignOut() {
 
     // Restore previously open groups so re-renders don't collapse them
     restoreOpenPermitGroups();
+    // Restore scroll position after re-render
+    requestAnimationFrame(() => window.scrollTo({ top: _savedScroll, behavior: 'instant' }));
   }
 
   // Toggle accordion open/close
@@ -4964,9 +4967,9 @@ Office: 631-651-1815`
       const absDx = Math.abs(dx), absDy = Math.abs(dy);
 
       // Must be strongly horizontal — vertical must be less than 20% of horizontal
-      if (absDy > absDx * 0.20) return;
-      // Minimum: 200px deliberate swipe only — no flick shortcuts
-      if (absDx < 200) return;
+      if (absDy > absDx * 0.30) return;
+      // Minimum: 120px — easy enough but not accidental
+      if (absDx < 120) return;
 
       const cs = window._currentSection !== undefined ? window._currentSection : currentSection;
       if (dx < 0 && cs < SECTION_COUNT - 1) navTo(cs + 1);
