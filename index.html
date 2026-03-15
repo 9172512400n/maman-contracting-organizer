@@ -2318,7 +2318,7 @@ function doSignOut() {
             ${j.email ? `<a href="mailto:${j.email}" onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;background:#1e3a5f;border:1px solid #2d5a9e;color:#60a5fa;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;">✉️ Email</a>` : ''}
           </div>
         </td>
-        <td>${j.taskType ? `<span class="badge badge-gray">${j.taskType}</span>` : '—'}</td>
+        <td>${j.taskType ? `${j.taskType}` : '—'}</td>
         <td>${parking}</td>
         <td>${j.projectSize || '—'}</td>
         <td>${crewBadge(j)}</td>
@@ -2452,7 +2452,7 @@ function doSignOut() {
     tbody.innerHTML = recent.map(j => `
       <tr style="cursor:pointer;" onclick="openEditJob('${j.id}')">
         <td>${j.address || '—'}</td>
-        <td>${j.taskType ? `<span class="badge badge-gray">${j.taskType}</span>` : '—'}</td>
+        <td>${j.taskType ? `${j.taskType}` : '—'}</td>
         <td>${crewBadge(j)}</td>
         <td>${statusBadge(j.status)}</td>
         <td>${fmtDate(j.scheduleDay)}</td>
