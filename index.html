@@ -1517,9 +1517,12 @@ function doSignOut() {
             </div>
             <!-- ALERTS PANEL (critical only) -->
             <div class="panel" id="alerts-panel" style="border:1.5px solid #e53e3e;background:rgba(229,62,62,0.04);margin-bottom:14px;">
-              <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;color:#f87171;">
+              <div class="panel-title" onclick="toggleAlertsExpand()" style="display:flex;justify-content:space-between;align-items:center;color:#f87171;cursor:pointer;user-select:none;">
                 <span>🚨 Alerts</span>
-                <span id="alerts-count-badge" style="background:#e53e3e;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:800;display:none;">0</span>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span id="alerts-count-badge" style="background:#e53e3e;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:800;display:none;">0</span>
+                  <span id="alerts-expand-chevron" style="color:#f87171;font-size:13px;transition:transform 0.2s;">▼</span>
+                </div>
               </div>
               <div id="alerts-log-panel">
                 <div style="color:#555;font-size:13px;font-weight:600;padding:8px 0;">✅ No active alerts</div>
@@ -2660,23 +2663,32 @@ function doSignOut() {
 
     // Inject into dedicated ALERTS panel (separate from activity)
     if (alertsPanel) {
-      const alertHtml = expiring.map((item, idx) => {
+      // Store all alerts, show only latest by default
+      window._allPermitAlerts = expiring;
+      window._alertsExpanded = false;
+
+      const renderAlertItem = (item, idx) => {
         const days = daysUntil(item.expiry);
-        const daysLabel = days === 0 ? '🔴 Expires TODAY!' : days === 1 ? '🟠 1 day left' : `🟡 ${days} days left`;
+        const daysLabel = days === 0 ? '🔴 TODAY!' : days === 1 ? '🟠 1 day' : `🟡 ${days} days`;
         const taskTitle = `Renew permit: ${item.label} — ${item.address}`;
         const taskTitleSafe = taskTitle.replace(/'/g, "\\'");
         const alertId = 'permit-alert-' + idx;
-        return `<div id="${alertId}" style="background:rgba(229,62,62,0.08);border-left:3px solid #e53e3e;border-radius:6px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:8px;">
+        return `<div id="${alertId}" style="background:rgba(229,62,62,0.08);border-left:3px solid #e53e3e;border-radius:6px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:flex-start;gap:8px;">
           <div onclick="createPermitRenewalTask('${taskTitleSafe}','${item.expiry}')" style="flex:1;cursor:pointer;">
-            <div style="font-size:13px;font-weight:800;color:#f87171;">⚠️ Permit Expiring — ${item.label}</div>
-            <div style="font-size:12px;color:#ccc;font-weight:600;margin-top:3px;">${item.address}</div>
-            <div style="font-size:12px;color:#e53e3e;font-weight:700;margin-top:2px;">${daysLabel} · Expires ${fmtDate(item.expiry)}</div>
-            <div style="font-size:10px;color:#fca5a5;font-weight:700;margin-top:5px;">👆 Tap to create a renewal task</div>
+            <div style="font-size:13px;font-weight:800;color:#f87171;">⚠️ ${item.label} — ${item.address}</div>
+            <div style="font-size:11px;color:#e53e3e;font-weight:700;margin-top:3px;">${daysLabel} left · Expires ${fmtDate(item.expiry)}</div>
+            <div style="font-size:10px;color:#fca5a5;margin-top:3px;">👆 Tap → Create renewal task</div>
           </div>
-          <button onclick="event.stopPropagation();document.getElementById('${alertId}').remove();window.showToast&&window.showToast('Alert dismissed','#4ade80')" style="background:transparent;border:none;color:#555;font-size:18px;cursor:pointer;padding:0 2px;flex-shrink:0;line-height:1;" title="Dismiss">×</button>
+          <button onclick="event.stopPropagation();document.getElementById('${alertId}').remove()" style="background:transparent;border:none;color:#555;font-size:18px;cursor:pointer;padding:0;flex-shrink:0;line-height:1;">×</button>
         </div>`;
-      }).join('');
-      alertsPanel.innerHTML = alertHtml;
+      };
+
+      // Show only the most urgent (first) alert by default
+      const latestAlert = renderAlertItem(expiring[0], 0);
+      const moreCount = expiring.length - 1;
+      const moreHint = moreCount > 0 ? `<div id="alerts-more-hint" style="font-size:11px;color:#f87171;font-weight:700;padding:4px 0;cursor:pointer;" onclick="toggleAlertsExpand()">+ ${moreCount} more alert${moreCount > 1 ? 's' : ''} — tap 🚨 to see all</div>` : '';
+      alertsPanel.innerHTML = latestAlert + moreHint;
+      window._renderAlertItem = renderAlertItem;
       if (alertsBadge) { alertsBadge.textContent = expiring.length; alertsBadge.style.display = 'inline-block'; }
     }
     if (typeof updateBellBadge === 'function') updateBellBadge();
@@ -3123,6 +3135,25 @@ function doSignOut() {
   };
 
   // Create a permit renewal task from alert and navigate to Tasks
+  // Toggle alerts panel expand/collapse
+  window.toggleAlertsExpand = function() {
+    const panel = document.getElementById('alerts-log-panel');
+    const chevron = document.getElementById('alerts-expand-chevron');
+    if (!panel || !window._allPermitAlerts || !window._allPermitAlerts.length) return;
+    window._alertsExpanded = !window._alertsExpanded;
+    if (chevron) chevron.style.transform = window._alertsExpanded ? 'rotate(180deg)' : '';
+    if (window._alertsExpanded) {
+      // Show all alerts
+      panel.innerHTML = window._allPermitAlerts.map((item, idx) => window._renderAlertItem(item, idx)).join('');
+    } else {
+      // Show just the first alert + hint
+      const latestAlert = window._renderAlertItem(window._allPermitAlerts[0], 0);
+      const moreCount = window._allPermitAlerts.length - 1;
+      const moreHint = moreCount > 0 ? `<div id="alerts-more-hint" style="font-size:11px;color:#f87171;font-weight:700;padding:4px 0;cursor:pointer;" onclick="toggleAlertsExpand()">+ ${moreCount} more alert${moreCount > 1 ? 's' : ''} — tap 🚨 to see all</div>` : '';
+      panel.innerHTML = latestAlert + moreHint;
+    }
+  };
+
   window.createPermitRenewalTask = async function(title, expiry) {
     const userEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
     const now = new Date().toISOString();
