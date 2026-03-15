@@ -4803,7 +4803,7 @@ function doSignOut() {
               try {
                 const docs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [{url: p.docUrl, name: 'Permit Doc'}] : []);
                 if (!docs.length) {
-                  return '<div style="font-size:13px;color:#555;padding:6px 0;">No document uploaded yet.<br><span style="font-size:11px;color:#444;">Tap "+ Upload" to add PDF or photo</span></div>';
+                  return '<div style="font-size:13px;color:#555;padding:6px 0;">No document uploaded yet.<br><span style="font-size:11px;color:#444;">👆 Tap the green "Upload" button below to add</span></div>';
                 }
                 return docs.map(function(d, i) {
                   const url = typeof d === 'string' ? d : (d && d.url ? d.url : '');
@@ -5314,7 +5314,9 @@ Cell: 516-306-3326`
     if (!p) return;
     const docs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [p.docUrl] : []);
     if (!docs.length) {
-      window.showToast && window.showToast('No document uploaded yet — tap ✏️ Edit to add', '#f59e0b', 3000);
+      window.showToast && window.showToast('No document yet — tap 📎 Upload first', '#f59e0b', 3000);
+      // Auto-trigger upload
+      window.quickUploadPermitDoc && window.quickUploadPermitDoc(permitId);
       return;
     }
     const url = typeof docs[0] === 'string' ? docs[0] : docs[0].url;
