@@ -1131,6 +1131,7 @@ function doSignOut() {
   <div class="drawer-divider"></div>
   <div class="drawer-footer">
     <div style="height:1px;background:#2a2a2a;margin:4px 16px;"></div>
+    <div class="drawer-item" onclick="openDOTEmailSettings(); closeDrawer();" style="color:rgba(255,255,255,0.6);"><span class="di" style="font-size:18px;">🏛️</span><span>DOT Bureau Emails</span></div>
     <div class="drawer-item" onclick="toggleTheme(); closeDrawer();" id="theme-drawer-item" style="color:rgba(255,255,255,0.6);"><span class="di" style="font-size:18px;">🌙</span><span id="theme-drawer-label">Night / Day Mode</span></div>
     <div class="drawer-item" onclick="doSignOut()" style="color:#f87171;"><span class="di">🚪</span><span>Sign Out</span></div>
   </div>
@@ -1388,6 +1389,14 @@ function doSignOut() {
           </div>
           <div id="permits-cards-container">
             <div style="text-align:center;color:#555;padding:40px;">Loading permits…</div>
+          </div>
+          <!-- Permit History Section -->
+          <div style="margin-top:20px;">
+            <button id="permit-history-btn" onclick="togglePermitHistory()" style="width:100%;padding:12px;background:transparent;border:1px solid #2a2a2a;border-radius:10px;color:#666;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;text-align:left;">📁 Show Permit History</button>
+            <div id="permit-history-section" style="display:none;margin-top:12px;">
+              <div style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Archived Permits</div>
+              <div id="permit-history-container"><div style="color:#555;font-size:13px;padding:10px 0;">No archived permits yet.</div></div>
+            </div>
           </div>
         </div>
 
@@ -2296,7 +2305,8 @@ function doSignOut() {
       // Permits
       const permits = await restFetch('permits');
       allStandalonePermits = permits.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
-      renderPermitsCards(allStandalonePermits);
+      renderPermitsCards(allStandalonePermits.filter(p => !p.archived));
+      window.filterPermitsDirect();
       checkPermitExpiry(); // re-run now that standalone permits are loaded
     } catch(e) { console.error('permits load failed:', e); }
     try {
@@ -4193,7 +4203,7 @@ function doSignOut() {
   let permitsUnsubscribe = null;
 
   // ── DOT BUREAUS ────────────────────────────────────────────────────────────
-  const DOT_BUREAUS = [
+  const DOT_BUREAUS_DEFAULT = [
     { id: 'brooklyn',      name: 'Brooklyn BPP',        email: 'Brooklynbpp@dot.nyc.gov' },
     { id: 'manhattan_hiqa',name: 'Manhattan HIQA',      email: 'MNHIQA@dot.nyc.gov' },
     { id: 'manhattan_bpp', name: 'Manhattan BPP',       email: 'Manhattanbpp@dot.nyc.gov' },
@@ -4202,6 +4212,55 @@ function doSignOut() {
     { id: 'staten_island', name: 'Staten Island',       email: 'Sibpp@dot.nyc.gov' },
     { id: 'construction',  name: 'DOT Construction',    email: 'ConstructionPermits@dot.nyc.gov' },
   ];
+
+  // Load custom bureau emails from localStorage (editable in Settings)
+  function loadDOTBureaus() {
+    try {
+      const saved = localStorage.getItem('dot_bureau_emails');
+      if (saved) {
+        const overrides = JSON.parse(saved);
+        return DOT_BUREAUS_DEFAULT.map(b => ({ ...b, email: overrides[b.id] || b.email }));
+      }
+    } catch(e) {}
+    return DOT_BUREAUS_DEFAULT;
+  }
+  const DOT_BUREAUS = loadDOTBureaus();
+
+  // Settings: open DOT email editor
+  window.openDOTEmailSettings = function() {
+    const bureaus = loadDOTBureaus();
+    const overlay = document.createElement('div');
+    overlay.id = 'dot-settings-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;';
+    overlay.innerHTML = `<div style="background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:16px;padding:24px;max-width:420px;width:100%;font-family:Inter,sans-serif;margin:auto;">
+      <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px;">🏛️ DOT Bureau Emails</div>
+      <div style="font-size:12px;color:#666;margin-bottom:20px;">Edit the email address for each DOT bureau. Changes save locally.</div>
+      ${bureaus.map(b => `
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;display:block;margin-bottom:5px;">${b.name}</label>
+          <input type="email" id="dot-email-${b.id}" value="${b.email}" placeholder="${b.email}"
+            style="width:100%;padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:Inter,sans-serif;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        </div>`).join('')}
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button onclick="saveDOTEmailSettings()" style="flex:1;padding:12px;background:#e53e3e;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">💾 Save</button>
+        <button onclick="document.getElementById('dot-settings-overlay').remove()" style="flex:1;padding:12px;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Cancel</button>
+        <button onclick="localStorage.removeItem('dot_bureau_emails');document.getElementById('dot-settings-overlay').remove();window.showToast('Reset to defaults','#4ade80')" style="padding:12px 16px;background:transparent;border:1px solid #555;border-radius:10px;color:#555;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">↺ Reset</button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+  };
+
+  window.saveDOTEmailSettings = function() {
+    const overrides = {};
+    DOT_BUREAUS_DEFAULT.forEach(b => {
+      const input = document.getElementById('dot-email-' + b.id);
+      if (input && input.value.trim()) overrides[b.id] = input.value.trim();
+    });
+    localStorage.setItem('dot_bureau_emails', JSON.stringify(overrides));
+    document.getElementById('dot-settings-overlay').remove();
+    window.showToast('✅ DOT bureau emails saved', '#4ade80');
+  };
 
   function detectBorough(address) {
     const a = (address || '').toLowerCase();
@@ -4331,6 +4390,7 @@ function doSignOut() {
           </div>
           <div class="permit-item-actions">
             <button class="permit-edit-btn" onclick="event.stopPropagation();openEditPermit('${p.id}')">✏️ Edit</button>
+            <button onclick="event.stopPropagation();archivePermit('${p.id}')" style="flex:1;padding:7px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;background:#1a2a1a;border:1px solid #16a34a;color:#4ade80;">📁 History</button>
             <button class="permit-del-btn" onclick="event.stopPropagation();confirmDeletePermit('${p.id}','${(p.permitNumber||'this permit').replace(/'/g,"\\'")}',this)">🗑️ Delete</button>
           </div>
         </div>`;
@@ -4446,7 +4506,26 @@ function doSignOut() {
   };
 
   window.filterPermitsDirect = function() {
-    renderPermitsCards(allStandalonePermits);
+    // Active permits only (not archived)
+    renderPermitsCards(allStandalonePermits.filter(p => !p.archived));
+    // Update history section
+    const archived = allStandalonePermits.filter(p => p.archived);
+    const histContainer = document.getElementById('permit-history-container');
+    if (histContainer) {
+      if (!archived.length) {
+        histContainer.innerHTML = '<div style="color:#555;font-size:13px;padding:10px 0;">No archived permits yet.</div>';
+      } else {
+        histContainer.innerHTML = archived.map(p => `
+          <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:12px;margin-bottom:8px;opacity:0.7;">
+            <div style="font-size:13px;font-weight:700;color:#aaa;">#${p.permitNumber||'—'} • ${p.jobAddress||'No address'}</div>
+            <div style="font-size:11px;color:#555;margin-top:4px;">${p.permitHolder||''} ${p.expirationDate ? '• Exp: '+p.expirationDate : ''}</div>
+            <div style="margin-top:8px;display:flex;gap:8px;">
+              <button onclick="unarchivePermit('${p.id}')" style="flex:1;padding:6px;background:#1a2a1a;border:1px solid #16a34a;border-radius:7px;color:#4ade80;font-size:11px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">↩ Restore Active</button>
+              <button onclick="confirmDeletePermit('${p.id}','${(p.permitNumber||'this permit').replace(/'/g,"\\'")}',this)" style="flex:1;padding:6px;background:#450a0a;border:1px solid #7f1d1d;border-radius:7px;color:#f87171;font-size:11px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">🗑️ Delete</button>
+            </div>
+          </div>`).join('');
+      }
+    }
   };
 
   // DOT inspection: enable/disable Notify button based on date+time+bureau only
@@ -4624,6 +4703,50 @@ Cell: 516-306-3326`
       <button onclick="document.body.removeChild(this.closest('[style]'))" style="display:block;width:100%;padding:12px;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Cancel</button>
     </div>`;
     document.body.appendChild(overlay);
+  };
+
+  // Archive permit to History
+  window.archivePermit = async function(permitId) {
+    const API_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
+    const FS_BASE = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
+    try {
+      await fetch(`${FS_BASE}/permits/${permitId}?key=${API_KEY}&updateMask.fieldPaths=archived`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: { archived: { booleanValue: true } } })
+      });
+      allStandalonePermits = allStandalonePermits.map(p => p.id === permitId ? { ...p, archived: true } : p);
+      renderPermitsCards(allStandalonePermits.filter(p => !p.archived));
+      window.showToast('📁 Permit moved to History', '#4ade80');
+    } catch(e) {
+      window.showToast('Failed to archive permit', '#e53e3e');
+    }
+  };
+
+  // Restore archived permit back to active
+  window.unarchivePermit = async function(permitId) {
+    const API_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
+    const FS_BASE = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
+    try {
+      await fetch(`${FS_BASE}/permits/${permitId}?key=${API_KEY}&updateMask.fieldPaths=archived`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: { archived: { booleanValue: false } } })
+      });
+      allStandalonePermits = allStandalonePermits.map(p => p.id === permitId ? { ...p, archived: false } : p);
+      window.filterPermitsDirect();
+      window.showToast('✅ Permit restored to Active', '#4ade80');
+    } catch(e) {
+      window.showToast('Failed to restore permit', '#e53e3e');
+    }
+  };
+
+  // Show/hide history
+  window.togglePermitHistory = function() {
+    const hist = document.getElementById('permit-history-section');
+    if (!hist) return;
+    const isOpen = hist.style.display !== 'none';
+    hist.style.display = isOpen ? 'none' : 'block';
+    const btn = document.getElementById('permit-history-btn');
+    if (btn) btn.textContent = isOpen ? '📁 Show Permit History' : '📁 Hide Permit History';
   };
 
   window.doDeletePermit = async function(permitId) {
