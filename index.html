@@ -4647,14 +4647,17 @@ function doSignOut() {
             ${p.validFrom ? `<span>📅 ${fmtDate(p.validFrom)} → ${fmtDate(p.expirationDate)||'?'}</span>` : (p.expirationDate ? `<span>📅 Exp: ${fmtDate(p.expirationDate)}</span>` : '')}
             ${linkedJobHtml}
             ${p.notes ? `<span>📝 ${p.notes}</span>` : ''}
-            ${(() => {
-              const docs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [{url: p.docUrl, name: 'Permit Doc'}] : []);
-              if (!docs.length) return '';
-              return docs.map((d, i) => {
-                const url = typeof d === 'string' ? d : d.url;
-                const name = typeof d === 'string' ? `Doc ${i+1}` : (d.name || `Doc ${i+1}`);
-                return `<span>📄 <a href="${url}" target="_blank" onclick="event.stopPropagation()" style="color:#60a5fa;font-weight:700;">${name}</a> · <span onclick="event.stopPropagation();navigator.share&&navigator.share({url:'${url}',title:'${name}'})" style="color:#4ade80;cursor:pointer;font-weight:700;">📤</span></span>`;
-              }).join('<br>');
+            ${(function() {
+              try {
+                const docs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [{url: p.docUrl, name: 'Permit Doc'}] : []);
+                if (!docs.length) return '';
+                return docs.map(function(d, i) {
+                  const url = typeof d === 'string' ? d : (d && d.url ? d.url : '');
+                  const name = typeof d === 'string' ? ('Doc '+(i+1)) : (d && d.name ? d.name : ('Doc '+(i+1)));
+                  if (!url) return '';
+                  return '<span>📄 <a href="'+url+'" target="_blank" onclick="event.stopPropagation()" style="color:#60a5fa;font-weight:700;">'+name+'</a> · <span onclick="event.stopPropagation();navigator.share&&navigator.share({url:\''+url+'\',title:\''+name+'\'})" style="color:#4ade80;cursor:pointer;font-weight:700;">📤</span></span>';
+                }).filter(Boolean).join('<br>');
+              } catch(e) { return ''; }
             })()}
           </div>
           <div class="permit-item-actions">
