@@ -1815,9 +1815,15 @@ function doSignOut() {
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Alternate Side Parking Days</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:700;color:#f87171;">
+            <input type="checkbox" id="f-altParkingBlocked" onchange="toggleParkingBlocked()" style="width:16px;height:16px;accent-color:#e53e3e;cursor:pointer;"/>
+            Fully Blocked
+          </label>
+        </div>
         <input type="text" id="f-altParkingDays" placeholder="e.g. Mon &amp; Thu" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
+      <div id="f-parkingTimeRow" style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Parking Time</label>
         <input type="text" id="f-altParkingTime" placeholder="e.g. 8:00am – 9:30am" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
       </div>
@@ -5222,8 +5228,21 @@ Cell: 516-306-3326`
     document.getElementById('f-invoiceNumber').value = j.invoiceNumber || '';
     document.getElementById('f-address').value = j.address || '';
     document.getElementById('f-projectSize').value = j.projectSize || '';
-    document.getElementById('f-altParkingDays').value = j.altParkingDays || '';
+    const isBlocked = j.altParkingBlocked || (j.altParkingDays||'').toLowerCase().includes('fully blocked');
+    document.getElementById('f-altParkingBlocked').checked = isBlocked;
+    document.getElementById('f-altParkingDays').value = isBlocked ? '' : (j.altParkingDays || '');
     document.getElementById('f-altParkingTime').value = j.altParkingTime || '';
+    if (isBlocked) {
+      document.getElementById('f-altParkingDays').placeholder = 'Fully Blocked';
+      document.getElementById('f-altParkingDays').disabled = true;
+      const tr = document.getElementById('f-parkingTimeRow');
+      if (tr) tr.style.display = 'none';
+    } else {
+      document.getElementById('f-altParkingDays').disabled = false;
+      document.getElementById('f-altParkingDays').placeholder = 'e.g. Mon & Thu';
+      const tr = document.getElementById('f-parkingTimeRow');
+      if (tr) tr.style.display = '';
+    }
     document.getElementById('f-blocked').value = j.blocked || 'no';
     document.getElementById('f-status').value = j.status || 'Pending';
     document.getElementById('f-scheduleDay').value = j.scheduleDay || '';
@@ -5289,8 +5308,9 @@ Cell: 516-306-3326`
       projectSize:    document.getElementById('f-projectSize').value.trim(),
       jobType:        jobType,
       concreteSub:    concreteSub,
-      altParkingDays: document.getElementById('f-altParkingDays').value.trim(),
-      altParkingTime: document.getElementById('f-altParkingTime').value.trim(),
+      altParkingBlocked: document.getElementById('f-altParkingBlocked').checked,
+      altParkingDays: document.getElementById('f-altParkingBlocked').checked ? 'Fully blocked off by client' : document.getElementById('f-altParkingDays').value.trim(),
+      altParkingTime: document.getElementById('f-altParkingBlocked').checked ? '' : document.getElementById('f-altParkingTime').value.trim(),
       blocked:        document.getElementById('f-blocked').value,
       status:         document.getElementById('f-status').value,
       scheduleDay:    document.getElementById('f-scheduleDay').value,
@@ -6651,6 +6671,23 @@ Cell: 516-306-3326`
     const topBtn = document.getElementById('theme-toggle-btn');
     if (topBtn) topBtn.textContent = isLight ? '☀️' : '🌙';
   }
+  window.toggleParkingBlocked = function() {
+    const cb = document.getElementById('f-altParkingBlocked');
+    const daysInput = document.getElementById('f-altParkingDays');
+    const timeRow = document.getElementById('f-parkingTimeRow');
+    if (!cb || !daysInput) return;
+    if (cb.checked) {
+      daysInput.value = '';
+      daysInput.placeholder = 'Fully Blocked';
+      daysInput.disabled = true;
+      if (timeRow) timeRow.style.display = 'none';
+    } else {
+      daysInput.placeholder = 'e.g. Mon & Thu';
+      daysInput.disabled = false;
+      if (timeRow) timeRow.style.display = '';
+    }
+  };
+
   function toggleTheme() {
     document.body.classList.toggle('light');
     localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
