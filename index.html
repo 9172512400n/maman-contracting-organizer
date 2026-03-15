@@ -3582,23 +3582,26 @@ Office: 631-651-1815`
   function populateJobDropdown(selectedId) {
     const sel = document.getElementById('pm-linked-job');
     if (!sel) return;
+    const jobs = (typeof allJobs !== 'undefined' && allJobs) ? allJobs : [];
     sel.innerHTML = '<option value="">— No job linked —</option>' +
-      allJobs.map(j => `<option value="${j.id}" ${j.id === selectedId ? 'selected' : ''}>${j.customerName || j.address || j.id}</option>`).join('');
+      jobs.map(j => `<option value="${j.id}" ${j.id === selectedId ? 'selected' : ''}>${j.customerName || j.address || j.id}</option>`).join('');
   }
 
   window.openPermitModal = function() {
-    editingPermitId = null;
-    document.getElementById('permit-modal-title').textContent = '📋 Add Permit';
-    ['pm-permitNumber','pm-permitTypeCode','pm-permitHolder','pm-jobAddress','pm-notes'].forEach(id => {
-      const el = document.getElementById(id); if (el) el.value = '';
-    });
-    document.getElementById('pm-validFrom').value = '';
-    document.getElementById('pm-expirationDate').value = '';
-    document.getElementById('pm-status').value = 'Pending';
-    document.getElementById('ocr-status').textContent = '';
-    const _ocrPrev = document.getElementById('ocr-preview-img'); if (_ocrPrev) _ocrPrev.style.display = 'none';
-    document.getElementById('ocr-pages-preview').style.display = 'none';
-    populateJobDropdown('');
+    try {
+      editingPermitId = null;
+      document.getElementById('permit-modal-title').textContent = '📋 Add Permit';
+      ['pm-permitNumber','pm-permitTypeCode','pm-permitHolder','pm-jobAddress','pm-notes'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+      const vf = document.getElementById('pm-validFrom'); if (vf) vf.value = '';
+      const ef = document.getElementById('pm-expirationDate'); if (ef) ef.value = '';
+      const st = document.getElementById('pm-status'); if (st) st.value = 'Pending';
+      const os = document.getElementById('ocr-status'); if (os) os.textContent = '';
+      const _ocrPrev = document.getElementById('ocr-preview-img'); if (_ocrPrev) _ocrPrev.style.display = 'none';
+      const pp = document.getElementById('ocr-pages-preview'); if (pp) pp.style.display = 'none';
+      populateJobDropdown('');
+    } catch(e) { console.warn('openPermitModal setup error:', e); }
     document.getElementById('permit-modal').style.display = 'block';
     document.body.style.overflow = 'hidden';
   };
