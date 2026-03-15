@@ -4329,6 +4329,40 @@ Office: 631-651-1815`
     });
   }
 
+  window.schedSelectDay = function(iso) {
+    window._schedSelectedDay = (window._schedSelectedDay === iso) ? null : iso;
+    renderSchedule();
+  };
+
+  window.schedExportDay = function(iso) {
+    const filter = window._schedCrewFilter || 'all';
+    const jobs = allJobs.filter(j => j.scheduleDay === iso && jobMatchesCrew(j, filter));
+    const d = new Date(iso + 'T00:00:00');
+    const dayLabel = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+    let text = `Maman Contracting — Schedule for ${dayLabel}\n\n`;
+    if (!jobs.length) { text += 'No jobs scheduled.'; }
+    else {
+      jobs.forEach((j, i) => {
+        text += `${i+1}. ${j.address || '—'}\n`;
+        if (j.customerName) text += `   Customer: ${j.customerName}\n`;
+        if (j.phone) text += `   Phone: ${j.phone}\n`;
+        if (j.taskType || j.jobType) text += `   Work: ${j.taskType || j.jobType}\n`;
+        if (j.projectSize) text += `   Size: ${j.projectSize}\n`;
+        const parking = j.altParkingDays ? `${j.altParkingDays}${j.altParkingTime ? ' ' + j.altParkingTime : ''}` : j.altParking;
+        if (parking) text += `   Alt Parking: ${parking}\n`;
+        if (j.permitNumber) text += `   Permit: ${j.permitNumber}\n`;
+        if (j.notes) text += `   Notes: ${j.notes}\n`;
+        text += '\n';
+      });
+    }
+    if (navigator.share) {
+      navigator.share({ title: `Schedule ${dayLabel}`, text }).catch(()=>{});
+    } else {
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(waUrl, '_blank');
+    }
+  };
+
   window.schedChangeWeek = function(delta) {
     window._schedWeekOffset = (window._schedWeekOffset || 0) + delta;
     renderSchedule();
@@ -4359,26 +4393,49 @@ Office: 631-651-1815`
         <button onclick="schedChangeWeek(1)" style="background:transparent;border:1.5px solid #2a2a2a;border-radius:8px;width:36px;height:36px;cursor:pointer;color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Inter',sans-serif;">&gt;</button>`;
     }
 
-    // ── Day sections ──
-    const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    // ── Day buttons (tap to see jobs) ──
     const container = document.getElementById('sched-days-container');
     if (container) {
-      container.innerHTML = weekDays.map((d, i) => {
-        const iso = toLocalISO(d);
-        const isToday = iso === todayISO;
-        const dayLabel = d.toLocaleDateString('en-US', {weekday:'long', month:'short', day:'numeric'});
-        const dayJobs = jobs.filter(j => j.scheduleDay === iso);
-        const headerStyle = isToday
-          ? 'color:#e53e3e;font-size:15px;font-weight:900;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e53e3e;'
-          : 'color:#aaa;font-size:14px;font-weight:800;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #2a2a2a;';
-        const jobsHtml = dayJobs.length
-          ? dayJobs.map(j => buildScheduleAddrCard(j)).join('')
-          : `<div style="color:#444;font-size:13px;font-weight:700;padding:10px 0 4px;font-style:italic;">— No jobs —</div>`;
-        return `<div style="margin-bottom:24px;">
-          <div style="${headerStyle}">${isToday ? '● ' : ''}${dayLabel}</div>
-          ${jobsHtml}
-        </div>`;
-      }).join('');
+      const dayShortNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      container.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px;">
+          ${weekDays.map((d, i) => {
+            const iso = toLocalISO(d);
+            const isToday = iso === todayISO;
+            const dayJobs = jobs.filter(j => j.scheduleDay === iso);
+            const hasJobs = dayJobs.length > 0;
+            const isSelected = window._schedSelectedDay === iso;
+            const bg = isSelected ? '#e53e3e' : isToday ? '#3a1a1a' : '#1a1a1a';
+            const border = isSelected ? '#e53e3e' : isToday ? '#e53e3e' : '#2a2a2a';
+            const textColor = (isSelected || isToday) ? '#fff' : '#aaa';
+            return `<button onclick="schedSelectDay('${iso}')" style="background:${bg};border:2px solid ${border};border-radius:10px;padding:8px 4px;cursor:pointer;font-family:'Inter',sans-serif;text-align:center;transition:all 0.15s;">
+              <div style="font-size:11px;font-weight:800;color:${textColor};text-transform:uppercase;letter-spacing:0.5px;">${dayShortNames[i]}</div>
+              <div style="font-size:16px;font-weight:900;color:${isSelected ? '#fff' : isToday ? '#e53e3e' : '#fff'};margin:2px 0;">${d.getDate()}</div>
+              ${hasJobs ? `<div style="width:6px;height:6px;background:${isSelected ? '#fff' : '#e53e3e'};border-radius:50%;margin:0 auto;"></div>` : `<div style="height:6px;"></div>`}
+            </button>`;
+          }).join('')}
+        </div>
+        <div id="sched-day-jobs"></div>`;
+
+      // Show jobs for selected day
+      const selDay = window._schedSelectedDay;
+      const dayJobsEl = container.querySelector('#sched-day-jobs');
+      if (dayJobsEl) {
+        if (!selDay) {
+          dayJobsEl.innerHTML = `<div style="text-align:center;color:#555;font-size:14px;font-weight:700;padding:32px 0;">Tap a day to see its jobs</div>`;
+        } else {
+          const selJobs = jobs.filter(j => j.scheduleDay === selDay);
+          const selDate = new Date(selDay + 'T00:00:00');
+          const dayLabel = selDate.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+          const exportBtn = `<button onclick="schedExportDay('${selDay}')" style="background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:'Inter',sans-serif;">📤 Export</button>`;
+          dayJobsEl.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div style="font-size:16px;font-weight:900;color:#fff;">${dayLabel}</div>
+              ${exportBtn}
+            </div>
+            ${selJobs.length ? selJobs.map(j => buildScheduleAddrCard(j)).join('') : '<div style="color:#555;font-size:14px;font-weight:700;padding:16px 0;text-align:center;">— No jobs scheduled —</div>'}`;
+        }
+      }
     }
 
     // ── TBD section ──
