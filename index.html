@@ -5872,41 +5872,49 @@ Cell: 516-306-3326`
     const fmtLong  = d => d.toLocaleDateString('en-US', {month:'long', day:'numeric'});
     const weekLabel = `${fmtShort(monday)}–${fmtShort(sunday)}, ${sunday.getFullYear()}`;
 
-    let text = `Maman Contracting — Week of ${weekLabel}\n`;
+    // Format: "Schedule 03/16 - 03/21"
+    const fmtMD = d => `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+    let text = `Schedule ${fmtMD(monday)} - ${fmtMD(sunday)}\n\n`;
 
-    weekDays.forEach(d => {
+    const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+    weekDays.forEach((d, i) => {
       const iso = toLocalISO(d);
       const dayJobs = jobs.filter(j => j.scheduleDay === iso);
-      const dayHeader = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'}).toUpperCase();
-      const note = (window.scheduleNotes && window.scheduleNotes[iso]) ? window.scheduleNotes[iso].trim() : null;
+      const noteObj = (window.scheduleNotes && window.scheduleNotes[iso]);
+      const note = noteObj ? (typeof noteObj === 'string' ? noteObj : noteObj.note) : null;
+      const dayName = dayNames[i];
 
-      text += `\n${dayHeader}:\n`;
+      text += `${dayName}:\n`;
 
       if (note) {
-        text += `• No work — ${note}\n`;
+        text += `No work — ${note}\n`;
       } else if (!dayJobs.length) {
-        text += `• No jobs scheduled\n`;
+        text += `\n`;
       } else {
+        text += `\n`;
         dayJobs.forEach(j => {
-          const parking = j.altParkingDays ? `${j.altParkingDays}${j.altParkingTime ? ' ' + j.altParkingTime : ''}` : null;
+          const altParking = j.altParkingDays
+            ? `${j.altParkingDays}${j.altParkingTime ? ' ' + j.altParkingTime : ''}`
+            : (j.altParking || null);
 
           let permitStr = null;
-          if (Array.isArray(j.permits) && j.permits.length) {
-            const lines = j.permits.filter(p => p.number || p.code).map(p => {
-              let l = p.number || p.code; if (p.code && p.number) l = `${p.code}-${p.number}`; return l;
-            });
-            if (lines.length) permitStr = lines.join(', ');
-          }
-          if (!permitStr && j.permitNumber) permitStr = j.permitNumber;
+          if (j.permitNumber && j.permitCode) permitStr = `${j.permitNumber} - ${j.permitCode}`;
+          else if (j.permitNumber) permitStr = j.permitNumber;
+          else if (j.permitCode) permitStr = j.permitCode;
 
-          text += `• ${j.address || '—'}${j.customerName ? ' (' + j.customerName + ')' : ''}\n`;
-          if (j.projectSize) text += `  Size: ${j.projectSize}\n`;
-          if (permitStr) text += `  Permit: ${permitStr}\n`;
-          if (parking) text += `  Alt Parking: ${parking}\n`;
-          if (j.notes) text += `  Notes: ${j.notes}\n`;
-          text += '\n';
+          text += `${j.address || '—'}`;
+          if (j.customerName && j.customerName !== j.address) text += ` (${j.customerName})`;
+          text += `\n`;
+          if (j.projectSize) text += `${j.projectSize}\n`;
+          if (permitStr) text += `Permit: ${permitStr}\n`;
+          if (altParking) text += `No Parking:\n${altParking}\n`;
+          if (j.notes) text += `${j.notes}\n`;
+          text += `\n`;
         });
       }
+
+      text += `\n`;
     });
 
     const trimmed = text.trim();
