@@ -4784,33 +4784,33 @@ function doSignOut() {
             ${linkedJobHtml}
             ${p.notes ? `<span>📝 ${p.notes}</span>` : ''}
           </div>
-          <!-- PERMIT DOCS SECTION — always visible -->
-          <div style="margin:8px 0;padding:8px;background:#0f0f0f;border-radius:8px;border:1px solid #2a2a2a;">
-            <div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">📋 Permit Document</div>
+          <!-- PERMIT DOCS SECTION — large, clear, always visible -->
+          <div style="margin:10px 0 6px;background:#111;border:1.5px solid #1e40af;border-radius:10px;padding:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="font-size:12px;font-weight:800;color:#60a5fa;letter-spacing:0.3px;">📄 Permit Document</div>
+              <button onclick="event.stopPropagation();quickUploadPermitDoc('${p.id}')" style="background:#1d4ed8;border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:800;padding:6px 14px;cursor:pointer;font-family:Inter,sans-serif;">+ Upload</button>
+            </div>
             ${(function() {
               try {
                 const docs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [{url: p.docUrl, name: 'Permit Doc'}] : []);
                 if (!docs.length) {
-                  return '<div style="font-size:12px;color:#444;font-style:italic;padding:4px 0;">No document yet — tap ✏️ Edit to upload</div>';
+                  return '<div style="font-size:13px;color:#555;padding:6px 0;">No document uploaded yet.<br><span style="font-size:11px;color:#444;">Tap "+ Upload" to add PDF or photo</span></div>';
                 }
                 return docs.map(function(d, i) {
                   const url = typeof d === 'string' ? d : (d && d.url ? d.url : '');
-                  const name = typeof d === 'string' ? ('Doc '+(i+1)) : (d && d.name ? d.name : ('Doc '+(i+1)));
+                  const name = typeof d === 'string' ? ('Permit Doc '+(i+1)) : (d && d.name ? d.name : ('Permit Doc '+(i+1)));
                   if (!url) return '';
-                  return '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;flex-wrap:wrap;">'+
-                    '<span style="font-size:12px;font-weight:700;color:#ddd;flex:1;">📄 '+name+'</span>'+
-                    '<a href="'+url+'" target="_blank" onclick="event.stopPropagation()" style="color:#fff;font-size:12px;font-weight:800;text-decoration:none;background:#1d4ed8;border-radius:6px;padding:6px 12px;">👁️ View</a>'+
-                    '<span onclick="event.stopPropagation();window.open(\'mailto:?subject=Permit&body='+encodeURIComponent(url)+'\')" style="font-size:12px;font-weight:800;cursor:pointer;background:#14532d;border-radius:6px;padding:6px 10px;color:#fff;">✉️</span>'+
-                    '<span onclick="event.stopPropagation();navigator.share&&navigator.share({url:\''+url+'\',title:\''+name+'\'})" style="font-size:12px;font-weight:800;cursor:pointer;background:#4c1d95;border-radius:6px;padding:6px 10px;color:#fff;">📤</span>'+
+                  return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #1a1a1a;flex-wrap:wrap;">'+
+                    '<span style="font-size:13px;font-weight:700;color:#fff;flex:1;">📄 '+name+'</span>'+
+                    '<a href="'+url+'" target="_blank" onclick="event.stopPropagation()" style="color:#fff;font-size:12px;font-weight:800;text-decoration:none;background:#1d4ed8;border-radius:7px;padding:7px 14px;white-space:nowrap;">👁️ View</a>'+
+                    '<span onclick="event.stopPropagation();navigator.share?navigator.share({url:\''+url+'\',title:\''+name+'\'}):window.open(\'mailto:?subject=Permit&body='+encodeURIComponent(url)+'\')" style="font-size:12px;font-weight:800;cursor:pointer;background:#4c1d95;border-radius:7px;padding:7px 12px;color:#fff;white-space:nowrap;">📤 Share</span>'+
                     '</div>';
                 }).filter(Boolean).join('');
-              } catch(e) { return '<div style="color:#f87171;font-size:11px;">Error loading docs</div>'; }
+              } catch(e) { return ''; }
             })()}
           </div>
-          <div class="permit-item-actions">
+          <div class="permit-item-actions" style="margin-top:6px;">
             <button class="permit-edit-btn" onclick="event.stopPropagation();openEditPermit('${p.id}')">✏️ Edit</button>
-            <button onclick="event.stopPropagation();viewPermitDoc('${p.id}')" style="flex:1;padding:7px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;background:#1a2a3a;border:1px solid #2563eb;color:#60a5fa;">👁️ View</button>
-            <button onclick="event.stopPropagation();quickUploadPermitDoc('${p.id}')" style="flex:1;padding:7px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;background:#1a2a1a;border:1px solid #16a34a;color:#4ade80;" title="Upload permit document">📎 Upload</button>
             <button class="permit-del-btn" onclick="event.stopPropagation();confirmDeletePermit('${p.id}','${(p.permitNumber||'this permit').replace(/'/g,"\\'")}',this)">🗑️ Delete</button>
           </div>
         </div>`;
