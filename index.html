@@ -4723,24 +4723,28 @@ function doSignOut() {
             ${p.validFrom ? `<span>📅 ${fmtDate(p.validFrom)} → ${fmtDate(p.expirationDate)||'?'}</span>` : (p.expirationDate ? `<span>📅 Exp: ${fmtDate(p.expirationDate)}</span>` : '')}
             ${linkedJobHtml}
             ${p.notes ? `<span>📝 ${p.notes}</span>` : ''}
+          </div>
+          <!-- PERMIT DOCS SECTION — always visible -->
+          <div style="margin:8px 0;padding:8px;background:#0f0f0f;border-radius:8px;border:1px solid #2a2a2a;">
+            <div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">📋 Permit Document</div>
             ${(function() {
               try {
                 const docs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [{url: p.docUrl, name: 'Permit Doc'}] : []);
                 if (!docs.length) {
-                  return '<div style="padding:6px 0;"><span style="font-size:11px;color:#444;font-style:italic;">No document uploaded — tap ✏️ Edit to upload</span></div>';
+                  return '<div style="font-size:12px;color:#444;font-style:italic;padding:4px 0;">No document yet — tap ✏️ Edit to upload</div>';
                 }
                 return docs.map(function(d, i) {
                   const url = typeof d === 'string' ? d : (d && d.url ? d.url : '');
                   const name = typeof d === 'string' ? ('Doc '+(i+1)) : (d && d.name ? d.name : ('Doc '+(i+1)));
                   if (!url) return '';
-                  return '<div style="display:flex;align-items:center;gap:6px;padding:5px 0;flex-wrap:wrap;border-bottom:1px solid #222;">'+
-                    '<span style="font-size:12px;font-weight:700;color:#fff;flex:1;min-width:80px;">📄 '+name+'</span>'+
-                    '<a href="'+url+'" target="_blank" onclick="event.stopPropagation()" style="color:#60a5fa;font-size:12px;font-weight:700;text-decoration:none;background:#1a2a3a;border:1px solid #3b82f6;border-radius:6px;padding:5px 10px;">👁️ View</a>'+
-                    '<span onclick="event.stopPropagation();window.open(\'mailto:?subject=Permit&body='+encodeURIComponent(url)+'\')" style="color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;background:#1a2a1a;border:1px solid #16a34a;border-radius:6px;padding:5px 10px;">✉️</span>'+
-                    '<span onclick="event.stopPropagation();navigator.share&&navigator.share({url:\''+url+'\',title:\''+name+'\'})" style="color:#a78bfa;font-size:12px;font-weight:700;cursor:pointer;background:#1a1a2e;border:1px solid #6d28d9;border-radius:6px;padding:5px 10px;">📤</span>'+
+                  return '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;flex-wrap:wrap;">'+
+                    '<span style="font-size:12px;font-weight:700;color:#ddd;flex:1;">📄 '+name+'</span>'+
+                    '<a href="'+url+'" target="_blank" onclick="event.stopPropagation()" style="color:#fff;font-size:12px;font-weight:800;text-decoration:none;background:#1d4ed8;border-radius:6px;padding:6px 12px;">👁️ View</a>'+
+                    '<span onclick="event.stopPropagation();window.open(\'mailto:?subject=Permit&body='+encodeURIComponent(url)+'\')" style="font-size:12px;font-weight:800;cursor:pointer;background:#14532d;border-radius:6px;padding:6px 10px;color:#fff;">✉️</span>'+
+                    '<span onclick="event.stopPropagation();navigator.share&&navigator.share({url:\''+url+'\',title:\''+name+'\'})" style="font-size:12px;font-weight:800;cursor:pointer;background:#4c1d95;border-radius:6px;padding:6px 10px;color:#fff;">📤</span>'+
                     '</div>';
                 }).filter(Boolean).join('');
-              } catch(e) { return ''; }
+              } catch(e) { return '<div style="color:#f87171;font-size:11px;">Error loading docs</div>'; }
             })()}
           </div>
           <div class="permit-item-actions">
