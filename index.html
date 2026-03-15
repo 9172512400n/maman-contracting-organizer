@@ -2657,12 +2657,17 @@ function doSignOut() {
     itemsEl.innerHTML = expiring.map(item => {
       const days = daysUntil(item.expiry);
       const daysLabel = days === 0 ? 'TODAY!' : days === 1 ? '1 day left' : `${days} days left`;
-      return `<div class="permit-alert-item">
+      const taskTitle = `Renew permit: ${item.label} — ${item.address}`;
+      const taskTitleSafe = taskTitle.replace(/'/g, "\\'");
+      return `<div class="permit-alert-item" onclick="createPermitRenewalTask('${taskTitleSafe}','${item.expiry}')" style="cursor:pointer;" title="Tap to create a renewal task">
         <div>
           <div class="permit-alert-info">📋 ${item.label} · ${item.address}</div>
           <div class="permit-alert-meta">Expires: ${fmtDate(item.expiry)}</div>
         </div>
-        <span class="permit-alert-days">⚠️ ${daysLabel}</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          <span class="permit-alert-days">⚠️ ${daysLabel}</span>
+          <span style="font-size:10px;color:#fca5a5;font-weight:600;">Tap → Create Task</span>
+        </div>
       </div>`;
     }).join('');
 
@@ -3120,6 +3125,36 @@ function doSignOut() {
     if (form.style.display === 'block') {
       const ti = document.getElementById('task-title-input');
       if (ti) ti.focus();
+    }
+  };
+
+  // Create a permit renewal task from alert and navigate to Tasks
+  window.createPermitRenewalTask = async function(title, expiry) {
+    const userEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
+    const now = new Date().toISOString();
+    const taskData = {
+      fields: {
+        title: { stringValue: title },
+        description: { stringValue: `Permit expires: ${expiry}. Please renew before expiry date.` },
+        status: { stringValue: 'open' },
+        dueDate: { stringValue: expiry },
+        createdBy: { stringValue: userEmail },
+        createdByName: { stringValue: userEmail.split('@')[0] },
+        createdAt: { stringValue: now },
+        notes: { arrayValue: { values: [] } }
+      }
+    };
+    try {
+      await fetch(`${FS_BASE}/tasks?key=${API_KEY}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskData)
+      });
+      window.showToast('✅ Task created — go to Dashboard → Tasks', '#16a34a', 3000);
+      await loadTasks();
+      // Navigate to Dashboard (Tasks are there)
+      navTo(0);
+    } catch(e) {
+      window.showToast('Failed to create task: ' + e.message, '#e53e3e');
     }
   };
 
