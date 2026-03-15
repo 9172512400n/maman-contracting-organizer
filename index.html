@@ -2953,27 +2953,40 @@ function doSignOut() {
     const task = _allTasks.find(t => t.id === id);
     if (!task) return;
 
-    // Show inline close panel inside the task card
+    // Remove if already open (toggle)
     const existing = document.getElementById('task-close-panel-' + id);
     if (existing) { existing.remove(); return; }
 
-    const actionArea = document.querySelector(`[data-task-actions="${id}"]`);
-    if (!actionArea) return;
+    // Find a suitable anchor — try action area first, then any parent with task id in card
+    let anchor = document.querySelector(`[data-task-actions="${id}"]`);
+    if (!anchor) {
+      // Fallback: find any button that called closeTask and use its parent card
+      const btns = document.querySelectorAll('button');
+      for (const btn of btns) {
+        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`closeTask('${id}')`)) {
+          anchor = btn.closest('div[style]');
+          break;
+        }
+      }
+    }
+    if (!anchor) { window.showToast('⚠️ Please expand the task first', '#e53e3e'); return; }
 
     const panel = document.createElement('div');
     panel.id = 'task-close-panel-' + id;
     panel.style.cssText = 'margin-top:10px;padding:12px;background:#0a1a0a;border:1.5px solid #16a34a;border-radius:10px;';
     panel.innerHTML = `
-      <div style="font-size:12px;font-weight:700;color:#4ade80;margin-bottom:8px;">📋 Close Task — Add a note first</div>
-      <textarea id="task-close-note-${id}" placeholder="What was done? Who handled it?" rows="2"
-        style="width:100%;box-sizing:border-box;background:#111;border:1px solid #333;border-radius:6px;color:#e2e8f0;font-size:12px;font-family:'Inter',sans-serif;padding:8px;resize:vertical;outline:none;margin-bottom:8px;"
+      <div style="font-size:12px;font-weight:700;color:#4ade80;margin-bottom:8px;">📋 Write a note — what was done?</div>
+      <textarea id="task-close-note-${id}" placeholder="Describe what was done and who handled it…" rows="3"
+        style="width:100%;box-sizing:border-box;background:#111;border:1px solid #333;border-radius:6px;color:#e2e8f0;font-size:13px;font-family:'Inter',sans-serif;padding:8px;resize:vertical;outline:none;margin-bottom:8px;"
         oninput="document.getElementById('task-close-btns-${id}').style.display=this.value.trim()?'flex':'none'"></textarea>
-      <div id="task-close-btns-${id}" style="display:none;flex-direction:column;gap:6px;">
-        <button onclick="doCloseTask('${id}','complete')" style="padding:10px;background:#16a34a;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">✅ Task Complete — Close</button>
-        <button onclick="doCloseTask('${id}','followup')" style="padding:10px;background:#1d4ed8;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">📅 Need Follow-Up</button>
-        <button onclick="document.getElementById('task-close-panel-${id}').remove()" style="padding:8px;background:transparent;border:1px solid #333;border-radius:8px;color:#888;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;">Cancel</button>
+      <div id="task-close-btns-${id}" style="display:none;flex-direction:column;gap:8px;">
+        <button onclick="doCloseTask('${id}','complete')" style="padding:12px;background:#16a34a;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">✅ Task Complete — Move to History</button>
+        <button onclick="doCloseTask('${id}','followup')" style="padding:12px;background:#1d4ed8;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">📅 Need Follow-Up — Set New Date</button>
+        <button onclick="document.getElementById('task-close-panel-${id}').remove()" style="padding:10px;background:transparent;border:1px solid #333;border-radius:8px;color:#888;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;">Cancel</button>
       </div>`;
-    actionArea.parentElement.appendChild(panel);
+
+    // Insert after anchor
+    anchor.insertAdjacentElement('afterend', panel);
     panel.querySelector('textarea').focus();
   };
 
