@@ -1384,7 +1384,7 @@ function doSignOut() {
             <button class="btn btn-primary" onclick="openPermitModal()">+ Add Permit</button>
           </div>
           <div style="margin-bottom:14px;">
-            <input class="search-input" type="text" id="permit-search" placeholder="🔍  Search by address…" oninput="filterPermitsDirect()" style="width:100%;box-sizing:border-box;"/>
+            <input class="search-input" type="text" id="permit-search" placeholder="🔍  Search by address or permit #…" oninput="filterPermitsDirect()" style="width:100%;box-sizing:border-box;"/>
           </div>
           <div id="permits-cards-container">
             <div style="text-align:center;color:#555;padding:40px;">Loading permits…</div>
@@ -2932,10 +2932,53 @@ function doSignOut() {
   };
 
   window.closeTask = async function(id) {
-    const now = new Date().toISOString();
-    const userEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
     const task = _allTasks.find(t => t.id === id);
     if (!task) return;
+
+    // Require at least one note before closing
+    if (!task.notes || task.notes.length === 0) {
+      window.showToast('⚠️ Add a note first — what was done & who handled it', '#e53e3e');
+      // Open note input for this task
+      const noteArea = document.getElementById('task-note-area-' + id);
+      if (noteArea) { noteArea.style.display = 'block'; noteArea.querySelector('textarea') && noteArea.querySelector('textarea').focus(); }
+      return;
+    }
+
+    // Show close or follow-up options
+    const action = await new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+      overlay.innerHTML = `<div style="background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:16px;padding:24px;max-width:320px;width:100%;font-family:Inter,sans-serif;">
+        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:8px;">📋 Close Task</div>
+        <div style="font-size:13px;color:#aaa;margin-bottom:20px;">Task has been handled. What would you like to do?</div>
+        <button onclick="this.closest('[style]').remove();window._closeTaskResolve('close')" style="display:block;width:100%;padding:12px;margin-bottom:10px;background:#16a34a;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">✅ Close — Mark as Done</button>
+        <button onclick="this.closest('[style]').remove();window._closeTaskResolve('followup')" style="display:block;width:100%;padding:12px;margin-bottom:10px;background:#1d4ed8;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">📅 Add Follow-Up for Another Day</button>
+        <button onclick="this.closest('[style]').remove();window._closeTaskResolve('cancel')" style="display:block;width:100%;padding:12px;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Cancel</button>
+      </div>`;
+      window._closeTaskResolve = resolve;
+      document.body.appendChild(overlay);
+    });
+
+    if (action === 'cancel') return;
+
+    if (action === 'followup') {
+      const followDate = prompt('Follow-up date (YYYY-MM-DD):', new Date(Date.now() + 86400000).toISOString().split('T')[0]);
+      if (!followDate) return;
+      // Add a follow-up note and update due date
+      const now = new Date().toISOString();
+      const userEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
+      const newNote = { text: `📅 Follow-up scheduled for ${followDate}`, author: userEmail, timestamp: now };
+      const notes = [...(task.notes || []), newNote];
+      const body = { fields: { ...buildTaskFields(task), notes: { arrayValue: { values: notes.map(n => ({ mapValue: { fields: { text: { stringValue: n.text }, author: { stringValue: n.author }, timestamp: { stringValue: n.timestamp } } } })) } }, dueDate: { stringValue: followDate }, status: { stringValue: 'open' } } };
+      await fetch(`${FS_BASE}/tasks/${id}?key=${API_KEY}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      window.showToast('📅 Follow-up set for ' + followDate, '#1d4ed8');
+      await loadTasks();
+      return;
+    }
+
+    // Close the task
+    const now = new Date().toISOString();
+    const userEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
     const body = {
       fields: {
         ...buildTaskFields(task),
@@ -2949,7 +2992,7 @@ function doSignOut() {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
       });
       if (!r.ok) throw new Error('PATCH failed: ' + r.status);
-      window.showToast('Task archived →', '#16a34a');
+      window.showToast('✅ Task closed and archived', '#16a34a');
       await loadTasks();
     } catch(e) {
       console.error('closeTask failed:', e);
@@ -4186,10 +4229,12 @@ function doSignOut() {
 
     const search = (document.getElementById('permit-search') ? document.getElementById('permit-search').value : '').toLowerCase().trim();
 
-    // Filter by address search only
+    // Filter by address OR permit number
     let filtered = permits.filter(p => {
       if (!search) return true;
-      return (p.jobAddress||'').toLowerCase().includes(search);
+      return (p.jobAddress||'').toLowerCase().includes(search) ||
+             (p.permitNumber||'').toLowerCase().includes(search) ||
+             (p.permitCode||'').toLowerCase().includes(search);
     });
 
     if (!filtered.length) {
@@ -4567,15 +4612,18 @@ Cell: 516-306-3326`
   };
 
   window.confirmDeletePermit = function(permitId, permitNum, btn) {
-    // Inline confirmation — replace Delete button with Yes/No
-    const row = btn.parentElement;
-    row.innerHTML = `
-      <div style="flex:1;display:flex;align-items:center;gap:8px;">
-        <span style="font-size:12px;color:#f87171;font-weight:700;">Delete #${permitNum}?</span>
-      </div>
-      <button onclick="event.stopPropagation();doDeletePermit('${permitId}')" style="flex:1;padding:8px;background:#dc2626;border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">✅ Yes, Delete</button>
-      <button onclick="event.stopPropagation();loadAllData()" style="flex:1;padding:8px;background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✕ Cancel</button>
-    `;
+    // Show prominent confirmation modal
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.innerHTML = `<div style="background:#1a1a1a;border:1.5px solid #dc2626;border-radius:16px;padding:24px;max-width:320px;width:100%;font-family:Inter,sans-serif;">
+      <div style="font-size:20px;text-align:center;margin-bottom:12px;">⚠️</div>
+      <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:8px;text-align:center;">Permanently Delete Permit?</div>
+      <div style="font-size:13px;color:#aaa;margin-bottom:6px;text-align:center;">This will permanently delete permit <strong style="color:#fff;">#${permitNum}</strong>.</div>
+      <div style="font-size:13px;color:#f87171;font-weight:700;margin-bottom:20px;text-align:center;">This cannot be undone.</div>
+      <button onclick="document.body.removeChild(this.closest('[style]'));doDeletePermit('${permitId}')" style="display:block;width:100%;padding:12px;margin-bottom:10px;background:#dc2626;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">🗑️ Yes, Permanently Delete</button>
+      <button onclick="document.body.removeChild(this.closest('[style]'))" style="display:block;width:100%;padding:12px;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Cancel</button>
+    </div>`;
+    document.body.appendChild(overlay);
   };
 
   window.doDeletePermit = async function(permitId) {
