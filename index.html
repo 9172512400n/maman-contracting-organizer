@@ -791,7 +791,10 @@ function navTo(idx) {
   if (overlay) overlay.classList.remove('open');
   document.body.style.overflow = '';
   // Side effects
-  if (idx === 3 && typeof window.renderSchedule === 'function') window.renderSchedule();
+  if (idx === 3 && typeof window.renderSchedule === 'function') {
+    window._schedWeekOffset = 0; // always reset to current week when opening schedule
+    window.renderSchedule();
+  }
   // Also call module navTo if available (for any extra logic)
   if (typeof window._navTo === 'function' && window._navTo !== navTo) window._navTo(idx);
 }
