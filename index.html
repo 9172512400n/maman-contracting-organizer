@@ -2093,6 +2093,7 @@ function doSignOut() {
       const permits = await restFetch('permits');
       allStandalonePermits = permits.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
       renderPermitsCards(allStandalonePermits);
+      checkPermitExpiry(); // re-run now that standalone permits are loaded
     } catch(e) { console.error('permits load failed:', e); }
     try {
       // Users
@@ -2144,11 +2145,29 @@ function doSignOut() {
     const itemsEl = document.getElementById('permit-alert-items');
     const actLog = document.getElementById('activity-log-panel');
 
-    const expiring = allJobs.filter(j => {
+    // Check jobs with permit expiry
+    const expiringFromJobs = allJobs.filter(j => {
       if (!j.permitExpiry) return false;
       if (j.status === 'Completed' || j.status === 'Cancelled') return false;
       const days = daysUntil(j.permitExpiry);
       return days !== null && days >= 0 && days <= 4;
+    }).map(j => ({ label: j.permitNumber || j.permitCode || 'N/A', address: j.address, expiry: j.permitExpiry }));
+
+    // Check standalone permits (Permits tab) with expirationDate
+    const expiringFromPermits = (typeof allStandalonePermits !== 'undefined' ? allStandalonePermits : []).filter(p => {
+      if (!p.expirationDate) return false;
+      if (p.status === 'Expired' || p.status === 'Cancelled') return false;
+      const days = daysUntil(p.expirationDate);
+      return days !== null && days >= 0 && days <= 4;
+    }).map(p => ({ label: p.permitNumber || 'N/A', address: p.jobAddress || p.address || '—', expiry: p.expirationDate }));
+
+    // Merge both sources, deduplicate by permit number
+    const seen = new Set();
+    const expiring = [...expiringFromJobs, ...expiringFromPermits].filter(item => {
+      const key = item.label + item.expiry;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
     });
 
     // Update bell badge with permit expiry count
@@ -2168,14 +2187,13 @@ function doSignOut() {
     }
 
     banner.classList.add('show');
-    itemsEl.innerHTML = expiring.map(j => {
-      const days = daysUntil(j.permitExpiry);
+    itemsEl.innerHTML = expiring.map(item => {
+      const days = daysUntil(item.expiry);
       const daysLabel = days === 0 ? 'TODAY!' : days === 1 ? '1 day left' : `${days} days left`;
-      const permitNum = j.permitNumber || j.permitCode || 'N/A';
       return `<div class="permit-alert-item">
         <div>
-          <div class="permit-alert-info">📋 ${permitNum} · ${j.address || '—'}</div>
-          <div class="permit-alert-meta">Expires: ${fmtDate(j.permitExpiry)}</div>
+          <div class="permit-alert-info">📋 ${item.label} · ${item.address}</div>
+          <div class="permit-alert-meta">Expires: ${fmtDate(item.expiry)}</div>
         </div>
         <span class="permit-alert-days">⚠️ ${daysLabel}</span>
       </div>`;
@@ -2183,16 +2201,15 @@ function doSignOut() {
 
     // Also inject into activity log panel at top
     if (actLog) {
-      const alertHtml = expiring.map(j => {
-        const days = daysUntil(j.permitExpiry);
+      const alertHtml = expiring.map(item => {
+        const days = daysUntil(item.expiry);
         const daysLabel = days === 0 ? 'Expires TODAY' : `${days} day${days !== 1 ? 's' : ''} left`;
         return `<div class="notif-item" style="border-left:3px solid #e53e3e;padding-left:10px;">
           <div class="notif-title"><span class="notif-dot dot-red"></span>⚠️ Permit Expiring</div>
-          <div class="notif-sub">${j.address || '—'} · ${j.permitNumber || j.permitCode || ''}</div>
+          <div class="notif-sub">${item.address} · ${item.label}</div>
           <div class="notif-sub" style="color:#e53e3e;font-weight:600;">${daysLabel}</div>
         </div>`;
       }).join('');
-      // Prepend to existing content
       actLog.insertAdjacentHTML('afterbegin', alertHtml);
     }
   }
