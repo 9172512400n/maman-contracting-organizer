@@ -3365,17 +3365,19 @@ function doSignOut() {
     renderPermitsCards(allStandalonePermits);
   };
 
-  // DOT inspection: enable/disable Notify button based on date+time+permits+bureaus
+  // DOT inspection: enable/disable Notify button based on date+time+bureau only
   window.dotUpdateBtn = function(groupKey) {
     const dateVal = (document.getElementById('dot-date-' + groupKey) || {}).value || '';
     const timeVal = (document.getElementById('dot-time-' + groupKey) || {}).value || '';
-    const permitCbs = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
     const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
-    const anyPermitChecked = Array.from(permitCbs).some(cb => cb.checked);
     const anyBureauChecked = Array.from(bureauCbs).some(cb => cb.checked);
     const btn = document.getElementById('dot-btn-' + groupKey);
     if (btn) {
-      btn.disabled = !(dateVal && timeVal && anyPermitChecked && anyBureauChecked);
+      const ready = !!(dateVal && timeVal && anyBureauChecked);
+      btn.disabled = !ready;
+      btn.style.opacity = ready ? '1' : '0.45';
+      btn.style.background = ready ? '#16a34a' : '';
+      btn.style.cursor = ready ? 'pointer' : 'not-allowed';
     }
   };
 
@@ -3404,17 +3406,18 @@ function doSignOut() {
     const dateVal = (document.getElementById('dot-date-' + groupKey) || {}).value || '';
     const timeVal = (document.getElementById('dot-time-' + groupKey) || {}).value || '';
 
-    // Get checked permits
+    // Get checked permits — if none checked, use ALL permits for this group
     const permitCbs = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
-    const checkedPermits = Array.from(permitCbs).filter(cb => cb.checked);
+    let checkedPermits = Array.from(permitCbs).filter(cb => cb.checked);
+    if (!checkedPermits.length) checkedPermits = Array.from(permitCbs); // default: all
 
     // Get checked bureaus
     const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
     const checkedBureaus = Array.from(bureauCbs).filter(cb => cb.checked);
 
-    // Validate all required fields
-    if (!checkedPermits.length || !dateVal || !timeVal || !checkedBureaus.length) {
-      window.showToast('Please select permits, date, time, and at least one bureau.', '#e53e3e');
+    // Validate required fields
+    if (!dateVal || !timeVal || !checkedBureaus.length) {
+      window.showToast('Please fill in date, time, and select at least one bureau.', '#e53e3e');
       return;
     }
 
