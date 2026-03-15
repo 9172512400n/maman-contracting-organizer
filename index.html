@@ -1406,6 +1406,50 @@ function doSignOut() {
               <button onclick="emailConcreteResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
             </div>
           </div>
+
+          <!-- SF + PRICE CALCULATOR -->
+          <div id="calc-sf-price" style="margin-top:28px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+              <span style="font-size:22px;">📐</span>
+              <h3 style="font-size:17px;font-weight:800;color:#fff;margin:0;letter-spacing:0.2px;">Square Footage &amp; Pricing Calculator</h3>
+            </div>
+
+            <!-- Section 1: Measurements -->
+            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:14px;">
+              <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Measurements (one per line)</div>
+              <textarea id="sf-measurements"
+                placeholder="10x10&#10;8x26&#10;90x50&#10;10'x10'&#10;10 x 10"
+                oninput="calcSFPrice()"
+                onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"
+                style="width:100%;box-sizing:border-box;min-height:140px;padding:12px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:10px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;resize:vertical;line-height:1.7;outline:none;"></textarea>
+              <div style="margin-top:12px;padding:12px 16px;background:#111;border-radius:10px;border:1px solid #2a2a2a;">
+                <span style="color:#aaa;font-size:14px;font-weight:600;">Total SF: </span>
+                <span id="sf-total-display" style="color:#4ade80;font-size:22px;font-weight:900;">0 SF</span>
+              </div>
+            </div>
+
+            <!-- Section 2: Pricing -->
+            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:14px;">
+              <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Pricing</div>
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+                <span style="color:#aaa;font-size:15px;font-weight:600;white-space:nowrap;">$ Price per SF</span>
+                <input type="number" id="sf-price-per-sf" placeholder="e.g. 4.75" inputmode="decimal" min="0" step="0.01"
+                  oninput="calcSFPrice()"
+                  onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"
+                  style="flex:1;padding:11px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:16px;font-family:'Inter',sans-serif;outline:none;"/>
+              </div>
+              <div style="padding:12px 16px;background:#111;border-radius:10px;border:1px solid #2a2a2a;">
+                <span style="color:#aaa;font-size:14px;font-weight:600;">Total Cost: </span>
+                <span id="sf-total-cost" style="color:#4ade80;font-size:22px;font-weight:900;">—</span>
+              </div>
+            </div>
+
+            <!-- Section 3: Clear -->
+            <button onclick="clearSFCalc()"
+              style="width:100%;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0.3px;">
+              🗑️ Clear All
+            </button>
+          </div>
         </div>
 
       </div><!-- end sections-wrapper -->
@@ -4933,6 +4977,48 @@ Office: 631-651-1815`
   window.clearConcrete = function() {
     ['con-width','con-length','con-thickness','con-cost'].forEach(id => document.getElementById(id).value = '');
     ['con-result-cy','con-result-bags','con-result-cost'].forEach(id => document.getElementById(id).textContent = '—');
+  };
+
+  // ── SF + PRICE CALCULATOR ─────────────────────────────────────────────────
+  window.calcSFPrice = function() {
+    const lines = (document.getElementById('sf-measurements').value || '').split('\n');
+    let totalSF = 0;
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      // Supports: 10x10, 10'x10', 10 x 10, 10X10, 10' x 10', etc.
+      const match = trimmed.match(/^([\d.]+)\s*'?\s*[xX]\s*([\d.]+)\s*'?$/);
+      if (match) {
+        const a = parseFloat(match[1]);
+        const b = parseFloat(match[2]);
+        if (!isNaN(a) && !isNaN(b) && a > 0 && b > 0) {
+          totalSF += a * b;
+        }
+      }
+    });
+
+    const sfDisplay = document.getElementById('sf-total-display');
+    sfDisplay.textContent = totalSF > 0
+      ? totalSF.toLocaleString('en-US', {maximumFractionDigits: 2}) + ' SF'
+      : '0 SF';
+
+    const pricePerSF = parseFloat(document.getElementById('sf-price-per-sf').value);
+    const costDisplay = document.getElementById('sf-total-cost');
+    if (totalSF > 0 && !isNaN(pricePerSF) && pricePerSF > 0) {
+      const totalCost = totalSF * pricePerSF;
+      costDisplay.textContent = '$' + totalCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      costDisplay.style.color = '#4ade80';
+    } else {
+      costDisplay.textContent = '—';
+      costDisplay.style.color = '#4ade80';
+    }
+  };
+
+  window.clearSFCalc = function() {
+    document.getElementById('sf-measurements').value = '';
+    document.getElementById('sf-price-per-sf').value = '';
+    document.getElementById('sf-total-display').textContent = '0 SF';
+    document.getElementById('sf-total-cost').textContent = '—';
   };
 
   window.emailConcreteResult = function() {
