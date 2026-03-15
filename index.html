@@ -1329,10 +1329,16 @@ function doSignOut() {
                 style="background:#1a2a3a;border:1.5px solid #3b82f6;border-radius:8px;padding:0 12px;height:36px;cursor:pointer;font-size:12px;font-weight:800;color:#60a5fa;font-family:'Inter',sans-serif;flex-shrink:0;white-space:nowrap;">
                 📋 View All Days
               </button>
-              <button onclick="exportDaySchedule()"
-                style="background:#e53e3e;border:none;border-radius:8px;padding:0 14px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-size:13px;font-weight:800;color:#fff;font-family:'Inter',sans-serif;flex-shrink:0;"
-                title="Export Week Schedule">📤
-              </button>
+              <div style="position:relative;flex-shrink:0;">
+                <button onclick="toggleShareMenu()" id="share-menu-btn"
+                  style="background:#e53e3e;border:none;border-radius:8px;padding:0 14px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-size:13px;font-weight:800;color:#fff;font-family:'Inter',sans-serif;"
+                  title="Share Schedule">📤
+                </button>
+                <div id="share-menu-dropdown" style="display:none;position:absolute;right:0;top:42px;background:#1a1a1a;border:1.5px solid #3a3a3a;border-radius:10px;padding:6px;z-index:999;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+                  <button onclick="schedShareDay();closeShareMenu();" style="display:block;width:100%;background:transparent;border:none;color:#fff;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;padding:10px 14px;text-align:left;cursor:pointer;border-radius:7px;" onmouseover="this.style.background='#2a2a2a'" onmouseout="this.style.background='transparent'">📅 Share This Day</button>
+                  <button onclick="shareFullWeek();closeShareMenu();" style="display:block;width:100%;background:transparent;border:none;color:#fff;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;padding:10px 14px;text-align:left;cursor:pointer;border-radius:7px;" onmouseover="this.style.background='#2a2a2a'" onmouseout="this.style.background='transparent'">📆 Share Full Week</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -4923,10 +4929,38 @@ Cell: 516-306-3326`
       const fmtShort = d => d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
       const fmtYear = d => d.getFullYear();
       const label = `${fmtShort(monday)} – ${fmtShort(sunday)}, ${fmtYear(sunday)}`;
+
+      // Build 8-week list for dropdown (current + 7 future)
+      const todayForList = new Date(); todayForList.setHours(0,0,0,0);
+      const weekListItems = Array.from({length: 8}, (_, wi) => {
+        const wMon = getMondayOfWeek(todayForList, wi);
+        const wSun = getWeekDays(wMon)[6];
+        const wIso = toLocalISO(wMon);
+        const curIso = toLocalISO(monday);
+        const isCurrent = wIso === toLocalISO(getMondayOfWeek(todayForList, 0));
+        const isSelected = wIso === curIso;
+        const hasJobs = allJobs.some(j => {
+          if (!j.scheduleDay) return false;
+          return j.scheduleDay >= wIso && j.scheduleDay <= toLocalISO(wSun);
+        });
+        const offsetFromCurrent = wi;
+        return `<div onclick="schedChangeWeekTo(${wi});closeWeekList();" style="display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;border-radius:8px;background:${isSelected ? '#e53e3e' : 'transparent'};" onmouseover="this.style.background='${isSelected ? '#e53e3e' : '#2a2a2a'}'" onmouseout="this.style.background='${isSelected ? '#e53e3e' : 'transparent'}'">
+          <span style="font-size:13px;font-weight:${isCurrent ? '900' : '700'};color:${isSelected ? '#fff' : isCurrent ? '#e53e3e' : '#ccc'};flex:1;">${fmtShort(wMon)} – ${fmtShort(wSun)}</span>
+          ${hasJobs ? `<span style="width:7px;height:7px;background:${isSelected ? '#fff' : '#e53e3e'};border-radius:50%;display:inline-block;flex-shrink:0;"></span>` : ''}
+        </div>`;
+      }).join('');
+
+      weekPicker.style.position = 'relative';
       weekPicker.innerHTML = `
         <button onclick="schedChangeWeek(-1)" style="background:transparent;border:1.5px solid #2a2a2a;border-radius:8px;width:36px;height:36px;cursor:pointer;color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Inter',sans-serif;">&lt;</button>
         <span style="font-size:14px;font-weight:800;color:#fff;text-align:center;flex:1;">${label}</span>
-        <button onclick="schedChangeWeek(1)" style="background:transparent;border:1.5px solid #2a2a2a;border-radius:8px;width:36px;height:36px;cursor:pointer;color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Inter',sans-serif;">&gt;</button>`;
+        <button onclick="schedChangeWeek(1)" style="background:transparent;border:1.5px solid #2a2a2a;border-radius:8px;width:36px;height:36px;cursor:pointer;color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Inter',sans-serif;">&gt;</button>
+        <div style="position:relative;flex-shrink:0;">
+          <button onclick="toggleWeekList(event)" id="week-list-btn" style="background:transparent;border:1.5px solid #2a2a2a;border-radius:8px;padding:0 10px;height:36px;cursor:pointer;color:#ccc;font-size:12px;font-weight:800;font-family:'Inter',sans-serif;white-space:nowrap;">📅 Weeks</button>
+          <div id="week-list-dropdown" style="display:none;position:absolute;right:0;top:42px;background:#1a1a1a;border:1.5px solid #3a3a3a;border-radius:12px;padding:6px;z-index:1000;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+            ${weekListItems}
+          </div>
+        </div>`;
     }
 
     // ── Day buttons (tap to see jobs) ──
@@ -5103,43 +5137,174 @@ Cell: 516-306-3326`
   };
 
   window.exportDaySchedule = function() {
-    // Export current week's schedule
+    shareFullWeek();
+  };
+
+  // ── Share / Week List UI helpers ──────────────────────────────────────
+  window.toggleShareMenu = function() {
+    const dd = document.getElementById('share-menu-dropdown');
+    if (!dd) return;
+    const isOpen = dd.style.display !== 'none';
+    dd.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) {
+      // close on outside click
+      setTimeout(() => document.addEventListener('click', closeShareMenuOutside, {once:true}), 10);
+    }
+  };
+
+  function closeShareMenuOutside(e) {
+    const dd = document.getElementById('share-menu-dropdown');
+    const btn = document.getElementById('share-menu-btn');
+    if (dd && !dd.contains(e.target) && btn && !btn.contains(e.target)) {
+      dd.style.display = 'none';
+    }
+  }
+
+  window.closeShareMenu = function() {
+    const dd = document.getElementById('share-menu-dropdown');
+    if (dd) dd.style.display = 'none';
+  };
+
+  window.toggleWeekList = function(e) {
+    if (e) e.stopPropagation();
+    const dd = document.getElementById('week-list-dropdown');
+    if (!dd) return;
+    const isOpen = dd.style.display !== 'none';
+    dd.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) {
+      setTimeout(() => document.addEventListener('click', closeWeekListOutside, {once:true}), 10);
+    }
+  };
+
+  function closeWeekListOutside(e) {
+    const dd = document.getElementById('week-list-dropdown');
+    const btn = document.getElementById('week-list-btn');
+    if (dd && !dd.contains(e.target) && btn && !btn.contains(e.target)) {
+      dd.style.display = 'none';
+    }
+  }
+
+  window.closeWeekList = function() {
+    const dd = document.getElementById('week-list-dropdown');
+    if (dd) dd.style.display = 'none';
+  };
+
+  // Navigate to a specific week offset from current week (wi = index 0-7)
+  window.schedChangeWeekTo = function(wi) {
+    window._schedWeekOffset = wi;
+    loadScheduleNotes().then(() => renderSchedule());
+  };
+
+  // ── Share This Day ────────────────────────────────────────────────────
+  window.schedShareDay = function() {
+    // Share the currently-selected day, or today if none selected
     const filter = window._schedCrewFilter || 'all';
     const jobs = allJobs.filter(j => jobMatchesCrew(j, filter));
-    const today = new Date();
+    const today = new Date(); today.setHours(0,0,0,0);
+    const offset = window._schedWeekOffset || 0;
+    const monday = getMondayOfWeek(today, offset);
+    const weekDays = getWeekDays(monday);
+
+    // If a day is selected use it, otherwise fall back to today or first weekday
+    let iso = window._schedSelectedDay;
+    if (!iso) {
+      const todayISO = toLocalISO(today);
+      iso = weekDays.some(d => toLocalISO(d) === todayISO) ? todayISO : toLocalISO(weekDays[0]);
+    }
+
+    const d = new Date(iso + 'T00:00:00');
+    const dayLabel = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+    const dayJobs = jobs.filter(j => j.scheduleDay === iso);
+
+    let text = `Maman Contracting — ${dayLabel}\n\n`;
+    if (!dayJobs.length) {
+      text += '• No jobs scheduled';
+    } else {
+      dayJobs.forEach(j => {
+        const parking = j.altParkingDays ? `${j.altParkingDays}${j.altParkingTime ? ' ' + j.altParkingTime : ''}` : null;
+        let permitStr = null;
+        if (Array.isArray(j.permits) && j.permits.length) {
+          const lines = j.permits.filter(p => p.number || p.code).map(p => {
+            let l = p.number || p.code; if (p.code && p.number) l = `${p.code}-${p.number}`; return l;
+          });
+          if (lines.length) permitStr = lines.join(', ');
+        }
+        if (!permitStr && j.permitNumber) permitStr = j.permitNumber;
+
+        text += `• ${j.address || '—'}${j.customerName ? ' (' + j.customerName + ')' : ''}\n`;
+        if (j.projectSize) text += `  Size: ${j.projectSize}\n`;
+        if (permitStr) text += `  Permit: ${permitStr}\n`;
+        if (parking) text += `  Alt Parking: ${parking}\n`;
+        if (j.notes) text += `  Notes: ${j.notes}\n`;
+        text += '\n';
+      });
+    }
+
+    if (navigator.share) {
+      navigator.share({ title: dayLabel, text: text.trim() }).catch(()=>{});
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text.trim())}`, '_blank');
+    }
+  };
+
+  // ── Share Full Week ───────────────────────────────────────────────────
+  window.shareFullWeek = function() {
+    const filter = window._schedCrewFilter || 'all';
+    const jobs = allJobs.filter(j => jobMatchesCrew(j, filter));
+    const today = new Date(); today.setHours(0,0,0,0);
     const offset = window._schedWeekOffset || 0;
     const monday = getMondayOfWeek(today, offset);
     const weekDays = getWeekDays(monday);
     const sunday = weekDays[6];
-    const weekLabel = `${monday.toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${sunday.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
 
-    let text = `Maman Contracting — Schedule\n${weekLabel}\n\n`;
-    let anyJob = false;
+    const fmtShort = d => d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+    const fmtLong  = d => d.toLocaleDateString('en-US', {month:'long', day:'numeric'});
+    const weekLabel = `${fmtShort(monday)}–${fmtShort(sunday)}, ${sunday.getFullYear()}`;
+
+    let text = `Maman Contracting — Week of ${weekLabel}\n`;
+
     weekDays.forEach(d => {
       const iso = toLocalISO(d);
       const dayJobs = jobs.filter(j => j.scheduleDay === iso);
-      if (!dayJobs.length) return;
-      anyJob = true;
-      const dayLabel = d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
-      text += `${dayLabel}\n`;
-      dayJobs.forEach((j, idx) => {
-        const parking = j.altParkingDays ? `${j.altParkingDays}${j.altParkingTime ? ' ' + j.altParkingTime : ''}` : null;
-        text += `  ${idx+1}. ${j.address || '—'}\n`;
-        if (j.customerName) text += `     Customer: ${j.customerName}\n`;
-        if (j.phone) text += `     Phone: ${j.phone}\n`;
-        if (j.taskType) text += `     Work: ${j.taskType}\n`;
-        if (j.projectSize) text += `     Size: ${j.projectSize}\n`;
-        if (parking) text += `     Alt Parking: ${parking}\n`;
-        if (j.notes) text += `     Notes: ${j.notes}\n`;
-      });
-      text += '\n';
-    });
-    if (!anyJob) text += 'No jobs scheduled this week.\n';
+      const dayHeader = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'}).toUpperCase();
+      const note = (window.scheduleNotes && window.scheduleNotes[iso]) ? window.scheduleNotes[iso].trim() : null;
 
+      text += `\n${dayHeader}:\n`;
+
+      if (note) {
+        text += `• No work — ${note}\n`;
+      } else if (!dayJobs.length) {
+        text += `• No jobs scheduled\n`;
+      } else {
+        dayJobs.forEach(j => {
+          const parking = j.altParkingDays ? `${j.altParkingDays}${j.altParkingTime ? ' ' + j.altParkingTime : ''}` : null;
+
+          let permitStr = null;
+          if (Array.isArray(j.permits) && j.permits.length) {
+            const lines = j.permits.filter(p => p.number || p.code).map(p => {
+              let l = p.number || p.code; if (p.code && p.number) l = `${p.code}-${p.number}`; return l;
+            });
+            if (lines.length) permitStr = lines.join(', ');
+          }
+          if (!permitStr && j.permitNumber) permitStr = j.permitNumber;
+
+          text += `• ${j.address || '—'}${j.customerName ? ' (' + j.customerName + ')' : ''}\n`;
+          if (j.projectSize) text += `  Size: ${j.projectSize}\n`;
+          if (permitStr) text += `  Permit: ${permitStr}\n`;
+          if (parking) text += `  Alt Parking: ${parking}\n`;
+          if (j.notes) text += `  Notes: ${j.notes}\n`;
+          text += '\n';
+        });
+      }
+    });
+
+    const trimmed = text.trim();
     if (navigator.share) {
-      navigator.share({ title: 'Schedule', text: text.trim() }).catch(()=>{});
+      navigator.share({ title: `Maman Contracting — Week of ${weekLabel}`, text: trimmed }).catch(()=>{
+        window.open(`https://wa.me/?text=${encodeURIComponent(trimmed)}`, '_blank');
+      });
     } else {
-      window.open(`https://wa.me/?text=${encodeURIComponent(text.trim())}`, '_blank');
+      window.open(`https://wa.me/?text=${encodeURIComponent(trimmed)}`, '_blank');
     }
   };
 
