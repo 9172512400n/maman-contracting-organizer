@@ -4951,7 +4951,7 @@ Cell: 516-306-3326`
       const selDay = window._schedSelectedDay;
       const dayJobsEl = container.querySelector('#sched-day-jobs');
       if (dayJobsEl) {
-        if (window._schedViewAll) {
+        if (window._schedViewAll !== false) { // default to true
           // Show ALL 7 days expanded
           dayJobsEl.innerHTML = weekDays.map(d => {
             const iso = toLocalISO(d);
