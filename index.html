@@ -2948,73 +2948,78 @@ function doSignOut() {
     }
   };
 
-  window.closeTask = async function(id) {
+  // Show close task flow: require note, then offer Close or Follow-Up
+  window.closeTask = function(id) {
     const task = _allTasks.find(t => t.id === id);
     if (!task) return;
 
-    // Require at least one note before closing
-    if (!task.notes || task.notes.length === 0) {
-      window.showToast('⚠️ Add a note first — what was done & who handled it', '#e53e3e');
-      // Open note input for this task
-      const noteArea = document.getElementById('task-note-area-' + id);
-      if (noteArea) { noteArea.style.display = 'block'; noteArea.querySelector('textarea') && noteArea.querySelector('textarea').focus(); }
-      return;
-    }
+    // Show inline close panel inside the task card
+    const existing = document.getElementById('task-close-panel-' + id);
+    if (existing) { existing.remove(); return; }
 
-    // Show close or follow-up options
-    const action = await new Promise(resolve => {
-      const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
-      overlay.innerHTML = `<div style="background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:16px;padding:24px;max-width:320px;width:100%;font-family:Inter,sans-serif;">
-        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:8px;">📋 Close Task</div>
-        <div style="font-size:13px;color:#aaa;margin-bottom:20px;">Task has been handled. What would you like to do?</div>
-        <button onclick="this.closest('[style]').remove();window._closeTaskResolve('close')" style="display:block;width:100%;padding:12px;margin-bottom:10px;background:#16a34a;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">✅ Close — Mark as Done</button>
-        <button onclick="this.closest('[style]').remove();window._closeTaskResolve('followup')" style="display:block;width:100%;padding:12px;margin-bottom:10px;background:#1d4ed8;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">📅 Add Follow-Up for Another Day</button>
-        <button onclick="this.closest('[style]').remove();window._closeTaskResolve('cancel')" style="display:block;width:100%;padding:12px;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Cancel</button>
+    const actionArea = document.querySelector(`[data-task-actions="${id}"]`);
+    if (!actionArea) return;
+
+    const panel = document.createElement('div');
+    panel.id = 'task-close-panel-' + id;
+    panel.style.cssText = 'margin-top:10px;padding:12px;background:#0a1a0a;border:1.5px solid #16a34a;border-radius:10px;';
+    panel.innerHTML = `
+      <div style="font-size:12px;font-weight:700;color:#4ade80;margin-bottom:8px;">📋 Close Task — Add a note first</div>
+      <textarea id="task-close-note-${id}" placeholder="What was done? Who handled it?" rows="2"
+        style="width:100%;box-sizing:border-box;background:#111;border:1px solid #333;border-radius:6px;color:#e2e8f0;font-size:12px;font-family:'Inter',sans-serif;padding:8px;resize:vertical;outline:none;margin-bottom:8px;"
+        oninput="document.getElementById('task-close-btns-${id}').style.display=this.value.trim()?'flex':'none'"></textarea>
+      <div id="task-close-btns-${id}" style="display:none;flex-direction:column;gap:6px;">
+        <button onclick="doCloseTask('${id}','complete')" style="padding:10px;background:#16a34a;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">✅ Task Complete — Close</button>
+        <button onclick="doCloseTask('${id}','followup')" style="padding:10px;background:#1d4ed8;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">📅 Need Follow-Up</button>
+        <button onclick="document.getElementById('task-close-panel-${id}').remove()" style="padding:8px;background:transparent;border:1px solid #333;border-radius:8px;color:#888;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;">Cancel</button>
       </div>`;
-      window._closeTaskResolve = resolve;
-      document.body.appendChild(overlay);
-    });
+    actionArea.parentElement.appendChild(panel);
+    panel.querySelector('textarea').focus();
+  };
 
-    if (action === 'cancel') return;
+  window.doCloseTask = async function(id, action) {
+    const task = _allTasks.find(t => t.id === id);
+    if (!task) return;
+    const noteText = (document.getElementById('task-close-note-' + id) || {}).value?.trim() || '';
+    if (!noteText) { window.showToast('⚠️ Please add a note first', '#e53e3e'); return; }
+
+    const now = new Date().toISOString();
+    const userEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
+    const userName = (currentUser && (currentUser.displayName || currentUser.email)) || 'Admin';
+
+    // Save the closing note
+    let notes = [];
+    try { notes = Array.isArray(task.notes) ? task.notes : JSON.parse(task.notes || '[]'); } catch(e) { notes = []; }
+    notes.push({ text: noteText, author: userName, timestamp: now });
 
     if (action === 'followup') {
       const followDate = prompt('Follow-up date (YYYY-MM-DD):', new Date(Date.now() + 86400000).toISOString().split('T')[0]);
       if (!followDate) return;
-      // Add a follow-up note and update due date
-      const now = new Date().toISOString();
-      const userEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
-      const newNote = { text: `📅 Follow-up scheduled for ${followDate}`, author: userEmail, timestamp: now };
-      const notes = [...(task.notes || []), newNote];
-      const body = { fields: { ...buildTaskFields(task), notes: { arrayValue: { values: notes.map(n => ({ mapValue: { fields: { text: { stringValue: n.text }, author: { stringValue: n.author }, timestamp: { stringValue: n.timestamp } } } })) } }, dueDate: { stringValue: followDate }, status: { stringValue: 'open' } } };
+      notes.push({ text: `📅 Follow-up scheduled for ${followDate}`, author: userName, timestamp: now });
+      const body = { fields: { ...buildTaskFields({...task, notes}), dueDate: { stringValue: followDate }, status: { stringValue: 'open' } } };
       await fetch(`${FS_BASE}/tasks/${id}?key=${API_KEY}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       window.showToast('📅 Follow-up set for ' + followDate, '#1d4ed8');
-      await loadTasks();
-      return;
+    } else {
+      const body = { fields: { ...buildTaskFields({...task, notes}), status: { stringValue: 'closed' }, closedBy: { stringValue: userEmail }, closedAt: { stringValue: now } } };
+      try {
+        const r = await fetch(`${FS_BASE}/tasks/${id}?key=${API_KEY}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        if (!r.ok) throw new Error('PATCH failed ' + r.status);
+        window.showToast('✅ Task closed and moved to History', '#16a34a');
+      } catch(e) { window.showToast('Failed to close task', '#e53e3e'); return; }
     }
+    await loadTasks();
+  };
 
-    // Close the task
-    const now = new Date().toISOString();
-    const userEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
-    const body = {
-      fields: {
-        ...buildTaskFields(task),
-        status: { stringValue: 'closed' },
-        closedBy: { stringValue: userEmail },
-        closedAt: { stringValue: now }
-      }
-    };
+  // Restore closed task back to open
+  window.restoreTask = async function(id) {
+    const task = _allTasks.find(t => t.id === id);
+    if (!task) return;
+    const body = { fields: { ...buildTaskFields(task), status: { stringValue: 'open' }, closedBy: { stringValue: '' }, closedAt: { stringValue: '' } } };
     try {
-      const r = await fetch(`${FS_BASE}/tasks/${id}?key=${API_KEY}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
-      });
-      if (!r.ok) throw new Error('PATCH failed: ' + r.status);
-      window.showToast('✅ Task closed and archived', '#16a34a');
+      await fetch(`${FS_BASE}/tasks/${id}?key=${API_KEY}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      window.showToast('↩ Task moved back to open', '#4ade80');
       await loadTasks();
-    } catch(e) {
-      console.error('closeTask failed:', e);
-      window.showToast('Failed to archive task', '#e53e3e');
-    }
+    } catch(e) { window.showToast('Failed to restore task', '#e53e3e'); }
   };
 
   window.deleteTask = async function(id) {
@@ -3295,7 +3300,7 @@ function doSignOut() {
           </div>
 
           <!-- Action buttons row -->
-          <div style="display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid #1f2937;padding-top:10px;">
+          <div data-task-actions="${task.id}" style="display:flex;flex-wrap:wrap;gap:6px;border-top:1px solid #1f2937;padding-top:10px;">
             <button onclick="openTaskEdit('${task.id}')" style="background:#0a1628;border:1px solid #3b82f6;border-radius:6px;color:#60a5fa;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit</button>
             <button onclick="document.getElementById('task-note-form-${task.id}').style.display='block';document.getElementById('task-note-ta-${task.id}')&&document.getElementById('task-note-ta-${task.id}').focus()" style="background:#0a1628;border:1px solid #3b82f6;border-radius:6px;color:#60a5fa;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:'Inter',sans-serif;">📝 Add Note</button>
             <button onclick="markTaskDone('${task.id}')" style="background:#052e16;border:1px solid #16a34a;border-radius:6px;color:#4ade80;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:'Inter',sans-serif;">✅ Mark Done</button>
@@ -3343,7 +3348,7 @@ function doSignOut() {
           </div>
           ${notes.length ? `<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;color:#4b5563;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Notes (${notes.length})</div>${notesThreadHtml(task)}</div>` : ''}
           <div style="border-top:1px solid #1a2e1a;padding-top:8px;">
-            <button onclick="closeTask('${task.id}')" style="background:#1a1208;border:1px solid #78350f;border-radius:6px;color:#fbbf24;font-size:11px;font-weight:700;padding:5px 14px;cursor:pointer;font-family:'Inter',sans-serif;">Close → Archive</button>
+            <button onclick="closeTask('${task.id}')" style="background:#1a1208;border:1px solid #78350f;border-radius:6px;color:#fbbf24;font-size:11px;font-weight:700;padding:5px 14px;cursor:pointer;font-family:'Inter',sans-serif;">🗂️ Close → Archive</button>
           </div>
         </div>`;
 
@@ -3357,10 +3362,22 @@ function doSignOut() {
         ? `<button onclick="event.stopPropagation();deleteTask('${task.id}')" title="Permanently delete" style="background:none;border:none;color:#333;cursor:pointer;font-size:13px;padding:2px 5px;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#333'">🗑️</button>`
         : '';
 
+      let notes = [];
+      try { notes = Array.isArray(task.notes) ? task.notes : JSON.parse(task.notes || '[]'); } catch(e) { notes = []; }
+
       return `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px 7px 12px;border-left:4px solid #222;background:#0a0a0a;border-radius:8px;margin-bottom:4px;opacity:0.45;">
-          <div style="flex:1;font-style:italic;color:#4b5563;font-size:12px;">${task.title}</div>
-          ${adminDel}
+        <div style="border-left:4px solid #222;background:#0a0a0a;border-radius:8px;margin-bottom:4px;opacity:0.7;">
+          <div onclick="toggleTaskExpand('${task.id}')" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px 8px 12px;cursor:pointer;">
+            <div style="flex:1;font-style:italic;color:#4b5563;font-size:12px;">${task.title}</div>
+            <span style="color:#333;font-size:11px;">${expanded ? '▲' : '▼'}</span>
+            ${adminDel}
+          </div>
+          ${expanded ? `<div style="padding:10px 14px;border-top:1px solid #1a1a1a;">
+            ${notes.length ? notesThreadHtml(task) : '<div style="color:#4b5563;font-size:12px;font-style:italic;">No notes</div>'}
+            <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">
+              <button onclick="restoreTask('${task.id}')" style="padding:8px 14px;background:#1a2a1a;border:1px solid #16a34a;border-radius:8px;color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">↩ Move Back to Tasks</button>
+            </div>
+          </div>` : ''}
         </div>`;
     }
 
