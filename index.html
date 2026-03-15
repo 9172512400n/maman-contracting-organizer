@@ -1006,30 +1006,15 @@ function enterApp() {
   if (window._enterAppCallback) window._enterAppCallback();
 }
 
-// Global permit modal opener — works before module script loads
-function openPermitModal() {
-  if (window.openPermitModal && window.openPermitModal !== openPermitModal) {
-    window.openPermitModal();
-  } else {
-    var modal = document.getElementById('permit-modal');
-    if (modal) { modal.style.display = 'block'; document.body.style.overflow = 'hidden'; }
-  }
-}
-function openAddPermitForAddress(addr) {
-  if (window.openAddPermitForAddress && window.openAddPermitForAddress !== openAddPermitForAddress) {
-    window.openAddPermitForAddress(addr);
-  } else {
-    openPermitModal();
-  }
-}
-function closePermitModal() {
-  if (window.closePermitModal && window.closePermitModal !== closePermitModal) {
-    window.closePermitModal();
-  } else {
-    var modal = document.getElementById('permit-modal');
-    if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
-  }
-}
+// Global permit modal helpers — safe fallbacks before module loads
+window._openPermitModal = function() {
+  var modal = document.getElementById('permit-modal');
+  if (modal) { modal.style.display = 'block'; document.body.style.overflow = 'hidden'; }
+};
+window._closePermitModal = function() {
+  var modal = document.getElementById('permit-modal');
+  if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
+};
 
 function toggleUserMenu() {
   var dd = document.getElementById('user-dropdown');
@@ -1580,7 +1565,7 @@ function doSignOut() {
         <div class="section" id="sec-permits">
           <div class="section-header">
             <h2>Permits</h2>
-            <button class="btn btn-primary" onclick="openPermitModal()">+ Add Permit</button>
+            <button class="btn btn-primary" onclick="(window.openPermitModal||function(){document.getElementById('permit-modal').style.display='block';document.body.style.overflow='hidden';})()">+ Add Permit</button>
           </div>
           <div style="margin-bottom:14px;">
             <input class="search-input" type="text" id="permit-search" placeholder="🔍  Search by address or permit #…" oninput="filterPermitsDirect()" style="width:100%;box-sizing:border-box;"/>
