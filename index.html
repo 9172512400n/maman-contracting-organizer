@@ -3105,9 +3105,9 @@ function doSignOut() {
             ${task.description ? `<div style="font-size:12px;color:#9ca3af;margin-top:3px;">${task.description}</div>` : ''}
             ${renderNotes(task)}
           </div>
-          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
-            <button onclick="markTaskDone('${task.id}')" style="background:#052e16;border:1px solid #16a34a;border-radius:5px;color:#4ade80;font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;font-family:'Inter',sans-serif;">✅ Done</button>
-            <button onclick="toggleTaskNoteForm('${task.id}')" style="background:#1a1a2e;border:1px solid #3b82f6;border-radius:5px;color:#60a5fa;font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;font-family:'Inter',sans-serif;">📝 Note</button>
+          <div style="display:flex;flex-direction:row;gap:6px;align-items:center;flex-shrink:0;">
+            <button onclick="markTaskDone('${task.id}')" style="background:#052e16;border:1px solid #16a34a;border-radius:8px;color:#4ade80;font-size:12px;font-weight:700;padding:6px 10px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;">✅</button>
+            <button onclick="toggleTaskNoteForm('${task.id}')" style="background:#1a1a2e;border:1px solid #3b82f6;border-radius:8px;color:#60a5fa;font-size:12px;font-weight:700;padding:6px 10px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;">📝</button>
             ${adminDel}
           </div>
         </div>
