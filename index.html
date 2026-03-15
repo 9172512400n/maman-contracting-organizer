@@ -3381,7 +3381,7 @@ function doSignOut() {
             <button onclick="toggleTaskExpand('${task.id}')" style="background:none;border:none;color:#4b5563;font-size:16px;cursor:pointer;padding:0 0 0 8px;">✕</button>
           </div>
           ${notes.length ? `<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;color:#4b5563;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Notes (${notes.length})</div>${notesThreadHtml(task)}</div>` : ''}
-          <div style="border-top:1px solid #1a2e1a;padding-top:8px;">
+          <div data-task-actions="${task.id}" style="border-top:1px solid #1a2e1a;padding-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
             <button onclick="closeTask('${task.id}')" style="background:#1a1208;border:1px solid #78350f;border-radius:6px;color:#fbbf24;font-size:11px;font-weight:700;padding:5px 14px;cursor:pointer;font-family:'Inter',sans-serif;">🗂️ Close → Archive</button>
           </div>
         </div>`;
