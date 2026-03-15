@@ -2327,7 +2327,17 @@ function doSignOut() {
       })();
       const _savedSection = parseInt(localStorage.getItem('last-section') || '0');
       if (_savedSection > 0) {
-        setTimeout(() => { if (typeof navTo === 'function') navTo(_savedSection); else if (typeof window._navTo === 'function') window._navTo(_savedSection); }, 800);
+        // Try multiple times to ensure navTo is ready and sections are rendered
+        const tryNav = (attempts) => {
+          if (typeof navTo === 'function') {
+            navTo(_savedSection);
+          } else if (typeof window._navTo === 'function') {
+            window._navTo(_savedSection);
+          } else if (attempts > 0) {
+            setTimeout(() => tryNav(attempts - 1), 300);
+          }
+        };
+        setTimeout(() => tryNav(5), 600);
       }
   };
 
