@@ -1260,10 +1260,13 @@ function doSignOut() {
           <div class="section-header">
             <h2>Schedule</h2>
             <div style="display:flex;gap:8px;align-items:center;">
-              <button id="sched-add-job-btn" class="btn btn-primary" onclick="openJobModalWithCrew()" style="padding:8px 14px;font-size:13px;display:none;">+ Add Job</button>
+              <button id="sched-view-all-btn" onclick="schedToggleViewAll()"
+                style="background:#1a2a3a;border:1.5px solid #3b82f6;border-radius:8px;padding:0 12px;height:36px;cursor:pointer;font-size:12px;font-weight:800;color:#60a5fa;font-family:'Inter',sans-serif;flex-shrink:0;white-space:nowrap;">
+                📋 View All Days
+              </button>
               <button onclick="exportDaySchedule()"
                 style="background:#e53e3e;border:none;border-radius:8px;padding:0 14px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-size:13px;font-weight:800;color:#fff;font-family:'Inter',sans-serif;flex-shrink:0;"
-                title="Export Week Schedule">📤 Export
+                title="Export Week Schedule">📤
               </button>
             </div>
           </div>
@@ -4330,8 +4333,24 @@ Office: 631-651-1815`
   }
 
   window.schedSelectDay = function(iso) {
+    if (window._schedViewAll) return; // in view-all mode, tapping day does nothing
     window._schedSelectedDay = (window._schedSelectedDay === iso) ? null : iso;
     renderSchedule();
+  };
+
+  window.schedToggleViewAll = function() {
+    window._schedViewAll = !window._schedViewAll;
+    window._schedSelectedDay = null;
+    renderSchedule();
+  };
+
+  window.schedAddJobForDay = function(iso) {
+    // Open job modal pre-filled with scheduleDay
+    if (typeof openJobModal === 'function') openJobModal();
+    setTimeout(() => {
+      const sdEl = document.getElementById('field-scheduleDay');
+      if (sdEl) { sdEl.value = iso; sdEl.dispatchEvent(new Event('change')); }
+    }, 150);
   };
 
   window.schedExportDay = function(iso) {
@@ -4417,21 +4436,47 @@ Office: 631-651-1815`
         </div>
         <div id="sched-day-jobs"></div>`;
 
-      // Show jobs for selected day
+      // "View All" toggle button
+      const viewAllBtn = document.getElementById('sched-view-all-btn');
+      if (viewAllBtn) {
+        viewAllBtn.textContent = window._schedViewAll ? '📅 Day View' : '📋 View All Days';
+      }
+
+      // Show jobs for selected day OR all days
       const selDay = window._schedSelectedDay;
       const dayJobsEl = container.querySelector('#sched-day-jobs');
       if (dayJobsEl) {
-        if (!selDay) {
+        if (window._schedViewAll) {
+          // Show ALL 7 days expanded
+          dayJobsEl.innerHTML = weekDays.map(d => {
+            const iso = toLocalISO(d);
+            const isToday = iso === todayISO;
+            const dayLabel = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+            const dayJobs = jobs.filter(j => j.scheduleDay === iso);
+            return `<div style="margin-bottom:20px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid ${isToday ? '#e53e3e' : '#2a2a2a'};">
+                <div style="font-size:15px;font-weight:900;color:${isToday ? '#e53e3e' : '#fff'};">${isToday ? '● ' : ''}${dayLabel}</div>
+                <div style="display:flex;gap:6px;">
+                  <button onclick="schedAddJobForDay('${iso}')" style="background:#1a3a1a;border:1px solid #16a34a;border-radius:7px;color:#4ade80;font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:'Inter',sans-serif;">+ Add</button>
+                  <button onclick="schedExportDay('${iso}')" style="background:#3a1a1a;border:1px solid #e53e3e;border-radius:7px;color:#f87171;font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:'Inter',sans-serif;">📤</button>
+                </div>
+              </div>
+              ${dayJobs.length ? dayJobs.map(j => buildScheduleAddrCard(j)).join('') : '<div style="color:#444;font-size:13px;font-style:italic;padding:4px 0 8px;">— No jobs —</div>'}
+            </div>`;
+          }).join('');
+        } else if (!selDay) {
           dayJobsEl.innerHTML = `<div style="text-align:center;color:#555;font-size:14px;font-weight:700;padding:32px 0;">Tap a day to see its jobs</div>`;
         } else {
           const selJobs = jobs.filter(j => j.scheduleDay === selDay);
           const selDate = new Date(selDay + 'T00:00:00');
           const dayLabel = selDate.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
-          const exportBtn = `<button onclick="schedExportDay('${selDay}')" style="background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:'Inter',sans-serif;">📤 Export</button>`;
           dayJobsEl.innerHTML = `
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
               <div style="font-size:16px;font-weight:900;color:#fff;">${dayLabel}</div>
-              ${exportBtn}
+              <div style="display:flex;gap:8px;">
+                <button onclick="schedAddJobForDay('${selDay}')" style="background:#1a3a1a;border:1px solid #16a34a;border-radius:8px;color:#4ade80;font-size:13px;font-weight:700;padding:8px 12px;cursor:pointer;font-family:'Inter',sans-serif;">+ Add Job</button>
+                <button onclick="schedExportDay('${selDay}')" style="background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:'Inter',sans-serif;">📤 Export</button>
+              </div>
             </div>
             ${selJobs.length ? selJobs.map(j => buildScheduleAddrCard(j)).join('') : '<div style="color:#555;font-size:14px;font-weight:700;padding:16px 0;text-align:center;">— No jobs scheduled —</div>'}`;
         }
