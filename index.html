@@ -3605,7 +3605,6 @@ function doSignOut() {
   function renderPermitsCards(permits) {
     const container = document.getElementById('permits-cards-container');
     if (!container) return;
-    const _savedScroll = window.scrollY; // save scroll before re-render
 
     const search = (document.getElementById('permit-search') ? document.getElementById('permit-search').value : '').toLowerCase().trim();
 
@@ -3745,11 +3744,11 @@ function doSignOut() {
             <div class="dot-inspect-row">
               <div class="dot-inspect-field">
                 <label>📅 Day</label>
-                <input type="date" id="dot-date-${groupKey}" onchange="dotUpdateBtn('${groupKey}')" onfocus="window._permitScrollY=window.scrollY" onblur="setTimeout(()=>window.scrollTo({top:window._permitScrollY||0,behavior:'instant'}),150)" />
+                <input type="date" id="dot-date-${groupKey}" onchange="dotUpdateBtn('${groupKey}')" />
               </div>
               <div class="dot-inspect-field">
                 <label>⏰ Time</label>
-                <input type="time" id="dot-time-${groupKey}" step="900" onchange="dotUpdateBtn('${groupKey}')" onfocus="window._permitScrollY=window.scrollY" onblur="setTimeout(()=>window.scrollTo({top:window._permitScrollY||0,behavior:'instant'}),150)" />
+                <input type="time" id="dot-time-${groupKey}" step="900" onchange="dotUpdateBtn('${groupKey}')" />
               </div>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px;">
@@ -3776,8 +3775,6 @@ function doSignOut() {
 
     // Restore previously open groups so re-renders don't collapse them
     restoreOpenPermitGroups();
-    // Restore scroll position after re-render
-    requestAnimationFrame(() => window.scrollTo({ top: _savedScroll, behavior: 'instant' }));
   }
 
   // Toggle accordion open/close
@@ -5312,9 +5309,14 @@ Cell: 516-306-3326`
       const absDx = Math.abs(dx), absDy = Math.abs(dy);
 
       // Must be strongly horizontal — vertical must be less than 20% of horizontal
-      if (absDy > absDx * 0.30) return;
-      // Minimum: 120px — easy enough but not accidental
-      if (absDx < 160) return;
+      if (absDy > absDx * 0.20) return;
+      // Minimum: 180px — deliberate swipe required
+      if (absDx < 180) return;
+      // Must start from left or right edge (outer 25% of screen width)
+      const screenW = window.innerWidth;
+      if (startX > screenW * 0.75 && dx < 0) return; // starting from right, swiping left — skip
+      // Only allow swipe from within 80% of screen (avoid accidental edge swipes triggering browser nav)
+      if (startX < screenW * 0.10 || startX > screenW * 0.90) return;
 
       const cs = window._currentSection !== undefined ? window._currentSection : currentSection;
       if (dx < 0 && cs < SECTION_COUNT - 1) navTo(cs + 1);
