@@ -3511,10 +3511,12 @@ function doSignOut() {
     const dateVal = (document.getElementById('dot-date-' + groupKey) || {}).value || '';
     const timeVal = (document.getElementById('dot-time-' + groupKey) || {}).value || '';
     const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
+    const permitCbs = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
     const anyBureauChecked = Array.from(bureauCbs).some(cb => cb.checked);
+    const anyPermitChecked = Array.from(permitCbs).some(cb => cb.checked);
     const btn = document.getElementById('dot-btn-' + groupKey);
     if (btn) {
-      const ready = !!(dateVal && timeVal && anyBureauChecked);
+      const ready = !!(dateVal && timeVal && anyBureauChecked && anyPermitChecked);
       btn.disabled = !ready;
       btn.style.opacity = ready ? '1' : '0.45';
       btn.style.background = ready ? '#16a34a' : '';
@@ -3549,14 +3551,17 @@ function doSignOut() {
 
     // Get checked permits — if none checked, use ALL permits for this group
     const permitCbs = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
-    let checkedPermits = Array.from(permitCbs).filter(cb => cb.checked);
-    if (!checkedPermits.length) checkedPermits = Array.from(permitCbs); // default: all
+    const checkedPermits = Array.from(permitCbs).filter(cb => cb.checked);
 
     // Get checked bureaus
     const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
     const checkedBureaus = Array.from(bureauCbs).filter(cb => cb.checked);
 
     // Validate required fields
+    if (!checkedPermits.length) {
+      window.showToast('Please check at least one permit to include in the email.', '#e53e3e');
+      return;
+    }
     if (!dateVal || !timeVal || !checkedBureaus.length) {
       window.showToast('Please fill in date, time, and select at least one bureau.', '#e53e3e');
       return;
