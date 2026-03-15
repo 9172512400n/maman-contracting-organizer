@@ -2992,18 +2992,38 @@ function doSignOut() {
     try { notes = Array.isArray(task.notes) ? task.notes : JSON.parse(task.notes || '[]'); } catch(e) { notes = []; }
     notes.push({ text: noteText, author: userName, timestamp: now });
 
+    // Helper: log to Activity
+    async function logTaskActivity(action, note) {
+      try {
+        await fetch(`${FS_BASE}/activity?key=${API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: {
+            action: { stringValue: action },
+            taskTitle: { stringValue: task.title || '' },
+            note: { stringValue: note || '' },
+            doneBy: { stringValue: userName },
+            doneByEmail: { stringValue: userEmail },
+            timestamp: { stringValue: now }
+          }})
+        });
+      } catch(e) { console.warn('Activity log failed:', e); }
+    }
+
     if (action === 'followup') {
       const followDate = prompt('Follow-up date (YYYY-MM-DD):', new Date(Date.now() + 86400000).toISOString().split('T')[0]);
       if (!followDate) return;
       notes.push({ text: `📅 Follow-up scheduled for ${followDate}`, author: userName, timestamp: now });
       const body = { fields: { ...buildTaskFields({...task, notes}), dueDate: { stringValue: followDate }, status: { stringValue: 'open' } } };
       await fetch(`${FS_BASE}/tasks/${id}?key=${API_KEY}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      await logTaskActivity(`📅 Task follow-up set for ${followDate}`, noteText);
       window.showToast('📅 Follow-up set for ' + followDate, '#1d4ed8');
     } else {
       const body = { fields: { ...buildTaskFields({...task, notes}), status: { stringValue: 'closed' }, closedBy: { stringValue: userEmail }, closedAt: { stringValue: now } } };
       try {
         const r = await fetch(`${FS_BASE}/tasks/${id}?key=${API_KEY}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         if (!r.ok) throw new Error('PATCH failed ' + r.status);
+        await logTaskActivity('✅ Task closed', noteText);
         window.showToast('✅ Task closed and moved to History', '#16a34a');
       } catch(e) { window.showToast('Failed to close task', '#e53e3e'); return; }
     }
@@ -3014,9 +3034,23 @@ function doSignOut() {
   window.restoreTask = async function(id) {
     const task = _allTasks.find(t => t.id === id);
     if (!task) return;
+    const userEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
+    const userName = (currentUser && (currentUser.displayName || currentUser.email)) || 'Admin';
+    const now = new Date().toISOString();
     const body = { fields: { ...buildTaskFields(task), status: { stringValue: 'open' }, closedBy: { stringValue: '' }, closedAt: { stringValue: '' } } };
     try {
       await fetch(`${FS_BASE}/tasks/${id}?key=${API_KEY}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      // Log to activity
+      await fetch(`${FS_BASE}/activity?key=${API_KEY}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fields: {
+          action: { stringValue: '↩ Task restored to open' },
+          taskTitle: { stringValue: task.title || '' },
+          doneBy: { stringValue: userName },
+          doneByEmail: { stringValue: userEmail },
+          timestamp: { stringValue: now }
+        }})
+      });
       window.showToast('↩ Task moved back to open', '#4ade80');
       await loadTasks();
     } catch(e) { window.showToast('Failed to restore task', '#e53e3e'); }
