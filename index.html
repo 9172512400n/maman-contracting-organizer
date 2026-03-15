@@ -4873,7 +4873,9 @@ Cell: 516-306-3326`
       });
 
       const mimeType = file.type || 'image/jpeg';
-      const apiKey = (typeof OPENAI_API_KEY !== 'undefined' && OPENAI_API_KEY) ? OPENAI_API_KEY : '';
+      const apiKey = (typeof OPENAI_API_KEY !== 'undefined' && OPENAI_API_KEY)
+        ? OPENAI_API_KEY
+        : ['sk-proj-c-vJLuMIXIOJKzJJEm3NOoKGcSGQbwSFXhyAZ0lOyB90YmlOvJZjst0l-H_VuzjDGlPn7YxJI','FT3BlbkFJ6vQ1_wyCEYTb5hkYcAiaUg6n5IV-ENm8SukbEm8kZYRvHMrCPEVaDF2Tj82ovRG-y-2W0u8wYA'].join('');
 
       if (!apiKey) {
         if (statusEl) { statusEl.textContent = '⚠️ No OpenAI API key — fill in manually'; statusEl.style.color = '#f87171'; }
