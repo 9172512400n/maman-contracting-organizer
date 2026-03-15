@@ -177,6 +177,10 @@
       display: grid; grid-template-columns: repeat(6, 1fr);
       align-items: center; z-index: 10000; overflow: hidden;
       pointer-events: all;
+      /* Force nav to stay visible on iOS Safari scroll */
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+      will-change: transform;
     }
     .bnav-item {
       display: flex; flex-direction: column; align-items: center;
@@ -4844,7 +4848,13 @@ Cell: 516-306-3326`
         <button onclick="window.schedHideNoteInput('${iso}')" style="background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:13px;font-weight:700;padding:8px 10px;cursor:pointer;font-family:'Inter',sans-serif;">✕</button>
       </div>`;
     const inp = document.getElementById('sched-note-text-' + iso);
-    if (inp) setTimeout(() => inp.focus(), 50);
+    if (inp) {
+      // Scroll to input first, then focus — prevents iOS jump
+      setTimeout(() => {
+        inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => inp.focus(), 200);
+      }, 50);
+    }
   };
 
   window.schedSaveNoteInput = async function(iso) {
