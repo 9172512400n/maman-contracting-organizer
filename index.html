@@ -318,11 +318,11 @@
     /* PERMIT EXPIRY BANNER */
     .permit-alert-banner {
       background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
-      border: 1px solid #dc2626; border-radius: 12px; padding: 16px 20px;
-      margin-bottom: 20px; display: none;
+      border: 1px solid #dc2626; border-radius: 10px; padding: 10px 16px;
+      margin-bottom: 14px; display: none; cursor: pointer;
     }
-    .permit-alert-banner.show { display: block; }
-    .permit-alert-title { font-size: 14px; font-weight: 800; color: #fca5a5; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .permit-alert-banner.show { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .permit-alert-title { font-size: 13px; font-weight: 800; color: #fca5a5; display: flex; align-items: center; gap: 6px; }
     .permit-alert-item { background: rgba(0,0,0,0.3); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
     .permit-alert-item:last-child { margin-bottom: 0; }
     .permit-alert-info { font-size: 13px; color: #fca5a5; font-weight: 600; }
@@ -1470,9 +1470,9 @@ function doSignOut() {
         <div class="section" id="sec-dashboard">
 
                     <!-- Permit Expiry Alert Banner -->
-          <div class="permit-alert-banner" id="permit-alert-banner">
-            <div class="permit-alert-title">⚠️ PERMIT EXPIRING SOON</div>
-            <div id="permit-alert-items"></div>
+          <div class="permit-alert-banner" id="permit-alert-banner" onclick="navTo(0);setTimeout(function(){var el=document.getElementById('alerts-log-panel');if(el)el.scrollIntoView({behavior:'smooth'});},300)">
+            <div class="permit-alert-title" id="permit-alert-items">⚠️ Permits expiring soon</div>
+            <span style="font-size:11px;color:#fca5a5;font-weight:700;white-space:nowrap;">Tap → See details 🔔</span>
           </div>
 
           <div class="cards">
@@ -2654,32 +2654,22 @@ function doSignOut() {
     }
 
     banner.classList.add('show');
-    itemsEl.innerHTML = expiring.map(item => {
-      const days = daysUntil(item.expiry);
-      const daysLabel = days === 0 ? 'TODAY!' : days === 1 ? '1 day left' : `${days} days left`;
-      const taskTitle = `Renew permit: ${item.label} — ${item.address}`;
-      const taskTitleSafe = taskTitle.replace(/'/g, "\\'");
-      return `<div class="permit-alert-item" onclick="createPermitRenewalTask('${taskTitleSafe}','${item.expiry}')" style="cursor:pointer;" title="Tap to create a renewal task">
-        <div>
-          <div class="permit-alert-info">📋 ${item.label} · ${item.address}</div>
-          <div class="permit-alert-meta">Expires: ${fmtDate(item.expiry)}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-          <span class="permit-alert-days">⚠️ ${daysLabel}</span>
-          <span style="font-size:10px;color:#fca5a5;font-weight:600;">Tap → Create Task</span>
-        </div>
-      </div>`;
-    }).join('');
+    // Compact banner — just a count
+    const urgentCount = expiring.filter(i => daysUntil(i.expiry) <= 1).length;
+    itemsEl.textContent = `⚠️ ${expiring.length} permit${expiring.length > 1 ? 's' : ''} expiring soon${urgentCount ? ' — ' + urgentCount + ' URGENT!' : ''}`;
 
     // Inject into dedicated ALERTS panel (separate from activity)
     if (alertsPanel) {
       const alertHtml = expiring.map(item => {
         const days = daysUntil(item.expiry);
         const daysLabel = days === 0 ? '🔴 Expires TODAY!' : days === 1 ? '🟠 1 day left' : `🟡 ${days} days left`;
-        return `<div style="background:rgba(229,62,62,0.08);border-left:3px solid #e53e3e;border-radius:6px;padding:10px 12px;margin-bottom:8px;">
+        const taskTitle = `Renew permit: ${item.label} — ${item.address}`;
+        const taskTitleSafe = taskTitle.replace(/'/g, "\\'");
+        return `<div onclick="createPermitRenewalTask('${taskTitleSafe}','${item.expiry}')" style="background:rgba(229,62,62,0.08);border-left:3px solid #e53e3e;border-radius:6px;padding:10px 12px;margin-bottom:8px;cursor:pointer;" title="Tap to create renewal task">
           <div style="font-size:13px;font-weight:800;color:#f87171;">⚠️ Permit Expiring — ${item.label}</div>
           <div style="font-size:12px;color:#ccc;font-weight:600;margin-top:3px;">${item.address}</div>
           <div style="font-size:12px;color:#e53e3e;font-weight:700;margin-top:2px;">${daysLabel} · Expires ${fmtDate(item.expiry)}</div>
+          <div style="font-size:10px;color:#fca5a5;font-weight:700;margin-top:5px;">👆 Tap to create a renewal task</div>
         </div>`;
       }).join('');
       alertsPanel.innerHTML = alertHtml;
