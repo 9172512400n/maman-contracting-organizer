@@ -5512,74 +5512,115 @@ Cell: 516-306-3326`
     // ── Day buttons (tap to see jobs) ──
     const container = document.getElementById('sched-days-container');
     if (container) {
-      const dayShortNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-      container.innerHTML = `
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px;">
-          ${weekDays.map((d, i) => {
-            const iso = toLocalISO(d);
-            const isToday = iso === todayISO;
-            const dayJobs = jobs.filter(j => j.scheduleDay === iso);
-            const hasJobs = dayJobs.length > 0;
-            const isSelected = window._schedSelectedDay === iso;
-            const bg = isSelected ? '#e53e3e' : isToday ? '#3a1a1a' : '#1a1a1a';
-            const border = isSelected ? '#e53e3e' : isToday ? '#e53e3e' : '#2a2a2a';
-            const textColor = (isSelected || isToday) ? '#fff' : '#aaa';
-            return `<button onclick="schedSelectDay('${iso}')" style="background:${bg};border:2px solid ${border};border-radius:10px;padding:8px 4px;cursor:pointer;font-family:'Inter',sans-serif;text-align:center;transition:all 0.15s;">
-              <div style="font-size:11px;font-weight:800;color:${textColor};text-transform:uppercase;letter-spacing:0.5px;">${dayShortNames[i]}</div>
-              <div style="font-size:16px;font-weight:900;color:${isSelected ? '#fff' : isToday ? '#e53e3e' : '#fff'};margin:2px 0;">${d.getDate()}</div>
-              ${hasJobs ? `<div style="width:6px;height:6px;background:${isSelected ? '#fff' : '#e53e3e'};border-radius:50%;margin:0 auto;"></div>` : `<div style="height:6px;"></div>`}
-            </button>`;
-          }).join('')}
-        </div>
-        <div id="sched-day-jobs"></div>`;
+      // ── New vertical day-list layout ──
+      container.innerHTML = weekDays.map(d => {
+        const iso = toLocalISO(d);
+        const isToday = iso === todayISO;
+        const dayJobs = jobs.filter(j => j.scheduleDay === iso);
+        const noteObj = window.scheduleNotes && window.scheduleNotes[iso];
+        const noteText = noteObj ? noteObj.note : null;
+        // Determine if note is a "no work" note (vs available note)
+        const isNoWork = noteText && !/available/i.test(noteText);
 
-      // "View All" toggle button
-      const viewAllBtn = document.getElementById('sched-view-all-btn');
-      if (viewAllBtn) {
-        viewAllBtn.textContent = window._schedViewAll ? '📅 Day View' : '📋 View All Days';
-      }
+        // Day header: "MONDAY, March 16" style
+        const dayName = d.toLocaleDateString('en-US', {weekday:'long'}).toUpperCase();
+        const dayDate = d.toLocaleDateString('en-US', {month:'long', day:'numeric'});
+        const headerColor = isToday ? '#e53e3e' : '#fff';
+        const headerBg = isToday ? 'rgba(229,62,62,0.08)' : 'transparent';
 
-      // Show jobs for selected day OR all days
-      const selDay = window._schedSelectedDay;
-      const dayJobsEl = container.querySelector('#sched-day-jobs');
-      if (dayJobsEl) {
-        if (true) { // always show all days
-          // Show ALL 7 days expanded
-          dayJobsEl.innerHTML = weekDays.map(d => {
-            const iso = toLocalISO(d);
-            const isToday = iso === todayISO;
-            const dayLabel = d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
-            const dayJobs = jobs.filter(j => j.scheduleDay === iso);
-            return `<div style="margin-bottom:20px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid ${isToday ? '#e53e3e' : '#2a2a2a'};">
-                <div style="font-size:15px;font-weight:900;color:${isToday ? '#e53e3e' : '#fff'};">${isToday ? '● ' : ''}${dayLabel}</div>
-                <div style="display:flex;gap:6px;">
-                  <button onclick="schedAddJobForDay('${iso}')" style="background:#1a3a1a;border:1px solid #16a34a;border-radius:7px;color:#4ade80;font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:'Inter',sans-serif;">+ Add</button>
-                  <button onclick="schedExportDay('${iso}')" style="background:#3a1a1a;border:1px solid #e53e3e;border-radius:7px;color:#f87171;font-size:12px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:'Inter',sans-serif;">📤</button>
+        // Build job address rows (simple tappable rows)
+        let jobRowsHTML = '';
+        if (dayJobs.length) {
+          jobRowsHTML = dayJobs.map(j => {
+            const isAsphalt = j.jobType === 'asphalt' || (j.crew && j.crew.toLowerCase().includes('asphalt'));
+            const accentColor = isAsphalt ? '#fb923c' : '#60a5fa';
+            const parking = j.altParkingDays ? `${j.altParkingDays}${j.altParkingTime ? ' · ' + j.altParkingTime : ''}` : null;
+            const crewName = crewLabel(j);
+            let permitStr = null;
+            if (Array.isArray(j.permits) && j.permits.length) {
+              const lines = j.permits.filter(p => p.number || p.code).map(p => {
+                let line = p.number || p.code;
+                if (p.code && p.number) line = `${p.code} · ${p.number}`;
+                if (p.expiry) line += ` · exp ${fmtDate(p.expiry)}`;
+                return line;
+              });
+              if (lines.length) permitStr = lines.join(', ');
+            }
+            if (!permitStr && (j.permitNumber || j.permitCode)) {
+              permitStr = j.permitNumber || j.permitCode;
+              if (j.permitExpiry) permitStr += ` · exp ${fmtDate(j.permitExpiry)}`;
+            }
+            const customRows = Array.isArray(j.customFields)
+              ? j.customFields.filter(cf => cf.label || cf.value).map(cf =>
+                  `<div class="sched-detail-row"><span class="sched-detail-label">${cf.label || '—'}</span><span class="sched-detail-value">${cf.value || ''}</span></div>`
+                ).join('')
+              : '';
+            const detailRows = [
+              j.customerName ? `<div class="sched-detail-row"><span class="sched-detail-label">Customer</span><span class="sched-detail-value" style="font-weight:800;">${j.customerName}</span></div>` : '',
+              j.phone ? `<div class="sched-detail-row"><span class="sched-detail-label">Phone</span><span class="sched-detail-value"><a href="tel:${j.phone}" onclick="event.stopPropagation()" style="color:#4ade80;font-weight:800;text-decoration:none;">📞 ${j.phone}</a></span></div>` : '',
+              j.email ? `<div class="sched-detail-row"><span class="sched-detail-label">Email</span><span class="sched-detail-value"><a href="mailto:${j.email}" onclick="event.stopPropagation()" style="color:#60a5fa;font-weight:800;text-decoration:none;">✉️ ${j.email}</a></span></div>` : '',
+              j.taskType ? `<div class="sched-detail-row"><span class="sched-detail-label">Work</span><span class="sched-detail-value">${j.taskType}</span></div>` : '',
+              j.projectSize ? `<div class="sched-detail-row"><span class="sched-detail-label">Size</span><span class="sched-detail-value">${j.projectSize}</span></div>` : '',
+              j.notes ? `<div class="sched-detail-row"><span class="sched-detail-label">Notes</span><span class="sched-detail-value">${j.notes}</span></div>` : '',
+              parking ? `<div class="sched-detail-row"><span class="sched-detail-label">Alt Parking</span><span class="sched-detail-value" style="color:#e53e3e;font-weight:800;">${parking}</span></div>` : '',
+              crewName && crewName !== '—' ? `<div class="sched-detail-row"><span class="sched-detail-label">Crew</span><span class="sched-detail-value">${isAsphalt ? '🟠' : '🔵'} ${crewName}</span></div>` : '',
+              permitStr ? `<div class="sched-detail-row"><span class="sched-detail-label">Permit</span><span class="sched-detail-value" style="color:#fbbf24;">${permitStr}</span></div>` : '',
+              `<div class="sched-detail-row"><span class="sched-detail-label">Status</span><span class="sched-detail-value">${statusBadge(j.status)}</span></div>`,
+              customRows,
+            ].filter(Boolean).join('');
+
+            return `<div id="sched-addr-row-${j.id}" style="border-bottom:1px solid #1e1e1e;">
+              <div onclick="toggleSchedAddrRow('${j.id}')" style="display:flex;align-items:center;gap:10px;padding:11px 0;cursor:pointer;">
+                <span style="color:${accentColor};font-size:15px;flex-shrink:0;">•</span>
+                <span style="font-size:15px;font-weight:700;color:#fff;flex:1;">${j.address || '(No address)'}</span>
+                <span class="sched-addr-row-chevron-${j.id}" style="color:#555;font-size:14px;transition:transform 0.2s;">⌄</span>
+              </div>
+              <div id="sched-addr-row-body-${j.id}" style="display:none;padding:0 0 14px 22px;">
+                <div style="font-size:18px;font-weight:900;color:#fff;margin-bottom:10px;">${j.address || '(No address)'}</div>
+                ${detailRows}
+                <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+                  <button onclick="event.stopPropagation();openEditJob('${j.id}')" style="background:#e53e3e;border:none;border-radius:8px;padding:9px 16px;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit</button>
+                  <button onclick="event.stopPropagation();if(confirm('Delete this job?'))deleteJobById('${j.id}')" style="background:#2a1a1a;border:1px solid #7f1d1d;border-radius:8px;padding:9px 16px;color:#f87171;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Delete</button>
+                  <button onclick="event.stopPropagation();schedMoveJobPrompt('${j.id}')" style="background:#1a2a3a;border:1px solid #1e40af;border-radius:8px;padding:9px 16px;color:#60a5fa;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📅 Move</button>
+                  <button onclick="event.stopPropagation();exportSingleJob('${j.id}')" style="background:#1a3a2a;border:1px solid #22c55e;border-radius:8px;padding:9px 16px;color:#4ade80;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📤 Share</button>
                 </div>
               </div>
-              ${buildDayNoteHTML(iso)}
-              ${dayJobs.length ? dayJobs.map(j => buildScheduleAddrCard(j)).join('') : '<div style="color:#444;font-size:13px;font-style:italic;padding:4px 0 8px;">— No jobs —</div>'}
             </div>`;
           }).join('');
-        } else if (!selDay) {
-          dayJobsEl.innerHTML = `<div style="text-align:center;color:#555;font-size:14px;font-weight:700;padding:32px 0;">Tap a day to see its jobs</div>`;
         } else {
-          const selJobs = jobs.filter(j => j.scheduleDay === selDay);
-          const selDate = new Date(selDay + 'T00:00:00');
-          const dayLabel = selDate.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
-          dayJobsEl.innerHTML = `
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-              <div style="font-size:16px;font-weight:900;color:#fff;">${dayLabel}</div>
-              <div style="display:flex;gap:8px;">
-                <button onclick="schedAddJobForDay('${selDay}')" style="background:#1a3a1a;border:1px solid #16a34a;border-radius:8px;color:#4ade80;font-size:13px;font-weight:700;padding:8px 12px;cursor:pointer;font-family:'Inter',sans-serif;">+ Add Job</button>
-                <button onclick="schedExportDay('${selDay}')" style="background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;font-family:'Inter',sans-serif;">📤 Export</button>
+          jobRowsHTML = `<div style="color:#555;font-size:13px;font-style:italic;padding:10px 0;">(Available to schedule)</div>`;
+        }
+
+        // Schedule note display
+        let noteHTML = '';
+        if (noteText) {
+          if (isNoWork) {
+            noteHTML = `<div style="display:flex;align-items:center;gap:7px;padding:8px 0 4px;color:#fbbf24;font-size:13px;font-weight:700;">⛔ ${noteText} <button onclick="window.schedShowNoteInput('${iso}')" style="background:transparent;border:none;color:#555;font-size:12px;cursor:pointer;">✎</button><button onclick="window.deleteScheduleNote('${iso}')" style="background:transparent;border:none;color:#555;font-size:13px;cursor:pointer;">🗑️</button></div><div id="sched-note-input-${iso}"></div>`;
+          } else {
+            noteHTML = `<div style="display:flex;align-items:center;gap:7px;padding:8px 0 4px;color:#4ade80;font-size:13px;font-weight:700;">✅ ${noteText} <button onclick="window.schedShowNoteInput('${iso}')" style="background:transparent;border:none;color:#555;font-size:12px;cursor:pointer;">✎</button><button onclick="window.deleteScheduleNote('${iso}')" style="background:transparent;border:none;color:#555;font-size:13px;cursor:pointer;">🗑️</button></div><div id="sched-note-input-${iso}"></div>`;
+          }
+        } else {
+          noteHTML = `<div style="margin-bottom:2px;"><button onclick="window.schedShowNoteInput('${iso}')" style="background:transparent;border:1px solid #2a2a2a;border-radius:10px;color:#444;font-size:11px;font-weight:600;padding:3px 9px;cursor:pointer;font-family:'Inter',sans-serif;">+ Note</button><div id="sched-note-input-${iso}"></div></div>`;
+        }
+
+        return `<div style="margin-bottom:0;border-bottom:2px solid ${isToday ? '#e53e3e' : '#2a2a2a'};">
+          <div style="background:${headerBg};padding:14px 0 8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="font-size:13px;font-weight:900;color:${headerColor};letter-spacing:0.5px;">${dayName}, ${dayDate}</div>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <button onclick="schedAddJobForDay('${iso}')" style="background:#1a3a1a;border:1px solid #16a34a;border-radius:8px;color:#4ade80;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;font-family:'Inter',sans-serif;">+ Add Job</button>
+                <button onclick="schedExportDay('${iso}')" style="background:transparent;border:1px solid #2a2a2a;border-radius:8px;color:#666;font-size:12px;font-weight:700;padding:6px 10px;cursor:pointer;font-family:'Inter',sans-serif;" title="Export day">📤</button>
               </div>
             </div>
-            ${buildDayNoteHTML(selDay)}
-            ${selJobs.length ? selJobs.map(j => buildScheduleAddrCard(j)).join('') : '<div style="color:#555;font-size:14px;font-weight:700;padding:16px 0;text-align:center;">— No jobs scheduled —</div>'}`;
-        }
-      }
+            ${noteHTML}
+          </div>
+          <div style="padding:0 0 14px 0;">
+            ${jobRowsHTML}
+          </div>
+        </div>`;
+      }).join('');
     }
 
     // ── TBD section ──
@@ -5657,6 +5698,33 @@ Cell: 516-306-3326`
     const card = document.getElementById('sched-card-' + jobId);
     if (!card) return;
     card.classList.toggle('expanded');
+  };
+
+  // Toggle inline address row expansion (new schedule layout)
+  window.toggleSchedAddrRow = function(jobId) {
+    const body = document.getElementById('sched-addr-row-body-' + jobId);
+    const chevron = document.querySelector('.sched-addr-row-chevron-' + jobId);
+    if (!body) return;
+    const isOpen = body.style.display !== 'none';
+    body.style.display = isOpen ? 'none' : 'block';
+    if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+  };
+
+  // Move job to another day prompt
+  window.schedMoveJobPrompt = function(jobId) {
+    const j = allJobs.find(x => x.id === jobId);
+    if (!j) return;
+    const newDay = prompt('Move to date (YYYY-MM-DD):', j.scheduleDay || '');
+    if (!newDay) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDay)) { alert('Invalid date format. Use YYYY-MM-DD.'); return; }
+    j.scheduleDay = newDay;
+    try {
+      if (typeof updateDoc !== 'undefined' && typeof doc !== 'undefined' && typeof db !== 'undefined') {
+        updateDoc(doc(db, 'jobs', jobId), { scheduleDay: newDay });
+      }
+    } catch(e) { console.warn('schedMoveJobPrompt update error:', e); }
+    loadScheduleNotes().then(() => renderSchedule());
+    window.showToast && window.showToast('📅 Job moved to ' + newDay, '#374151');
   };
 
   window.exportSingleJob = function(jobId) {
