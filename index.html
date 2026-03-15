@@ -3443,11 +3443,11 @@ function doSignOut() {
             <div class="dot-inspect-row">
               <div class="dot-inspect-field">
                 <label>📅 Day</label>
-                <input type="date" id="dot-date-${groupKey}" onchange="dotUpdateBtn('${groupKey}')" />
+                <input type="date" id="dot-date-${groupKey}" onchange="dotUpdateBtn('${groupKey}')" onfocus="this._scrollY=window.scrollY" onblur="setTimeout(()=>window.scrollTo(0,this._scrollY||0),50)" />
               </div>
               <div class="dot-inspect-field">
                 <label>⏰ Time</label>
-                <input type="time" id="dot-time-${groupKey}" step="900" onchange="dotUpdateBtn('${groupKey}')" />
+                <input type="time" id="dot-time-${groupKey}" step="900" onchange="dotUpdateBtn('${groupKey}')" onfocus="this._scrollY=window.scrollY" onblur="setTimeout(()=>window.scrollTo(0,this._scrollY||0),50)" />
               </div>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px;">
