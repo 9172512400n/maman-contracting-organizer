@@ -4700,17 +4700,33 @@ Cell: 516-306-3326`
   };
 
   window.confirmDeletePermit = function(permitId, permitNum, btn) {
-    // Show prominent confirmation modal
+    // Look up permit number safely from data
+    const permit = allStandalonePermits.find(p => p.id === permitId);
+    const safeNum = permit ? (permit.permitNumber || 'this permit') : (permitNum || 'this permit');
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
-    overlay.innerHTML = `<div style="background:#1a1a1a;border:1.5px solid #dc2626;border-radius:16px;padding:24px;max-width:320px;width:100%;font-family:Inter,sans-serif;">
+    const inner = document.createElement('div');
+    inner.style.cssText = 'background:#1a1a1a;border:1.5px solid #dc2626;border-radius:16px;padding:24px;max-width:320px;width:100%;font-family:Inter,sans-serif;';
+    inner.innerHTML = `
       <div style="font-size:20px;text-align:center;margin-bottom:12px;">⚠️</div>
       <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:8px;text-align:center;">Permanently Delete Permit?</div>
-      <div style="font-size:13px;color:#aaa;margin-bottom:6px;text-align:center;">This will permanently delete permit <strong style="color:#fff;">#${permitNum}</strong>.</div>
+      <div style="font-size:13px;color:#aaa;margin-bottom:6px;text-align:center;">This will permanently delete permit:</div>
+      <div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:6px;text-align:center;word-break:break-all;"></div>
       <div style="font-size:13px;color:#f87171;font-weight:700;margin-bottom:20px;text-align:center;">This cannot be undone.</div>
-      <button onclick="document.body.removeChild(this.closest('[style]'));doDeletePermit('${permitId}')" style="display:block;width:100%;padding:12px;margin-bottom:10px;background:#dc2626;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">🗑️ Yes, Permanently Delete</button>
-      <button onclick="document.body.removeChild(this.closest('[style]'))" style="display:block;width:100%;padding:12px;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Cancel</button>
-    </div>`;
+    `;
+    // Set permit number text safely (no innerHTML injection)
+    inner.querySelectorAll('div')[3].textContent = '#' + safeNum;
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '🗑️ Yes, Permanently Delete';
+    delBtn.style.cssText = 'display:block;width:100%;padding:12px;margin-bottom:10px;background:#dc2626;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;';
+    delBtn.onclick = () => { document.body.removeChild(overlay); doDeletePermit(permitId); };
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'display:block;width:100%;padding:12px;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;';
+    cancelBtn.onclick = () => document.body.removeChild(overlay);
+    inner.appendChild(delBtn);
+    inner.appendChild(cancelBtn);
+    overlay.appendChild(inner);
     document.body.appendChild(overlay);
   };
 
