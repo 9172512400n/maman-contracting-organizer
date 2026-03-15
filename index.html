@@ -7153,9 +7153,10 @@ Cell: 516-306-3326`
     const preview = document.getElementById('permit-preview');
     const docsList = document.getElementById('permit-docs-list');
     if (preview) { preview.textContent = `⏳ Uploading ${files.length} file(s)…`; preview.style.display = 'block'; preview.style.color = '#f59e0b'; }
-    if (docsList) docsList.innerHTML = '';
-    window._uploadedPermitDocUrls = [];
-    window._uploadedPermitDocUrl = '';
+    // KEEP existing docs — append new uploads to existing ones
+    if (!Array.isArray(window._uploadedPermitDocUrls)) window._uploadedPermitDocUrls = [];
+    // Don't reset existing docs list — only clear the upload status rows
+    if (docsList && docsList.children.length === 0) docsList.innerHTML = '';
 
     for (const file of files) {
       const rowEl = document.createElement('div');
@@ -7172,7 +7173,11 @@ Cell: 516-306-3326`
         rowEl.innerHTML = `<span style="color:#f87171;">❌ ${file.name} — ${e.message}</span>`;
       }
     }
-    if (preview) { preview.textContent = `✅ ${window._uploadedPermitDocUrls.length} of ${files.length} uploaded`; preview.style.color = '#4ade80'; }
+    if (preview) { preview.textContent = `✅ ${window._uploadedPermitDocUrls.length} document(s) attached`; preview.style.color = '#4ade80'; }
+    if (!window._uploadedPermitDocUrl && window._uploadedPermitDocUrls.length) {
+      const first = window._uploadedPermitDocUrls[0];
+      window._uploadedPermitDocUrl = typeof first === 'string' ? first : first.url;
+    }
   };
 
   async function handleFile(input, previewId) {
