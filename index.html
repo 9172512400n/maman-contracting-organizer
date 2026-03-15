@@ -1354,10 +1354,7 @@ function doSignOut() {
           <div class="section-header">
             <h2>Schedule</h2>
             <div style="display:flex;gap:8px;align-items:center;">
-              <button id="sched-view-all-btn" onclick="schedToggleViewAll()"
-                style="background:#1a2a3a;border:1.5px solid #3b82f6;border-radius:8px;padding:0 12px;height:36px;cursor:pointer;font-size:12px;font-weight:800;color:#60a5fa;font-family:'Inter',sans-serif;flex-shrink:0;white-space:nowrap;">
-                📋 View All Days
-              </button>
+              
               <div style="position:relative;flex-shrink:0;">
                 <button onclick="toggleShareMenu()" id="share-menu-btn"
                   style="background:#e53e3e;border:none;border-radius:8px;padding:0 14px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-size:13px;font-weight:800;color:#fff;font-family:'Inter',sans-serif;"
@@ -5374,7 +5371,7 @@ Cell: 516-306-3326`
       const selDay = window._schedSelectedDay;
       const dayJobsEl = container.querySelector('#sched-day-jobs');
       if (dayJobsEl) {
-        if (window._schedViewAll !== false) { // default to true
+        if (true) { // always show all days
           // Show ALL 7 days expanded
           dayJobsEl.innerHTML = weekDays.map(d => {
             const iso = toLocalISO(d);
