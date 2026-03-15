@@ -919,6 +919,47 @@ function doSignOut() {
   </div>
 </div>
 
+<!-- EMAIL SIGNATURE MODAL -->
+<div id="email-signature-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:20000;display:none;align-items:center;justify-content:center;">
+  <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;max-width:420px;width:90%;padding:28px;position:relative;margin:auto;top:50%;transform:translateY(-50%);">
+    <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:6px;">✍️ DOT Email Signature</div>
+    <div style="font-size:12px;color:#666;margin-bottom:20px;">Customize the signature used in DOT inspection emails.</div>
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px;">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Name</label>
+        <input type="text" id="sig-name" placeholder="Nir Maman"
+          style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
+          onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Cell 1</label>
+        <input type="text" id="sig-cell1" placeholder="917-251-2400"
+          style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
+          onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Cell 2 (optional)</label>
+        <input type="text" id="sig-cell2" placeholder="516-306-3326"
+          style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
+          onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      </div>
+      <div style="background:#111;border:1px solid #2a2a2a;border-radius:8px;padding:12px;font-size:12px;color:#aaa;font-family:'Inter',sans-serif;line-height:1.6;">
+        <div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Preview</div>
+        My contact information is below<br>
+        Thank you<br>
+        <span id="sig-preview-name" style="color:#eee;font-weight:600;">Nir Maman</span><br>
+        Cell: <span id="sig-preview-cell1" style="color:#eee;">917-251-2400</span><br>
+        <span id="sig-preview-cell2-row">Cell: <span id="sig-preview-cell2" style="color:#eee;">516-306-3326</span></span>
+      </div>
+    </div>
+    <div id="sig-error" style="color:#f87171;font-size:12px;margin-bottom:12px;min-height:16px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="closeEmailSignatureModal()" style="flex:1;padding:11px;background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
+      <button onclick="saveEmailSignature()" style="flex:2;padding:11px;background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">💾 Save Signature</button>
+    </div>
+  </div>
+</div>
+
 <!-- PERMIT MODAL -->
 <div id="permit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;overflow-y:auto;padding:20px 20px 100px;">
   <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;max-width:600px;margin:auto;padding:28px;position:relative;">
@@ -1127,6 +1168,9 @@ function doSignOut() {
           <!-- Account actions -->
           <div>
             <div style="padding:8px 14px 4px;font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.8px;">Account</div>
+            <button onclick="openEmailSignatureModal();toggleUserMenu();" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#eee;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:16px;">✍️</span> My Signature
+            </button>
             <button onclick="toggleTheme();toggleUserMenu();" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#eee;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
               <span style="font-size:16px;" id="dropdown-theme-icon">🌙</span> Toggle Theme
             </button>
@@ -1192,10 +1236,21 @@ function doSignOut() {
                 </tbody>
               </table>
             </div>
+            <!-- ALERTS PANEL (critical only) -->
+            <div class="panel" id="alerts-panel" style="border:1.5px solid #e53e3e;background:rgba(229,62,62,0.04);margin-bottom:14px;">
+              <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;color:#f87171;">
+                <span>🚨 Alerts</span>
+                <span id="alerts-count-badge" style="background:#e53e3e;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:800;display:none;">0</span>
+              </div>
+              <div id="alerts-log-panel">
+                <div style="color:#555;font-size:13px;font-weight:600;padding:8px 0;">✅ No active alerts</div>
+              </div>
+            </div>
+            <!-- ACTIVITY PANEL -->
             <div class="panel">
               <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
-                <span>🔔 Activity &amp; Alerts</span>
-                <button onclick="clearAllNotifications()" style="background:#450a0a;border:1px solid #7f1d1d;border-radius:6px;color:#f87171;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Clear All</button>
+                <span>📋 Activity</span>
+                <button onclick="clearAllNotifications()" style="background:#450a0a;border:1px solid #7f1d1d;border-radius:6px;color:#f87171;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Clear</button>
               </div>
               <div id="activity-log-panel">
                 <div class="notif-item"><div class="notif-title" style="color:#555;">Loading…</div></div>
@@ -2181,7 +2236,8 @@ function doSignOut() {
   function checkPermitExpiry() {
     const banner = document.getElementById('permit-alert-banner');
     const itemsEl = document.getElementById('permit-alert-items');
-    const actLog = document.getElementById('activity-log-panel');
+    const alertsPanel = document.getElementById('alerts-log-panel');
+    const alertsBadge = document.getElementById('alerts-count-badge');
 
     // Check jobs with permit expiry
     const expiringFromJobs = allJobs.filter(j => {
@@ -2237,18 +2293,24 @@ function doSignOut() {
       </div>`;
     }).join('');
 
-    // Also inject into activity log panel at top
-    if (actLog) {
-      const alertHtml = expiring.map(item => {
-        const days = daysUntil(item.expiry);
-        const daysLabel = days === 0 ? 'Expires TODAY' : `${days} day${days !== 1 ? 's' : ''} left`;
-        return `<div class="notif-item" style="border-left:3px solid #e53e3e;padding-left:10px;">
-          <div class="notif-title"><span class="notif-dot dot-red"></span>⚠️ Permit Expiring</div>
-          <div class="notif-sub">${item.address} · ${item.label}</div>
-          <div class="notif-sub" style="color:#e53e3e;font-weight:600;">${daysLabel}</div>
-        </div>`;
-      }).join('');
-      actLog.insertAdjacentHTML('afterbegin', alertHtml);
+    // Inject into dedicated ALERTS panel (separate from activity)
+    if (alertsPanel) {
+      if (expiring.length === 0) {
+        alertsPanel.innerHTML = '<div style="color:#555;font-size:13px;font-weight:600;padding:8px 0;">✅ No active alerts</div>';
+        if (alertsBadge) alertsBadge.style.display = 'none';
+      } else {
+        const alertHtml = expiring.map(item => {
+          const days = daysUntil(item.expiry);
+          const daysLabel = days === 0 ? '🔴 Expires TODAY!' : days === 1 ? '🟠 1 day left' : `🟡 ${days} days left`;
+          return `<div style="background:rgba(229,62,62,0.08);border-left:3px solid #e53e3e;border-radius:6px;padding:10px 12px;margin-bottom:8px;">
+            <div style="font-size:13px;font-weight:800;color:#f87171;">⚠️ Permit Expiring — ${item.label}</div>
+            <div style="font-size:12px;color:#ccc;font-weight:600;margin-top:3px;">${item.address}</div>
+            <div style="font-size:12px;color:#e53e3e;font-weight:700;margin-top:2px;">${daysLabel} · Expires ${fmtDate(item.expiry)}</div>
+          </div>`;
+        }).join('');
+        alertsPanel.innerHTML = alertHtml;
+        if (alertsBadge) { alertsBadge.textContent = expiring.length; alertsBadge.style.display = 'inline-block'; }
+      }
     }
   }
 
