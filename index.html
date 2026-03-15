@@ -6369,7 +6369,10 @@ Cell: 516-306-3326`
     // Close drawer if open
     closeDrawer();
     // Side effects
-    if (idx === 3 && typeof renderSchedule === 'function') renderSchedule();
+    if (idx === 3 && typeof renderSchedule === 'function') {
+      window._schedWeekOffset = 0; // always show current week on open
+      loadScheduleNotes().then(() => renderSchedule());
+    }
   }
 
   // Legacy alias used by other parts of code
