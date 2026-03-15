@@ -141,6 +141,14 @@
     .sections-wrapper .section.active-section {
       display: block;
     }
+    /* Default: show first section before JS runs */
+    .sections-wrapper .section:first-child {
+      display: block;
+    }
+    /* Once JS has run and added active-section, use that instead */
+    .sections-wrapper.js-ready .section:first-child:not(.active-section) {
+      display: none;
+    }
     .sections-outer {
       overflow: hidden;
       flex: 1;
@@ -805,6 +813,8 @@ function navTo(idx) {
   localStorage.setItem('last-section', String(idx));
 
   // Show only the active section, hide all others
+  var wrapper = document.getElementById('sections-wrapper');
+  if (wrapper) wrapper.classList.add('js-ready');
   var sections = document.querySelectorAll('.sections-wrapper .section');
   sections.forEach(function(s, i) {
     s.classList.toggle('active-section', i === idx);
@@ -6024,6 +6034,8 @@ Cell: 516-306-3326`
     window._currentSection = idx;
     localStorage.setItem('last-section', idx);
     // Show/hide sections (bulletproof on iOS Safari)
+    const sw = document.getElementById('sections-wrapper');
+    if (sw) sw.classList.add('js-ready');
     document.querySelectorAll('.sections-wrapper .section').forEach((s, i) => {
       s.classList.toggle('active-section', i === idx);
     });
