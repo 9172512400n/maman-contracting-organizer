@@ -2064,8 +2064,8 @@ function doSignOut() {
       <!-- PERMIT UPLOAD (multiple files) -->
       <div style="grid-column:1/-1;background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:16px;">
         <div style="font-size:12px;font-weight:700;color:#e53e3e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">📋 Permit Documents (multiple allowed)</div>
-        <input type="file" accept=".pdf,.jpg,.png,.jpeg" id="permit-upload" multiple style="display:none" onchange="window.handlePermitFiles(this)"/>
-        <div onclick="document.getElementById('permit-upload').click()" style="border:2px dashed #2a2a2a;border-radius:8px;padding:18px;text-align:center;cursor:pointer;color:#555;font-size:13px;" onmouseover="this.style.borderColor='#e53e3e'" onmouseout="this.style.borderColor='#2a2a2a'">📄 Tap to upload permits — select multiple at once</div>
+        <input type="file" accept=".pdf,.jpg,.png,.jpeg" id="permit-upload" multiple style="display:none" onchange="if(window.handlePermitFiles){window.handlePermitFiles(this);}else{var s=document.getElementById('permit-preview');if(s){s.textContent='Loading… tap again in a moment';}}"/>
+        <div onclick="document.getElementById('permit-upload').click()" style="border:2px dashed #2a2a2a;border-radius:8px;padding:18px;text-align:center;cursor:pointer;color:#555;font-size:13px;" onmouseover="this.style.borderColor='#e53e3e'" onmouseout="this.style.borderColor='#2a2a2a'">📄 Tap to upload permit documents — multiple files OK</div>
         <div id="permit-preview" style="margin-top:8px;font-size:12px;color:#4ade80;"></div>
         <div id="permit-docs-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px;"></div>
       </div>
@@ -5261,10 +5261,13 @@ Cell: 516-306-3326`
     if (!file) return;
 
     // Open the modal immediately (blank) with address pre-filled
-    openPermitModal();
+    if (window.openPermitModal) window.openPermitModal();
+    else { const m = document.getElementById('permit-modal'); if(m) { m.style.display='block'; document.body.style.overflow='hidden'; } }
     if (cardAddress) {
-      const addrEl = document.getElementById('pm-jobAddress');
-      if (addrEl) addrEl.value = cardAddress;
+      setTimeout(() => {
+        const addrEl = document.getElementById('pm-jobAddress');
+        if (addrEl) addrEl.value = cardAddress;
+      }, 100);
     }
 
     const statusEl = document.getElementById('ocr-status');
@@ -5751,6 +5754,24 @@ Cell: 516-306-3326`
     loadPermitChips(j.permits, j.permitNumber, j.permitCode, j.permitExpiry);
     document.getElementById('f-notes').value = j.notes || '';
 
+    // Restore existing permit doc uploads for this job
+    const existingJobDocs = Array.isArray(j.permitDocUrls) && j.permitDocUrls.length ? j.permitDocUrls : (j.permitDocUrl ? [{url: j.permitDocUrl, name: 'Permit Doc'}] : []);
+    window._uploadedPermitDocUrls = existingJobDocs;
+    window._uploadedPermitDocUrl = existingJobDocs.length ? (typeof existingJobDocs[0]==='string' ? existingJobDocs[0] : existingJobDocs[0].url) : '';
+    const jobDocsList = document.getElementById('permit-docs-list');
+    const jobDocsPrev = document.getElementById('permit-preview');
+    if (jobDocsList) {
+      jobDocsList.innerHTML = existingJobDocs.map(function(d, i) {
+        const url = typeof d === 'string' ? d : d.url;
+        const name = typeof d === 'string' ? ('Doc '+(i+1)) : (d.name || ('Doc '+(i+1)));
+        return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #1a1a1a;font-size:12px;"><span style="color:#4ade80;">✅</span> <a href="'+url+'" target="_blank" style="color:#60a5fa;font-weight:700;flex:1;">'+name+'</a> <span onclick="navigator.share&&navigator.share({url:\''+url+'\',title:\''+name+'\'})" style="color:#4ade80;cursor:pointer;">📤</span></div>';
+      }).join('');
+    }
+    if (jobDocsPrev) {
+      if (existingJobDocs.length) { jobDocsPrev.textContent = '✅ '+existingJobDocs.length+' permit doc(s)'; jobDocsPrev.style.display='block'; jobDocsPrev.style.color='#4ade80'; }
+      else { jobDocsPrev.textContent=''; jobDocsPrev.style.display='none'; }
+    }
+
     const knownTypes = ['BPP', 'Parking Lot', 'Sidewalk', 'Custom', ''];
     const ttSel = document.getElementById('f-taskType');
     if (j.taskType && !knownTypes.includes(j.taskType)) {
@@ -5821,6 +5842,8 @@ Cell: 516-306-3326`
       permitExpiry:   getPermitRows()[0]?.expiry || '',
       notes:          document.getElementById('f-notes').value.trim(),
       customFields:   collectCustomFields(),
+      permitDocUrls:  window._uploadedPermitDocUrls || [],
+      permitDocUrl:   window._uploadedPermitDocUrl || '',
     };
 
     const FS_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
