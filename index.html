@@ -119,6 +119,11 @@
     }
     .sections-outer {
       overflow: hidden; flex: 1;
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
+    }
+    .section {
+      touch-action: pan-y;
     }
 
     /* ── DRAWER (hamburger slide-out) ───────────────────────────────────── */
@@ -3452,11 +3457,11 @@ function doSignOut() {
             <div class="dot-inspect-row">
               <div class="dot-inspect-field">
                 <label>📅 Day</label>
-                <input type="date" id="dot-date-${groupKey}" onchange="dotUpdateBtn('${groupKey}')" onfocus="this._scrollY=window.scrollY" onblur="setTimeout(()=>window.scrollTo(0,this._scrollY||0),50)" />
+                <input type="date" id="dot-date-${groupKey}" onchange="dotUpdateBtn('${groupKey}')" onfocus="this._scrollY=window.scrollY;this._scrollEl=this.closest('.section')||document.documentElement" onblur="var el=this._scrollEl;var y=this._scrollY||0;setTimeout(()=>{if(el)el.scrollTop=el.scrollTop;window.scrollTo({top:y,behavior:'instant'})},100)" />
               </div>
               <div class="dot-inspect-field">
                 <label>⏰ Time</label>
-                <input type="time" id="dot-time-${groupKey}" step="900" onchange="dotUpdateBtn('${groupKey}')" onfocus="this._scrollY=window.scrollY" onblur="setTimeout(()=>window.scrollTo(0,this._scrollY||0),50)" />
+                <input type="time" id="dot-time-${groupKey}" step="900" onchange="dotUpdateBtn('${groupKey}')" onfocus="this._scrollY=window.scrollY;this._scrollEl=this.closest('.section')||document.documentElement" onblur="var el=this._scrollEl;var y=this._scrollY||0;setTimeout(()=>{if(el)el.scrollTop=el.scrollTop;window.scrollTo({top:y,behavior:'instant'})},100)" />
               </div>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px;">
@@ -4929,10 +4934,10 @@ Office: 631-651-1815`
       const dt = Date.now() - startTime;
       const absDx = Math.abs(dx), absDy = Math.abs(dy);
 
-      // Must be strongly horizontal — vertical must be less than 25% of horizontal
-      if (absDy > absDx * 0.25) return;
-      // Minimum: 160px deliberate swipe only — no flick shortcuts
-      if (absDx < 160) return;
+      // Must be strongly horizontal — vertical must be less than 20% of horizontal
+      if (absDy > absDx * 0.20) return;
+      // Minimum: 200px deliberate swipe only — no flick shortcuts
+      if (absDx < 200) return;
 
       const cs = window._currentSection !== undefined ? window._currentSection : currentSection;
       if (dx < 0 && cs < SECTION_COUNT - 1) navTo(cs + 1);
