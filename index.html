@@ -1006,6 +1006,31 @@ function enterApp() {
   if (window._enterAppCallback) window._enterAppCallback();
 }
 
+// Global permit modal opener — works before module script loads
+function openPermitModal() {
+  if (window.openPermitModal && window.openPermitModal !== openPermitModal) {
+    window.openPermitModal();
+  } else {
+    var modal = document.getElementById('permit-modal');
+    if (modal) { modal.style.display = 'block'; document.body.style.overflow = 'hidden'; }
+  }
+}
+function openAddPermitForAddress(addr) {
+  if (window.openAddPermitForAddress && window.openAddPermitForAddress !== openAddPermitForAddress) {
+    window.openAddPermitForAddress(addr);
+  } else {
+    openPermitModal();
+  }
+}
+function closePermitModal() {
+  if (window.closePermitModal && window.closePermitModal !== closePermitModal) {
+    window.closePermitModal();
+  } else {
+    var modal = document.getElementById('permit-modal');
+    if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
+  }
+}
+
 function toggleUserMenu() {
   var dd = document.getElementById('user-dropdown');
   if (!dd) return;
