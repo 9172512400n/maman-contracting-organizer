@@ -1246,6 +1246,25 @@ function doSignOut() {
                 <div style="color:#555;font-size:13px;font-weight:600;padding:8px 0;">✅ No active alerts</div>
               </div>
             </div>
+            <!-- NOTIFICATIONS PANEL (admin push messages) -->
+            <div class="panel" id="notifications-panel" style="border:1.5px solid #3b82f6;background:rgba(59,130,246,0.04);margin-bottom:14px;">
+              <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;color:#60a5fa;">
+                <span>🔔 Notifications</span>
+                <button id="push-notif-btn" onclick="toggleNotifInput()" style="display:none;background:#172554;border:1px solid #1d4ed8;border-radius:6px;color:#60a5fa;font-size:11px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:'Inter',sans-serif;">+ 📣 Push Notification</button>
+              </div>
+              <!-- Inline input (hidden by default) -->
+              <div id="notif-input-area" style="display:none;margin-bottom:10px;">
+                <textarea id="notif-message-input" placeholder="Type your message to the team…" rows="2" style="width:100%;box-sizing:border-box;background:#1a1a2e;border:1px solid #3b82f6;border-radius:6px;color:#e2e8f0;font-size:13px;font-family:'Inter',sans-serif;padding:8px 10px;resize:vertical;outline:none;"></textarea>
+                <div style="display:flex;gap:8px;margin-top:6px;">
+                  <button onclick="pushNotification()" style="background:#1d4ed8;border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:700;padding:6px 14px;cursor:pointer;font-family:'Inter',sans-serif;">📣 Send</button>
+                  <button onclick="toggleNotifInput()" style="background:#1f1f1f;border:1px solid #333;border-radius:6px;color:#888;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
+                </div>
+              </div>
+              <div id="notifications-log-panel">
+                <div class="notif-item"><div class="notif-title" style="color:#555;">Loading…</div></div>
+              </div>
+            </div>
+
             <!-- ACTIVITY PANEL -->
             <div class="panel">
               <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
@@ -2177,6 +2196,10 @@ function doSignOut() {
       loadScheduleNotes().then(() => renderSchedule());
     } catch(e) { console.error('jobs load failed:', e); }
     try {
+      // Push Notifications
+      await loadNotifications();
+    } catch(e) { console.error('notifications load failed:', e); }
+    try {
       // Activity
       const acts = await restFetch('activity', 20);
       const items = acts.sort((a,b) => (b.timestamp||'') > (a.timestamp||'') ? 1 : -1).slice(0,10);
@@ -2267,19 +2290,16 @@ function doSignOut() {
       return true;
     });
 
-    // Update bell badge with permit expiry count
-    const badge = document.getElementById('notif-badge');
-    if (badge) {
-      if (expiring.length > 0) {
-        badge.textContent = expiring.length;
-        badge.style.display = 'flex';
-      } else {
-        badge.style.display = 'none';
-      }
-    }
+    // Update bell badge: permit expiry + unread push notifications
+    // (updateBellBadge() will handle the combined count after alerts badge is set)
 
     if (expiring.length === 0) {
       banner.classList.remove('show');
+      if (alertsPanel) {
+        alertsPanel.innerHTML = '<div style="color:#555;font-size:13px;font-weight:600;padding:8px 0;">✅ No active alerts</div>';
+        if (alertsBadge) alertsBadge.style.display = 'none';
+      }
+      if (typeof updateBellBadge === 'function') updateBellBadge();
       return;
     }
 
@@ -2298,23 +2318,19 @@ function doSignOut() {
 
     // Inject into dedicated ALERTS panel (separate from activity)
     if (alertsPanel) {
-      if (expiring.length === 0) {
-        alertsPanel.innerHTML = '<div style="color:#555;font-size:13px;font-weight:600;padding:8px 0;">✅ No active alerts</div>';
-        if (alertsBadge) alertsBadge.style.display = 'none';
-      } else {
-        const alertHtml = expiring.map(item => {
-          const days = daysUntil(item.expiry);
-          const daysLabel = days === 0 ? '🔴 Expires TODAY!' : days === 1 ? '🟠 1 day left' : `🟡 ${days} days left`;
-          return `<div style="background:rgba(229,62,62,0.08);border-left:3px solid #e53e3e;border-radius:6px;padding:10px 12px;margin-bottom:8px;">
-            <div style="font-size:13px;font-weight:800;color:#f87171;">⚠️ Permit Expiring — ${item.label}</div>
-            <div style="font-size:12px;color:#ccc;font-weight:600;margin-top:3px;">${item.address}</div>
-            <div style="font-size:12px;color:#e53e3e;font-weight:700;margin-top:2px;">${daysLabel} · Expires ${fmtDate(item.expiry)}</div>
-          </div>`;
-        }).join('');
-        alertsPanel.innerHTML = alertHtml;
-        if (alertsBadge) { alertsBadge.textContent = expiring.length; alertsBadge.style.display = 'inline-block'; }
-      }
+      const alertHtml = expiring.map(item => {
+        const days = daysUntil(item.expiry);
+        const daysLabel = days === 0 ? '🔴 Expires TODAY!' : days === 1 ? '🟠 1 day left' : `🟡 ${days} days left`;
+        return `<div style="background:rgba(229,62,62,0.08);border-left:3px solid #e53e3e;border-radius:6px;padding:10px 12px;margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:800;color:#f87171;">⚠️ Permit Expiring — ${item.label}</div>
+          <div style="font-size:12px;color:#ccc;font-weight:600;margin-top:3px;">${item.address}</div>
+          <div style="font-size:12px;color:#e53e3e;font-weight:700;margin-top:2px;">${daysLabel} · Expires ${fmtDate(item.expiry)}</div>
+        </div>`;
+      }).join('');
+      alertsPanel.innerHTML = alertHtml;
+      if (alertsBadge) { alertsBadge.textContent = expiring.length; alertsBadge.style.display = 'inline-block'; }
     }
+    if (typeof updateBellBadge === 'function') updateBellBadge();
   }
 
   // ── JOBS TABLE ─────────────────────────────────────────────────────────────
@@ -2681,6 +2697,143 @@ function doSignOut() {
     // Re-inject expiry alerts on top
     checkPermitExpiry();
   }
+
+  // ── PUSH NOTIFICATIONS ─────────────────────────────────────────────────────
+  let _allNotifications = [];
+
+  window.toggleNotifInput = function() {
+    const area = document.getElementById('notif-input-area');
+    if (!area) return;
+    const isVisible = area.style.display !== 'none';
+    area.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible) {
+      const inp = document.getElementById('notif-message-input');
+      if (inp) { inp.value = ''; inp.focus(); }
+    }
+  };
+
+  async function loadNotifications() {
+    try {
+      // Fetch last 20 notifications ordered by timestamp desc
+      const url = `${FS_BASE}/notifications?key=${API_KEY}&pageSize=20&orderBy=timestamp+desc`;
+      const r = await fetch(url);
+      const data = await r.json();
+      const docs = (data.documents || []).map(parseDoc);
+      // Sort newest first by timestamp string
+      docs.sort((a, b) => (b.timestamp || '') > (a.timestamp || '') ? 1 : -1);
+      _allNotifications = docs;
+      renderNotifications(docs);
+      updateBellBadge();
+    } catch(e) {
+      console.error('loadNotifications failed:', e);
+      const el = document.getElementById('notifications-log-panel');
+      if (el) el.innerHTML = '<div class="notif-item"><div class="notif-title" style="color:#555;">Failed to load notifications.</div></div>';
+    }
+    // Show push button for admin
+    const pushBtn = document.getElementById('push-notif-btn');
+    if (pushBtn) pushBtn.style.display = window._isAdmin ? 'inline-block' : 'none';
+  }
+
+  function renderNotifications(items) {
+    const el = document.getElementById('notifications-log-panel');
+    if (!el) return;
+    if (!items || !items.length) {
+      el.innerHTML = '<div class="notif-item"><div class="notif-title" style="color:#555;">No notifications yet.</div></div>';
+      return;
+    }
+    const isAdmin = window._isAdmin;
+    el.innerHTML = items.map(n => {
+      const ts = n.timestamp
+        ? (() => { try { return new Date(n.timestamp).toLocaleString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' }); } catch(e) { return n.timestamp; } })()
+        : '';
+      const unreadDot = n.read === false ? '<span style="display:inline-block;width:7px;height:7px;background:#3b82f6;border-radius:50%;margin-right:6px;flex-shrink:0;"></span>' : '';
+      const deleteBtn = isAdmin
+        ? `<button onclick="deleteNotification('${n.id}')" title="Delete" style="background:none;border:none;color:#555;cursor:pointer;font-size:14px;padding:2px 4px;line-height:1;" onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#555'">🗑️</button>`
+        : '';
+      return `<div class="notif-item" id="notif-item-${n.id}" style="border-left:3px solid ${n.read === false ? '#3b82f6' : '#333'};padding-left:10px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
+          <div class="notif-title" style="display:flex;align-items:center;flex:1;">${unreadDot}${n.message || '—'}</div>
+          ${deleteBtn}
+        </div>
+        <div class="notif-sub" style="font-size:11px;color:#555;margin-top:3px;">Sent by ${n.sentBy || 'Admin'} · ${ts}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function updateBellBadge() {
+    // Count unread push notifications + unread permit alerts
+    const unreadNotifs = _allNotifications.filter(n => n.read === false).length;
+    // Permit expiry count is already handled by checkPermitExpiry — combine
+    const badge = document.getElementById('notif-badge');
+    if (!badge) return;
+    // Re-calculate permit count from current alerts panel
+    const alertsPanel = document.getElementById('alerts-log-panel');
+    const hasAlerts = alertsPanel && alertsPanel.innerHTML && !alertsPanel.innerHTML.includes('No active alerts');
+    // Get permit count from badge text if shown
+    const alertsBadge = document.getElementById('alerts-count-badge');
+    const permitCount = alertsBadge && alertsBadge.style.display !== 'none' ? parseInt(alertsBadge.textContent || '0') : 0;
+    const total = unreadNotifs + permitCount;
+    if (total > 0) {
+      badge.textContent = total;
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  window.pushNotification = async function() {
+    if (!window._isAdmin) { window.showToast('Only admin can push notifications', '#e53e3e'); return; }
+    const inp = document.getElementById('notif-message-input');
+    const message = (inp && inp.value || '').trim();
+    if (!message) { window.showToast('Please type a message first', '#f59e0b'); return; }
+
+    const now = new Date().toISOString();
+    const sentByEmail = (currentUser && currentUser.email) || ADMIN_EMAIL;
+    const sentBy = (currentUser && (currentUser.displayName || currentUser.email)) || 'Nir Maman';
+
+    try {
+      const body = {
+        fields: {
+          message: { stringValue: message },
+          sentBy: { stringValue: sentBy },
+          sentByEmail: { stringValue: sentByEmail },
+          timestamp: { stringValue: now },
+          read: { booleanValue: false }
+        }
+      };
+      const r = await fetch(`${FS_BASE}/notifications?key=${API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error('POST failed: ' + r.status);
+      window.showToast('Notification sent! 📣', '#22c55e');
+      // Hide input
+      const area = document.getElementById('notif-input-area');
+      if (area) area.style.display = 'none';
+      // Reload notifications
+      await loadNotifications();
+    } catch(e) {
+      console.error('pushNotification failed:', e);
+      window.showToast('Failed to send notification', '#e53e3e');
+    }
+  };
+
+  window.deleteNotification = async function(id) {
+    if (!window._isAdmin) return;
+    if (!confirm('Delete this notification?')) return;
+    try {
+      const r = await fetch(`${FS_BASE}/notifications/${id}?key=${API_KEY}`, { method: 'DELETE' });
+      if (!r.ok) throw new Error('DELETE failed: ' + r.status);
+      _allNotifications = _allNotifications.filter(n => n.id !== id);
+      renderNotifications(_allNotifications);
+      updateBellBadge();
+      window.showToast('Notification deleted', '#22c55e');
+    } catch(e) {
+      console.error('deleteNotification failed:', e);
+      window.showToast('Failed to delete notification', '#e53e3e');
+    }
+  };
 
   // ── CONTACTS ───────────────────────────────────────────────────────────────
   let editingContactId = null;
