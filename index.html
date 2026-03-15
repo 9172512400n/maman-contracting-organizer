@@ -1007,35 +1007,59 @@ function enterApp() {
 }
 
 // Global permit modal helpers — always available (module-independent)
-window.openPermitModal = window.openPermitModal || function() {
+// ── PERMIT MODAL GLOBALS (always available, no module dependency) ──────────
+function _showPermitModal(addr) {
   var modal = document.getElementById('permit-modal');
-  if (modal) { modal.style.display = 'block'; document.body.style.overflow = 'hidden'; }
-};
-window.closePermitModal = window.closePermitModal || function() {
+  if (!modal) return;
+  // Reset key fields
+  ['pm-permitNumber','pm-permitTypeCode','pm-permitHolder','pm-jobAddress','pm-notes','pm-validFrom','pm-expirationDate'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  var st = document.getElementById('pm-status'); if (st) st.value = 'Pending';
+  var os = document.getElementById('ocr-status'); if (os) os.textContent = '';
+  var pp = document.getElementById('permit-preview'); if (pp) { pp.textContent = ''; pp.style.display='none'; }
+  var dl = document.getElementById('permit-docs-list'); if (dl) dl.innerHTML = '';
+  window._uploadedPermitDocUrl = '';
+  window._uploadedPermitDocUrls = [];
+  modal.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  if (addr) {
+    var addrEl = document.getElementById('pm-jobAddress');
+    if (addrEl) addrEl.value = addr;
+  }
+  // Reset editingPermitId if module is loaded
+  if (typeof editingPermitId !== 'undefined') editingPermitId = null;
+}
+
+window.openPermitModal = function() { _showPermitModal(''); };
+window.openAddPermitForAddress = function(addr) { _showPermitModal(addr || ''); };
+window.closePermitModal = function() {
   var modal = document.getElementById('permit-modal');
   if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
+  if (typeof editingPermitId !== 'undefined') editingPermitId = null;
 };
-window.openAddPermitForAddress = window.openAddPermitForAddress || function(addr) {
-  window.openPermitModal();
-  if (addr) { setTimeout(function() { var el = document.getElementById('pm-jobAddress'); if (el) el.value = addr; }, 200); }
-};
-window.scanPermitForAddress = window.scanPermitForAddress || function(addr) {
+window.scanPermitForAddress = function(addr) {
   var input = document.createElement('input');
   input.type = 'file'; input.accept = 'image/*,application/pdf'; input.capture = 'environment';
   input.style.display = 'none';
   input.onchange = function() {
-    var file = input.files[0];
-    if (!file) return;
-    window.openPermitModal();
-    if (addr) { setTimeout(function() { var el = document.getElementById('pm-jobAddress'); if(el) el.value = addr; }, 200); }
+    _showPermitModal(addr || '');
     setTimeout(function() {
-      if (window.handleScanInputForAddress) { window.handleScanInputForAddress(input, addr); }
-      else if (window.handlePermitFiles) { window.handlePermitFiles(input); }
-    }, 300);
-    document.body.removeChild(input);
+      if (window.handleScanInputForAddress) window.handleScanInputForAddress(input, addr || '');
+      else if (window.handlePermitFiles) window.handlePermitFiles(input);
+    }, 500);
+    setTimeout(function() { if (input.parentNode) document.body.removeChild(input); }, 2000);
   };
   document.body.appendChild(input);
   input.click();
+};
+window.togglePermitGroup = window.togglePermitGroup || function(groupKey) {
+  var body = document.getElementById('permit-addr-body-' + groupKey);
+  var row = document.getElementById('permit-addr-row-' + groupKey);
+  if (!body) return;
+  var isOpen = body.classList.contains('open');
+  if (isOpen) { body.classList.remove('open'); if(row) row.classList.remove('expanded'); }
+  else { body.classList.add('open'); if(row) row.classList.add('expanded'); }
 };
 
 function toggleUserMenu() {
