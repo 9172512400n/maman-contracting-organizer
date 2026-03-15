@@ -4420,11 +4420,10 @@ Office: 631-651-1815`
       const dt = Date.now() - startTime;
       const absDx = Math.abs(dx), absDy = Math.abs(dy);
 
-      // Must be strongly horizontal — vertical movement must be less than 40% of horizontal
-      if (absDy > absDx * 0.4) return;
-      // Minimum swipe: 100px deliberate swipe OR fast flick ≥60px in <300ms
-      const isFlick = absDx >= 60 && dt < 300;
-      if (absDx < 100 && !isFlick) return;
+      // Must be strongly horizontal — vertical must be less than 25% of horizontal
+      if (absDy > absDx * 0.25) return;
+      // Minimum: 160px deliberate swipe only — no flick shortcuts
+      if (absDx < 160) return;
 
       const cs = window._currentSection !== undefined ? window._currentSection : currentSection;
       if (dx < 0 && cs < SECTION_COUNT - 1) navTo(cs + 1);
