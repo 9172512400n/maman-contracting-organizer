@@ -4539,6 +4539,7 @@ function doSignOut() {
   }
 
   function renderPermitsCards(permits) {
+    try {
     const container = document.getElementById('permits-cards-container');
     if (!container) return;
 
@@ -4733,6 +4734,11 @@ function doSignOut() {
     restoreOpenPermitGroups();
     // Init swipe-to-archive on all permit group cards
     setTimeout(() => window.initPermitSwipe && window.initPermitSwipe(), 100);
+    } catch(e) {
+      console.error('renderPermitsCards error:', e);
+      const container = document.getElementById('permits-cards-container');
+      if (container) container.innerHTML = '<div style="color:#f87171;padding:20px;">Error loading permits: ' + e.message + '</div>';
+    }
   }
 
   // Toggle accordion open/close
@@ -5406,15 +5412,39 @@ Cell: 516-306-3326`
       docUrls: window._uploadedPermitDocUrls || (window._uploadedPermitDocUrl ? [window._uploadedPermitDocUrl] : []),
     };
 
+    const FS_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
+    const FS_URL = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
+
+    // Build Firestore REST fields
+    const toFS = val => {
+      if (Array.isArray(val)) return { arrayValue: { values: val.map(v => typeof v === 'object' ? { mapValue: { fields: Object.fromEntries(Object.entries(v).map(([k,vv]) => [k, {stringValue: String(vv||'')}])) } } : { stringValue: String(v||'') }) } };
+      return { stringValue: String(val || '') };
+    };
+    const fields = {};
+    Object.entries(permitData).forEach(([k,v]) => { fields[k] = toFS(v); });
+    fields.updatedBy = { stringValue: userEmail };
+    fields.updatedAt = { stringValue: new Date().toISOString() };
+    if (!editingPermitId) fields.createdBy = { stringValue: userEmail };
+
     try {
+      let resp;
       if (editingPermitId) {
-        await updateDoc(doc(db, 'permits', editingPermitId), { ...permitData, updatedBy: userEmail, updatedAt: serverTimestamp() });
-        window.showToast('✅ Permit updated!');
+        const mask = Object.keys(fields).map(k => `updateMask.fieldPaths=${k}`).join('&');
+        resp = await fetch(`${FS_URL}/permits/${editingPermitId}?key=${FS_KEY}&${mask}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields })
+        });
       } else {
-        await addDoc(collection(db, 'permits'), { ...permitData, createdBy: userEmail, createdAt: serverTimestamp() });
-        window.showToast('✅ Permit saved!');
+        resp = await fetch(`${FS_URL}/permits?key=${FS_KEY}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields })
+        });
       }
+      if (!resp.ok) { const err = await resp.json().catch(()=>({})); throw new Error(err.error?.message || 'Save failed: ' + resp.status); }
+      window.showToast(editingPermitId ? '✅ Permit updated!' : '✅ Permit saved!');
       closePermitModal();
+      // Reload permits
+      if (typeof loadAllData === 'function') loadAllData();
     } catch(e) {
       window.showToast('Error: ' + e.message, '#e53e3e');
     } finally {
