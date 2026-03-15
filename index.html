@@ -1573,13 +1573,10 @@ function doSignOut() {
           <div id="permits-cards-container">
             <div style="text-align:center;color:#555;padding:40px;">Loading permits…</div>
           </div>
-          <!-- Permit History Section -->
-          <div style="margin-top:20px;">
-            <button id="permit-history-btn" onclick="togglePermitHistory()" style="width:100%;padding:12px;background:transparent;border:1px solid #2a2a2a;border-radius:10px;color:#666;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;text-align:left;">📁 Show Permit History</button>
-            <div id="permit-history-section" style="display:none;margin-top:12px;">
-              <div style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Archived Permits</div>
-              <div id="permit-history-container"><div style="color:#555;font-size:13px;padding:10px 0;">No archived permits yet.</div></div>
-            </div>
+          <!-- Permit Archive/History — always visible -->
+          <div id="permit-history-section" style="margin-top:20px;">
+            <div style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;padding-bottom:6px;border-top:1px solid #2a2a2a;padding-top:14px;">📁 Archived Permits</div>
+            <div id="permit-history-container"><div style="color:#555;font-size:13px;padding:10px 0;">No archived permits yet.</div></div>
           </div>
         </div>
 
@@ -4688,7 +4685,13 @@ function doSignOut() {
                   const url = typeof d === 'string' ? d : (d && d.url ? d.url : '');
                   const name = typeof d === 'string' ? ('Doc '+(i+1)) : (d && d.name ? d.name : ('Doc '+(i+1)));
                   if (!url) return '';
-                  return '<span>📄 <a href="'+url+'" target="_blank" onclick="event.stopPropagation()" style="color:#60a5fa;font-weight:700;">'+name+'</a> · <span onclick="event.stopPropagation();navigator.share&&navigator.share({url:\''+url+'\',title:\''+name+'\'})" style="color:#4ade80;cursor:pointer;font-weight:700;">📤</span></span>';
+                  return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;flex-wrap:wrap;">'+
+                    '<span style="font-size:12px;font-weight:700;color:#fff;flex:1;">📄 '+name+'</span>'+
+                    '<a href="'+url+'" target="_blank" onclick="event.stopPropagation()" style="color:#60a5fa;font-size:11px;font-weight:700;text-decoration:none;background:#1a2a3a;border:1px solid #3b82f6;border-radius:6px;padding:3px 8px;">👁️ View</a>'+
+                    '<span onclick="event.stopPropagation();window.open(\'mailto:?subject=Permit Doc&body='+encodeURIComponent(url)+'\')" style="color:#4ade80;font-size:11px;font-weight:700;cursor:pointer;background:#1a2a1a;border:1px solid #16a34a;border-radius:6px;padding:3px 8px;">✉️ Email</span>'+
+                    '<span onclick="event.stopPropagation();var w=window.open(\''+url+'\',\'_blank\');w&&setTimeout(function(){w.print()},1500)" style="color:#fbbf24;font-size:11px;font-weight:700;cursor:pointer;background:#1a1208;border:1px solid #78350f;border-radius:6px;padding:3px 8px;">🖨️ Print</span>'+
+                    '<span onclick="event.stopPropagation();navigator.share&&navigator.share({url:\''+url+'\',title:\''+name+'\'})" style="color:#a78bfa;font-size:11px;font-weight:700;cursor:pointer;background:#1a1a2e;border:1px solid #6d28d9;border-radius:6px;padding:3px 8px;">📤 Share</span>'+
+                    '</div>';
                 }).filter(Boolean).join('<br>');
               } catch(e) { return ''; }
             })()}
@@ -4722,9 +4725,9 @@ function doSignOut() {
           ${buildPermitItemsHtml(groupPermits, groupKey)}
           <!-- PER-ADDRESS ACTION BUTTONS -->
           <div class="permit-addr-actions" style="display:flex;gap:10px;padding:10px 12px 2px 12px;flex-wrap:wrap;">
-            <button class="btn btn-primary" style="flex:1;min-width:130px;font-size:13px;padding:10px 12px;" onclick="event.stopPropagation();openAddPermitForAddress(${JSON.stringify(addr === '__no_address__' ? '' : addr)})">+ Add Permit</button>
-            <button class="btn" style="flex:1;min-width:130px;font-size:13px;padding:10px 12px;background:#1a2a3a;border:1.5px solid #3b82f6;color:#60a5fa;" onclick="event.stopPropagation();scanPermitForAddress(${JSON.stringify(addr === '__no_address__' ? '' : addr)})">📷 Scan Permit</button>
-            <input type="file" id="scan-input-${groupKey}" accept="image/*,application/pdf" capture="environment" style="display:none;" onchange="handleScanInputForAddress(this, ${JSON.stringify(addr === '__no_address__' ? '' : addr)})" />
+            <button class="btn btn-primary" style="flex:1;min-width:130px;font-size:13px;padding:10px 12px;" onclick="event.stopPropagation();var fn=window.openAddPermitForAddress||window.openPermitModal;fn&&fn(${JSON.stringify(addr === '__no_address__' ? '' : addr)})">+ Add Permit</button>
+            <button class="btn" style="flex:1;min-width:130px;font-size:13px;padding:10px 12px;background:#1a2a3a;border:1.5px solid #3b82f6;color:#60a5fa;" onclick="event.stopPropagation();window.scanPermitForAddress&&window.scanPermitForAddress(${JSON.stringify(addr === '__no_address__' ? '' : addr)})">📷 Scan Permit</button>
+            <input type="file" id="scan-input-${groupKey}" accept="image/*,application/pdf" capture="environment" style="display:none;" onchange="window.handleScanInputForAddress&&window.handleScanInputForAddress(this, ${JSON.stringify(addr === '__no_address__' ? '' : addr)})" />
           </div>
           <!-- DOT INSPECTION SECTION -->
           <div class="dot-inspect-section">
