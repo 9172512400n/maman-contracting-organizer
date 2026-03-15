@@ -3160,11 +3160,13 @@ function doSignOut() {
 
   // ── DOT BUREAUS ────────────────────────────────────────────────────────────
   const DOT_BUREAUS = [
-    { id: 'brooklyn',      name: 'Brooklyn BPP',   email: 'Brooklynbpp@dot.nyc.gov' },
-    { id: 'manhattan',     name: 'Manhattan',       email: 'MNHIQA@dot.nyc.gov' },
-    { id: 'queens',        name: 'Queens BPP',      email: 'Queensbpp@dot.nyc.gov' },
-    { id: 'bronx',         name: 'Bronx BPP',       email: 'Bronxbpp@dot.nyc.gov' },
-    { id: 'staten_island', name: 'Staten Island',   email: 'Sibpp@dot.nyc.gov' },
+    { id: 'brooklyn',      name: 'Brooklyn BPP',        email: 'Brooklynbpp@dot.nyc.gov' },
+    { id: 'manhattan_hiqa',name: 'Manhattan HIQA',      email: 'MNHIQA@dot.nyc.gov' },
+    { id: 'manhattan_bpp', name: 'Manhattan BPP',       email: 'Manhattanbpp@dot.nyc.gov' },
+    { id: 'queens',        name: 'Queens BPP',          email: 'Queensbpp@dot.nyc.gov' },
+    { id: 'bronx',         name: 'Bronx BPP',           email: 'Bronxbpp@dot.nyc.gov' },
+    { id: 'staten_island', name: 'Staten Island',       email: 'Sibpp@dot.nyc.gov' },
+    { id: 'construction',  name: 'DOT Construction',    email: 'ConstructionPermits@dot.nyc.gov' },
   ];
 
   function detectBorough(address) {
@@ -3183,8 +3185,8 @@ function doSignOut() {
     if (a.includes('queens')) return 'queens';
     if (a.includes('bronx')) return 'bronx';
     if (/staten island|staten isl/.test(a)) return 'staten_island';
-    if (a.includes('manhattan')) return 'manhattan';
-    return 'manhattan'; // default
+    if (a.includes('manhattan')) return 'manhattan_hiqa';
+    return 'manhattan'; // default (triggers both manhattan bureaus via isPreChecked logic)
   }
 
   function renderPermitsCards(permits) {
@@ -3242,7 +3244,7 @@ function doSignOut() {
     function buildBureauHtml(addr, groupKey) {
       const detectedBorough = detectBorough(addr);
       return DOT_BUREAUS.map(b => {
-        const isPreChecked = b.id === detectedBorough;
+        const isPreChecked = b.id === detectedBorough || (detectedBorough === 'manhattan' && (b.id === 'manhattan_hiqa' || b.id === 'manhattan_bpp'));
         return `<label class="dot-bureau-item${isPreChecked ? ' selected' : ''}" id="bureau-lbl-${groupKey}-${b.id}" onclick="toggleBureau('${groupKey}','${b.id}')">
           <input type="checkbox" class="dot-bureau-cb" id="bureau-cb-${groupKey}-${b.id}" data-group="${groupKey}" data-bureau-id="${b.id}" data-email="${b.email}" ${isPreChecked ? 'checked' : ''} onchange="dotUpdateBtn('${groupKey}')" onclick="event.stopPropagation()" />
           <label for="bureau-cb-${groupKey}-${b.id}" style="pointer-events:none;margin:0;">${b.name}</label>
@@ -3377,13 +3379,12 @@ function doSignOut() {
     }
   };
 
-  // Format date for display (YYYY-MM-DD → Month Day, Year)
+  // Format date for display (YYYY-MM-DD → MM/DD/YYYY)
   function formatDOTDate(dateStr) {
     if (!dateStr) return dateStr;
     try {
       const [y,m,d] = dateStr.split('-');
-      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-      return `${months[parseInt(m,10)-1]} ${parseInt(d,10)}, ${y}`;
+      return `${m}/${d}/${y}`;
     } catch(e) { return dateStr; }
   }
 
@@ -3428,7 +3429,7 @@ function doSignOut() {
     // Build email parts
     const permitNumStr = permitNums.map(n => '#' + n).join(', ');
     const toEmails = bureauEmails.join(',');
-    const subject = encodeURIComponent(`${jobAddress} #${permitNums.join(', #')}`);
+    const subject = encodeURIComponent(`${jobAddress}#${permitNums.join(', #')}`);
     const body = encodeURIComponent(
 `Hi,
 
@@ -3444,7 +3445,7 @@ My contact information is below
 Thank you
 Nir Maman
 Cell: 917-251-2400
-Cell: 516-306-3326`
+Office: 631-651-1815`
     );
 
     const bcc = encodeURIComponent('nir@mamancontracting.com');
