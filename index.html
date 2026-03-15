@@ -635,22 +635,19 @@
 
 <!-- LOGIN SCREEN -->
 <script>
-// Auto-launch: hide loading/login screens instantly, no login needed
+// Show loading screen while Firebase checks auth state
 (function() {
-  function hideScreens() {
+  function showLoading() {
     var loading = document.getElementById('app-loading');
-    if (loading) { loading.style.display = 'none'; loading.style.pointerEvents = 'none'; }
+    if (loading) { loading.style.display = 'flex'; loading.style.pointerEvents = 'auto'; loading.style.zIndex = '99999'; }
     var loginScreen = document.getElementById('login-screen');
     if (loginScreen) { loginScreen.style.display = 'none'; loginScreen.style.pointerEvents = 'none'; loginScreen.style.zIndex = '-1'; }
   }
-  // Hide immediately if DOM ready, otherwise on DOMContentLoaded
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', hideScreens);
+    document.addEventListener('DOMContentLoaded', showLoading);
   } else {
-    hideScreens();
+    showLoading();
   }
-  // Belt and suspenders: also hide after 300ms in case elements rendered late
-  setTimeout(hideScreens, 300);
 })();
 
 function togglePasswordVisibility() {
@@ -769,21 +766,25 @@ function enterApp() {
 
 function toggleUserMenu() {
   var dd = document.getElementById('user-dropdown');
-  if (dd) dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+  if (!dd) return;
+  var isOpen = dd.style.display === 'block';
+  dd.style.display = isOpen ? 'none' : 'block';
 }
 // Close dropdown when clicking outside
 document.addEventListener('click', function(e) {
-  var avatar = document.getElementById('user-avatar-sm');
   var dd = document.getElementById('user-dropdown');
-  if (dd && avatar && !avatar.contains(e.target) && !dd.contains(e.target)) {
-    dd.style.display = 'none';
+  var trigger = document.getElementById('user-menu-trigger');
+  if (dd && dd.style.display === 'block') {
+    if (!dd.contains(e.target) && (!trigger || !trigger.contains(e.target))) {
+      dd.style.display = 'none';
+    }
   }
 });
 
 function doSignOut() {
   localStorage.removeItem('last-section');
   localStorage.removeItem('entered-app');
-  sessionStorage.setItem('signed-out', '1'); // flag to skip auto-login
+  sessionStorage.removeItem('signed-out');
   if (window._firebaseSignOut) {
     window._firebaseSignOut().then(function(){ window.location.reload(); }).catch(function(){ window.location.reload(); });
   } else {
@@ -1059,7 +1060,7 @@ function doSignOut() {
 
       <!-- User menu -->
       <div style="position:relative;display:inline-flex;align-items:center;">
-        <div onclick="toggleUserMenu()" style="display:inline-flex;flex-direction:row;align-items:center;gap:6px;cursor:pointer;user-select:none;">
+        <div id="user-menu-trigger" onclick="toggleUserMenu()" style="display:inline-flex;flex-direction:row;align-items:center;gap:6px;cursor:pointer;user-select:none;">
           <!-- Red NM initials circle -->
           <div id="user-avatar-sm" style="width:32px;height:32px;border-radius:50%;background:#e53e3e;border:2px solid #c53030;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:800;color:#fff;font-family:'Inter',sans-serif;letter-spacing:0.5px;">NM</div>
           <!-- Person silhouette circle -->
@@ -1699,12 +1700,6 @@ function doSignOut() {
   const auth = getAuth(app);
   // Set persistence immediately so sessions survive page refresh
   setPersistence(auth, browserLocalPersistence).catch(e => console.warn('setPersistence:', e));
-  // Pre-emptive sign in — ensures Firebase session exists before onAuthStateChanged
-  setPersistence(auth, browserLocalPersistence).then(() => {
-    if (!auth.currentUser) {
-      return signInWithEmailAndPassword(auth, 'nir@mamancontracting.com', 'Nirmaman1');
-    }
-  }).catch(e => console.warn('pre-login:', e.message));
   const db = getFirestore(app);
 
   const ADMIN_EMAIL = 'nir@mamancontracting.com';
@@ -1800,44 +1795,68 @@ function doSignOut() {
     return (phone || '').replace(/\D/g, '');
   }
 
-  // ── AUTH — No-login mode: always boot as Nir Maman (admin) ──────────────
-  const _bootAsAdmin = async () => {
+  // ── AUTH — Boot app for any signed-in user ──────────────────────────────
+  // Helper: get initials from displayName or email
+  function _getInitials(displayName, email) {
+    if (displayName && displayName.trim()) {
+      const parts = displayName.trim().split(/\s+/);
+      if (parts.length >= 2) return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+      return parts[0].slice(0,2).toUpperCase();
+    }
+    if (email) {
+      const local = email.split('@')[0];
+      const parts = local.split(/[._\-]/);
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      return local.slice(0,2).toUpperCase();
+    }
+    return '??';
+  }
+
+  const _bootAsAdmin = async (firebaseUser) => {
     // Hide loading/login screens
     const appLoading = document.getElementById('app-loading');
     if (appLoading) { appLoading.style.display = 'none'; appLoading.style.pointerEvents = 'none'; try { appLoading.remove(); } catch(e){} }
     const ls3 = document.getElementById('login-screen');
     if (ls3) { ls3.style.display = 'none'; ls3.style.pointerEvents = 'none'; ls3.style.zIndex = '-1'; }
 
-    // Set up a fake user object so the rest of the code works
-    currentUser = { email: ADMIN_EMAIL, uid: 'nir-admin', displayName: 'Nir Maman' };
-    window._isAdmin = true;
+    // Use real Firebase user if provided, otherwise fall back to Nir (legacy)
+    const fbUser = firebaseUser || { email: ADMIN_EMAIL, uid: 'nir-admin', displayName: 'Nir Maman' };
+    const isAdmin = fbUser.email === ADMIN_EMAIL;
+    currentUser = fbUser;
+    window._isAdmin = isAdmin;
+
+    // Compute display info
+    const displayName = fbUser.displayName || fbUser.email.split('@')[0];
+    const displayEmail = fbUser.email;
+    const initials = _getInitials(fbUser.displayName, fbUser.email);
 
     // Setup UI
     const topbarUser = document.getElementById('topbar-user');
     if (topbarUser) topbarUser.style.display = 'flex';
-    const displayEmail = ADMIN_EMAIL;
     const el = document.getElementById('user-email-display');
     if (el) el.textContent = displayEmail;
     const avatarSm = document.getElementById('user-avatar-sm');
-    if (avatarSm) avatarSm.textContent = 'NM';
+    if (avatarSm) avatarSm.textContent = initials;
     const da = document.getElementById('drawer-avatar');
     const dn = document.getElementById('drawer-user-name');
     const de = document.getElementById('drawer-user-email');
-    if (da) da.textContent = 'NI';
-    if (dn) dn.textContent = 'Nir Maman';
-    if (de) de.textContent = ADMIN_EMAIL;
+    if (da) da.textContent = initials;
+    if (dn) dn.textContent = displayName;
+    if (de) de.textContent = displayEmail;
+    // Admin-only UI elements
     const inviteBtn = document.getElementById('invite-user-btn');
-    if (inviteBtn) inviteBtn.style.display = 'inline-flex';
+    if (inviteBtn) inviteBtn.style.display = isAdmin ? 'inline-flex' : 'none';
     const drawerUsers = document.getElementById('drawer-users-item');
-    if (drawerUsers) drawerUsers.style.display = 'flex';
+    if (drawerUsers) drawerUsers.style.display = isAdmin ? 'flex' : 'none';
+    // Dropdown UI
     const dropAdmin = document.getElementById('dropdown-admin-section');
     const dropEmail = document.getElementById('dropdown-email');
     const dropBigAvatar = document.getElementById('dropdown-avatar-big');
     const dropNameEl = document.getElementById('dropdown-name');
-    if (dropAdmin) dropAdmin.style.display = 'block';
-    if (dropEmail) dropEmail.textContent = ADMIN_EMAIL;
-    if (dropBigAvatar) dropBigAvatar.textContent = 'NM';
-    if (dropNameEl) dropNameEl.textContent = 'Nir Maman';
+    if (dropAdmin) dropAdmin.style.display = isAdmin ? 'block' : 'none';
+    if (dropEmail) dropEmail.textContent = displayEmail;
+    if (dropBigAvatar) dropBigAvatar.textContent = initials;
+    if (dropNameEl) dropNameEl.textContent = displayName;
 
     try { startListeners(); } catch(e) { console.error('startListeners error:', e); }
       // Load contacts directly (REST, paginated) — always runs regardless of SDK status
@@ -1879,37 +1898,30 @@ function doSignOut() {
       }
   };
 
-  // Listen for auth state — boot app when signed in
+  // Listen for auth state — boot app when signed in, show login when not
   let _booted = false;
-  const _signedOut = sessionStorage.getItem('signed-out') === '1';
 
   onAuthStateChanged(auth, async (user) => {
     if (_booted) return;
     if (user) {
       _booted = true;
       sessionStorage.removeItem('signed-out');
-      await _bootAsAdmin();
+      await _bootAsAdmin(user);
     } else {
-      if (_signedOut) {
-        // User explicitly signed out — show login screen
-        _booted = true;
-        const appLoading = document.getElementById('app-loading');
-        if (appLoading) { appLoading.style.display = 'none'; }
-        const ls = document.getElementById('login-screen');
-        if (ls) { ls.style.display = 'flex'; ls.style.zIndex = '9999'; ls.style.pointerEvents = 'auto'; }
-        // Update login screen to allow any email login
+      // No session — show login screen
+      _booted = true;
+      const appLoading = document.getElementById('app-loading');
+      if (appLoading) { appLoading.style.display = 'none'; appLoading.style.pointerEvents = 'none'; }
+      const ls = document.getElementById('login-screen');
+      if (ls) {
+        ls.style.display = 'flex';
+        ls.style.zIndex = '9999';
+        ls.style.pointerEvents = 'auto';
+        // Always show login fields (not welcome-back screen)
+        const welcomeWrap = document.getElementById('welcome-back-wrap');
+        if (welcomeWrap) welcomeWrap.style.display = 'none';
         const loginFieldsWrap = document.getElementById('login-fields-wrap');
         if (loginFieldsWrap) loginFieldsWrap.style.display = 'block';
-      } else {
-        // Auto sign-in silently
-        try {
-          await setPersistence(auth, browserLocalPersistence).catch(()=>{});
-          await signInWithEmailAndPassword(auth, 'nir@mamancontracting.com', 'Nirmaman1');
-        } catch(e) {
-          console.warn('auto sign-in failed, booting anyway:', e);
-          _booted = true;
-          await _bootAsAdmin();
-        }
       }
     }
   });
@@ -1961,7 +1973,9 @@ function doSignOut() {
 
   // Expose Firebase functions for plain script
   window._firebaseSignIn = async function(email, pass) {
-    await setPersistence(auth, browserLocalPersistence);
+    const rememberMe = document.getElementById('remember-me');
+    const persistence = (rememberMe && !rememberMe.checked) ? browserSessionPersistence : browserLocalPersistence;
+    await setPersistence(auth, persistence);
     await signInWithEmailAndPassword(auth, email, pass);
   };
   window._firebaseSignOut = async function() {
