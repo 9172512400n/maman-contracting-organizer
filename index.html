@@ -83,10 +83,18 @@
     body.light .week-label { color: #1a1a1a; }
     body.light .badge-gray { background: #f1f5f9; color: #475569; }
     body.light .contact-card { background: #fff; border-color: #e2e8f0; }
-    body.light .contact-name { color: #1a1a1a; }
+    body.light .contact-name { color: #111; }
+    body.light .contact-meta { color: #444; }
+    body.light .contact-detail-row { color: #333; }
+    body.light .contact-person-name { color: #111; }
+    body.light .contact-person-meta { color: #555; }
     body.light .contact-modal-box { background: #fff; border-color: #e2e8f0; }
     body.light .person-row { background: #f4f6f9; border-color: #e2e8f0; }
     body.light .person-row input { background: #fff; border-color: #e2e8f0; color: #1a1a1a; }
+    body.light .crew-job-row { color: #1a1a1a; font-weight: 700; }
+    body.light .crew-job-row span.label { color: #555; }
+    body.light .card-label { color: #444; }
+    body.light .card-sub { color: #555; }
 
     /* THEME TOGGLE — icon-only button */
     #theme-toggle-btn {
@@ -279,9 +287,9 @@
     .card.red { border-top-color: #e53e3e; }
     .card.green { border-top-color: #22c55e; }
     .card.yellow { border-top-color: #f59e0b; }
-    .card-label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+    .card-label { font-size: 11px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
     .card-value { font-size: 34px; font-weight: 800; color: #fff; }
-    .card-sub { font-size: 12px; color: #555; margin-top: 4px; }
+    .card-sub { font-size: 12px; color: #bbb; margin-top: 4px; font-weight: 600; }
 
     /* PANELS */
     .panels { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
@@ -354,8 +362,8 @@
     .crew-job-card.asphalt { border-left-color: #fb923c; }
     .crew-job-card.concrete { border-left-color: #60a5fa; }
     .crew-job-name { font-size: 15px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -0.2px; }
-    .crew-job-row { font-size: 13px; color: #e0e0e0; margin-top: 5px; display: flex; align-items: flex-start; gap: 6px; font-weight: 600; }
-    .crew-job-row span.label { color: #bbb; min-width: 16px; }
+    .crew-job-row { font-size: 13px; color: #f0f0f0; margin-top: 5px; display: flex; align-items: flex-start; gap: 6px; font-weight: 700; }
+    .crew-job-row span.label { color: #ccc; min-width: 16px; }
     .crew-empty-day { padding: 16px; text-align: center; font-size: 12px; color: #444; }
     .crew-no-jobs { text-align: center; padding: 40px; color: #555; font-size: 14px; }
 
@@ -378,19 +386,19 @@
     .contact-avatar { width: 44px; height: 44px; border-radius: 50%; background: #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; color: #fff; flex-shrink: 0; }
     .contact-info { flex: 1; min-width: 0; }
     .contact-name { font-size: 15px; font-weight: 800; color: #fff; }
-    .contact-meta { font-size: 12px; color: #666; margin-top: 3px; }
+    .contact-meta { font-size: 12px; color: #bbb; margin-top: 3px; font-weight: 600; }
     .contact-jobs-badge { background: #172554; color: #60a5fa; border-radius: 999px; padding: 4px 12px; font-size: 11px; font-weight: 700; white-space: nowrap; cursor: pointer; flex-shrink: 0; }
     .contact-jobs-badge:hover { background: #1e3a8a; }
     .contact-expand-body { display: none; border-top: 1px solid #2a2a2a; padding: 16px; }
     .contact-expand-body.open { display: block; }
     .contact-person-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #222; }
     .contact-person-row:last-child { border-bottom: none; }
-    .contact-person-name { font-size: 13px; font-weight: 600; color: #e8e8e8; }
-    .contact-person-meta { font-size: 12px; color: #888; margin-top: 2px; }
+    .contact-person-name { font-size: 13px; font-weight: 700; color: #fff; }
+    .contact-person-meta { font-size: 12px; color: #bbb; margin-top: 2px; font-weight: 600; }
     .contact-person-phone { font-size: 13px; color: #60a5fa; font-weight: 600; text-decoration: none; }
     .contact-person-phone:hover { text-decoration: underline; }
     .contact-person-role { display: inline-block; background: #1f2937; color: #9ca3af; border-radius: 4px; padding: 1px 7px; font-size: 10px; font-weight: 600; margin-left: 6px; }
-    .contact-detail-row { font-size: 12px; color: #888; margin-top: 6px; display: flex; align-items: flex-start; gap: 6px; }
+    .contact-detail-row { font-size: 12px; color: #ccc; margin-top: 6px; display: flex; align-items: flex-start; gap: 6px; font-weight: 600; }
     .contact-detail-row a { color: #60a5fa; text-decoration: none; }
     .contact-detail-row a:hover { text-decoration: underline; }
     .contact-expand-actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #2a2a2a; }
@@ -535,6 +543,31 @@
       font-size: 12px; opacity: 0.3;
       pointer-events: none;
     }
+
+    /* DOT INSPECTION */
+    .dot-inspect-section {
+      margin-top: 14px; padding: 14px; background: #0f1f0f; border: 1px solid #1a3a1a;
+      border-radius: 10px;
+    }
+    .dot-inspect-title { font-size: 11px; font-weight: 800; color: #4ade80; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
+    .dot-inspect-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .dot-inspect-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 130px; }
+    .dot-inspect-field label { font-size: 10px; font-weight: 700; color: #4ade80; text-transform: uppercase; letter-spacing: 0.4px; }
+    .dot-inspect-field input { padding: 9px 10px; background: #111; border: 1.5px solid #1a3a1a; border-radius: 7px; color: #fff; font-size: 13px; font-family: 'Inter', sans-serif; font-weight: 700; }
+    .dot-inspect-field input:focus { outline: none; border-color: #4ade80; }
+    .dot-permit-check-list { margin-bottom: 10px; }
+    .dot-permit-check-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+    .dot-permit-check-item:hover { background: rgba(74,222,128,0.08); }
+    .dot-permit-check-item input[type=checkbox] { width: 16px; height: 16px; accent-color: #4ade80; cursor: pointer; flex-shrink: 0; }
+    .dot-permit-check-label { font-size: 13px; font-weight: 700; color: #e0e0e0; }
+    .btn-notify-dot {
+      width: 100%; padding: 11px; background: #dc2626; border: none; border-radius: 8px;
+      color: #fff; font-size: 13px; font-weight: 800; cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: background 0.2s, opacity 0.2s;
+    }
+    .btn-notify-dot:disabled { background: #3a1a1a; color: #888; cursor: not-allowed; opacity: 0.6; }
+    .btn-notify-dot:not(:disabled):hover { background: #b91c1c; }
+    .badge-dot-notified { display: inline-block; background: #14532d; color: #4ade80; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700; margin-left: 6px; }
 
     /* RESPONSIVE */
     @media (max-width: 600px) {
@@ -2444,7 +2477,7 @@ function doSignOut() {
             </div>
             ${c.phone ? `<div class="contact-meta"><a href="tel:${c.phone}" class="contact-person-phone" onclick="event.stopPropagation()">📞 ${c.phone}</a></div>` : (firstPerson.phone ? `<div class="contact-meta"><a href="tel:${firstPerson.phone}" class="contact-person-phone" onclick="event.stopPropagation()">📞 ${firstPerson.phone}</a></div>` : '')}
           </div>
-          <span class="contact-jobs-badge" onclick="event.stopPropagation();toggleContactJobs('${c.id}')" title="View linked jobs">${jobCount} job${jobCount !== 1 ? 's' : ''}</span>
+          <!-- job count badge removed -->
         </div>
         <div class="contact-expand-body" id="contact-expand-${c.id}">
           <!-- Persons -->
@@ -3102,45 +3135,96 @@ function doSignOut() {
       return;
     }
 
-    container.innerHTML = filtered.map(p => {
+    // Group permits by job address for DOT inspection grouping
+    const groups = {};
+    filtered.forEach(p => {
+      const addr = (p.jobAddress || '').trim() || '__no_address__';
+      if (!groups[addr]) groups[addr] = [];
+      groups[addr].push(p);
+    });
+
+    const statusColors = {
+      'Submitted': 'badge-blue', 'Under Review': 'badge-yellow', 'Approved': 'badge-green',
+      'Issued': 'badge-green', 'Active': 'badge-green', 'Expired': 'badge-red',
+      'Rejected': 'badge-red', 'On Hold': 'badge-orange', 'Cancelled': 'badge-gray', 'Pending': 'badge-yellow'
+    };
+    const statusEmoji = {
+      'Submitted':'📤','Under Review':'🔍','Approved':'✅','Issued':'🏷️','Active':'🟢',
+      'Expired':'❌','Rejected':'🚫','On Hold':'⏸️','Cancelled':'🗑️','Pending':'⏳'
+    };
+
+    function permitExpBadge(p) {
       const days = p.expirationDate ? daysUntil(p.expirationDate) : null;
-      let expBadge = '';
-      let alertBadge = '';
       if (days !== null) {
-        if (days < 0) expBadge = '<span class="badge badge-red">Expired</span>';
-        else if (days <= 4) { expBadge = '<span class="badge badge-red">Expiring Soon</span>'; alertBadge = '<span class="badge badge-red" style="margin-left:4px;">⚠️ ' + days + 'd</span>'; }
-        else if (days < 30) expBadge = '<span class="badge badge-orange">Expiring Soon</span>';
-        else expBadge = '<span class="badge badge-green">Valid</span>';
-      } else {
-        const statusColors = {
-          'Submitted': 'badge-blue', 'Under Review': 'badge-yellow', 'Approved': 'badge-green',
-          'Issued': 'badge-green', 'Active': 'badge-green', 'Expired': 'badge-red',
-          'Rejected': 'badge-red', 'On Hold': 'badge-orange', 'Cancelled': 'badge-gray', 'Pending': 'badge-yellow'
-        };
-        const statusEmoji = {
-          'Submitted':'📤','Under Review':'🔍','Approved':'✅','Issued':'🏷️','Active':'🟢',
-          'Expired':'❌','Rejected':'🚫','On Hold':'⏸️','Cancelled':'🗑️','Pending':'⏳'
-        };
-        const sc = p.status||'Pending';
-        expBadge = `<span class="badge ${statusColors[sc]||'badge-yellow'}">${statusEmoji[sc]||''} ${sc}</span>`;
+        if (days < 0) return '<span class="badge badge-red">Expired</span>';
+        if (days <= 4) return '<span class="badge badge-red">Expiring Soon</span><span class="badge badge-red" style="margin-left:4px;">⚠️ ' + days + 'd</span>';
+        if (days < 30) return '<span class="badge badge-orange">Expiring Soon</span>';
+        return '<span class="badge badge-green">Valid</span>';
       }
-      return `<div class="crew-day-card" style="margin-bottom:10px;">
-        <div class="crew-day-header" style="cursor:pointer;" onclick="openEditPermit('${p.id}')">
-          <div>
-            <div style="font-size:14px;font-weight:700;color:#fff;">#${p.permitNumber||'—'}</div>
-            <div style="font-size:12px;color:#888;margin-top:2px;">📍 ${p.jobAddress||'—'}</div>
+      const sc = p.status || 'Pending';
+      return `<span class="badge ${statusColors[sc]||'badge-yellow'}">${statusEmoji[sc]||''} ${sc}</span>`;
+    }
+
+    container.innerHTML = Object.entries(groups).map(([addr, permits]) => {
+      // Use permit holder from first permit
+      const permitHolder = permits.find(p => p.permitHolder)?.permitHolder || '';
+      const displayAddr = addr === '__no_address__' ? '— No Address —' : addr;
+      // Unique group key (safe for HTML id)
+      const groupKey = btoa(encodeURIComponent(addr)).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+      // DOT notified status — check if ANY permit in group is notified (show badge), or all
+      const dotNotified = permits.every(p => p.dotNotified);
+      const dotNotifiedAny = permits.some(p => p.dotNotified);
+      const notifiedBadge = dotNotifiedAny ? `<span class="badge-dot-notified">✅ DOT Notified</span>` : '';
+
+      const permitCards = permits.map(p => {
+        const linkedJobHtml = p.linkedJobId ? (() => { const lj = allJobs.find(j=>j.id===p.linkedJobId); return lj ? `<div class="crew-job-row"><span class="label">🔗</span><span style="color:#60a5fa;font-weight:700;">${lj.customerName||lj.address||'Linked Job'}</span></div>` : ''; })() : '';
+        return `<div style="background:#111;border-radius:10px;padding:14px;border-left:4px solid #e53e3e;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <label class="dot-permit-check-item" style="margin:0;flex:1;cursor:pointer;">
+              <input type="checkbox" class="dot-permit-cb" data-permit-id="${p.id}" data-permit-num="${(p.permitNumber||'').replace(/"/g,'&quot;')}" data-group="${groupKey}" onchange="dotUpdateBtn('${groupKey}')" />
+              <span class="dot-permit-check-label">#${p.permitNumber||'—'}</span>
+            </label>
+            <div style="display:flex;gap:4px;align-items:center;">${permitExpBadge(p)}</div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center;">${expBadge}${alertBadge}</div>
-        </div>
-        <div class="crew-jobs-container" style="padding:12px 16px;">
           ${p.permitHolder ? `<div class="crew-job-row"><span class="label">👤</span><span>${p.permitHolder}</span></div>` : ''}
           ${p.permitTypeCode ? `<div class="crew-job-row"><span class="label">🏷️</span><span>Type Code: ${p.permitTypeCode}</span></div>` : ''}
           ${p.validFrom ? `<div class="crew-job-row"><span class="label">📅</span><span>Valid: ${fmtDate(p.validFrom)} → ${fmtDate(p.expirationDate)||'?'}</span></div>` : ''}
-          ${p.linkedJobId ? (() => { const lj = allJobs.find(j=>j.id===p.linkedJobId); return lj ? `<div class="crew-job-row"><span class="label">🔗</span><span style="color:#60a5fa;font-weight:600;">${lj.customerName||lj.address||'Linked Job'}</span></div>` : ''; })() : ''}
+          ${linkedJobHtml}
           ${p.notes ? `<div class="crew-job-row"><span class="label">📝</span><span>${p.notes}</span></div>` : ''}
-          <div style="display:flex;gap:8px;margin-top:12px;border-top:1px solid #2a2a2a;padding-top:12px;">
-            <button onclick="event.stopPropagation();openEditPermit('${p.id}')" style="flex:1;padding:8px;background:#1e3a5f;border:1px solid #2d5a9e;border-radius:8px;color:#60a5fa;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit</button>
-            <button onclick="event.stopPropagation();confirmDeletePermit('${p.id}','${(p.permitNumber||'this permit').replace(/'/g,"\\'")}',this)" style="flex:1;padding:8px;background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;color:#f87171;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Delete</button>
+          <div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid #2a2a2a;padding-top:10px;">
+            <button onclick="event.stopPropagation();openEditPermit('${p.id}')" style="flex:1;padding:7px;background:#1e3a5f;border:1px solid #2d5a9e;border-radius:8px;color:#60a5fa;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit</button>
+            <button onclick="event.stopPropagation();confirmDeletePermit('${p.id}','${(p.permitNumber||'this permit').replace(/'/g,"\\'")}',this)" style="flex:1;padding:7px;background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;color:#f87171;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Delete</button>
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<div class="crew-day-card" style="margin-bottom:14px;" id="permit-group-${groupKey}">
+        <div class="crew-day-header">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:800;color:#fff;">📍 ${displayAddr} ${notifiedBadge}</div>
+            ${permitHolder ? `<div style="font-size:12px;color:#ccc;font-weight:700;margin-top:3px;">👤 ${permitHolder}</div>` : ''}
+            <div style="font-size:11px;color:#888;margin-top:2px;">${permits.length} permit${permits.length !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+        <div class="crew-jobs-container" style="padding:12px 16px;">
+          ${permitCards}
+          <!-- DOT INSPECTION SECTION -->
+          <div class="dot-inspect-section">
+            <div class="dot-inspect-title">🟢 DOT Milling Inspection</div>
+            <div class="dot-inspect-row">
+              <div class="dot-inspect-field">
+                <label>📅 Inspection Date</label>
+                <input type="date" id="dot-date-${groupKey}" onchange="dotUpdateBtn('${groupKey}')" />
+              </div>
+              <div class="dot-inspect-field">
+                <label>⏰ Inspection Time</label>
+                <input type="time" id="dot-time-${groupKey}" onchange="dotUpdateBtn('${groupKey}')" />
+              </div>
+            </div>
+            <button class="btn-notify-dot" id="dot-btn-${groupKey}" disabled
+              onclick="sendDOTEmail('${groupKey}', '${displayAddr.replace(/'/g,"\\'")}', '${permitHolder.replace(/'/g,"\\'")}')">
+              📧 Notify DOT
+            </button>
           </div>
         </div>
       </div>`;
@@ -3149,6 +3233,114 @@ function doSignOut() {
 
   window.filterPermitsDirect = function() {
     renderPermitsCards(allStandalonePermits);
+  };
+
+  // DOT inspection: enable/disable Notify button based on date+time+checked permits
+  window.dotUpdateBtn = function(groupKey) {
+    const dateVal = (document.getElementById('dot-date-' + groupKey) || {}).value || '';
+    const timeVal = (document.getElementById('dot-time-' + groupKey) || {}).value || '';
+    const checkboxes = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
+    const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+    const btn = document.getElementById('dot-btn-' + groupKey);
+    if (btn) {
+      btn.disabled = !(dateVal && timeVal && anyChecked);
+    }
+  };
+
+  // Format date for display (YYYY-MM-DD → Month Day, Year)
+  function formatDOTDate(dateStr) {
+    if (!dateStr) return dateStr;
+    try {
+      const [y,m,d] = dateStr.split('-');
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      return `${months[parseInt(m,10)-1]} ${parseInt(d,10)}, ${y}`;
+    } catch(e) { return dateStr; }
+  }
+
+  // Format time for display (HH:MM → 12h format)
+  function formatDOTTime(timeStr) {
+    if (!timeStr) return timeStr;
+    try {
+      const [h,m] = timeStr.split(':');
+      const hour = parseInt(h,10);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const h12 = hour % 12 || 12;
+      return `${h12}:${m} ${ampm}`;
+    } catch(e) { return timeStr; }
+  }
+
+  window.sendDOTEmail = async function(groupKey, jobAddress, permitHolder) {
+    const dateVal = (document.getElementById('dot-date-' + groupKey) || {}).value || '';
+    const timeVal = (document.getElementById('dot-time-' + groupKey) || {}).value || '';
+
+    if (!dateVal || !timeVal) {
+      window.showToast('Please enter both an inspection date and time before sending.', '#e53e3e');
+      return;
+    }
+
+    // Get checked permit numbers
+    const checkboxes = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
+    const checkedPermits = Array.from(checkboxes).filter(cb => cb.checked);
+    if (!checkedPermits.length) {
+      window.showToast('Please check at least one permit before sending.', '#e53e3e');
+      return;
+    }
+    const permitNums = checkedPermits.map(cb => cb.dataset.permitNum).filter(Boolean);
+    const permitIds = checkedPermits.map(cb => cb.dataset.permitId).filter(Boolean);
+
+    // Build email
+    const permitNumStr = permitNums.map(n => '#' + n).join(', ');
+    const subject = encodeURIComponent(`${jobAddress} ${permitNumStr}`);
+    const body = encodeURIComponent(
+`Hi,
+
+Please Schedule milling inspection for the above mentioned location
+
+Day: ${formatDOTDate(dateVal)}
+Time: ${formatDOTTime(timeVal)}
+
+Permit holder: ${permitHolder}
+Permit Number: ${permitNumStr}
+
+My contact information is below
+Thank you
+Nir Maman
+Cell: 917-251-2400
+Cell: 516-306-3326`
+    );
+
+    const bcc = encodeURIComponent('nir@mamancontracting.com');
+    const mailtoUrl = `mailto:?subject=${subject}&body=${body}&bcc=${bcc}`;
+    window.location.href = mailtoUrl;
+
+    // Mark DOT notified in Firestore for each checked permit
+    try {
+      await Promise.all(permitIds.map(async (pid) => {
+        const permRef = doc(db, 'permits', pid);
+        await updateDoc(permRef, { dotNotified: true, dotNotifiedDate: new Date().toISOString() });
+        // Update local cache too
+        const localP = allStandalonePermits.find(x => x.id === pid);
+        if (localP) { localP.dotNotified = true; localP.dotNotifiedDate = new Date().toISOString(); }
+      }));
+    } catch(e) {
+      // REST fallback for each
+      try {
+        await Promise.all(permitIds.map(async (pid) => {
+          const now = new Date().toISOString();
+          await fetch(`https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents/permits/${pid}?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c&updateMask.fieldPaths=dotNotified&updateMask.fieldPaths=dotNotifiedDate`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: { dotNotified: { booleanValue: true }, dotNotifiedDate: { stringValue: now } } })
+          });
+          const localP = allStandalonePermits.find(x => x.id === pid);
+          if (localP) { localP.dotNotified = true; localP.dotNotifiedDate = now; }
+        }));
+      } catch(e2) { /* ignore */ }
+    }
+
+    // Show toast and refresh
+    window.showToast('✅ DOT notification sent!', '#4ade80');
+    setTimeout(() => renderPermitsCards(allStandalonePermits), 500);
   };
 
   window.clearAllNotifications = async function() {
