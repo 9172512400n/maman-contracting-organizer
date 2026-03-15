@@ -3467,11 +3467,11 @@ function doSignOut() {
             <div class="dot-inspect-row">
               <div class="dot-inspect-field">
                 <label>📅 Day</label>
-                <input type="date" id="dot-date-${groupKey}" onchange="dotUpdateBtn('${groupKey}')" onfocus="this._scrollY=window.scrollY;this._scrollEl=this.closest('.section')||document.documentElement" onblur="var el=this._scrollEl;var y=this._scrollY||0;setTimeout(()=>{if(el)el.scrollTop=el.scrollTop;window.scrollTo({top:y,behavior:'instant'})},100)" />
+                <input type="date" id="dot-date-${groupKey}" onchange="dotUpdateBtn('${groupKey}')" onfocus="window._permitScrollY=window.scrollY" onblur="setTimeout(()=>window.scrollTo({top:window._permitScrollY||0,behavior:'instant'}),150)" />
               </div>
               <div class="dot-inspect-field">
                 <label>⏰ Time</label>
-                <input type="time" id="dot-time-${groupKey}" step="900" onchange="dotUpdateBtn('${groupKey}')" onfocus="this._scrollY=window.scrollY;this._scrollEl=this.closest('.section')||document.documentElement" onblur="var el=this._scrollEl;var y=this._scrollY||0;setTimeout(()=>{if(el)el.scrollTop=el.scrollTop;window.scrollTo({top:y,behavior:'instant'})},100)" />
+                <input type="time" id="dot-time-${groupKey}" step="900" onchange="dotUpdateBtn('${groupKey}')" onfocus="window._permitScrollY=window.scrollY" onblur="setTimeout(()=>window.scrollTo({top:window._permitScrollY||0,behavior:'instant'}),150)" />
               </div>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px;">
@@ -3495,9 +3495,15 @@ function doSignOut() {
       const groupKey = btoa(encodeURIComponent(addr)).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
       dotUpdateBtn(groupKey);
     });
+
+    // Restore previously open groups so re-renders don't collapse them
+    restoreOpenPermitGroups();
   }
 
   // Toggle accordion open/close
+  // Track which permit groups are open — persist across re-renders
+  window._openPermitGroups = window._openPermitGroups || new Set();
+
   window.togglePermitGroup = function(groupKey) {
     const row = document.getElementById('permit-addr-row-' + groupKey);
     const body = document.getElementById('permit-addr-body-' + groupKey);
@@ -3506,11 +3512,24 @@ function doSignOut() {
     if (isOpen) {
       body.classList.remove('open');
       row.classList.remove('expanded');
+      window._openPermitGroups.delete(groupKey);
     } else {
       body.classList.add('open');
       row.classList.add('expanded');
+      window._openPermitGroups.add(groupKey);
     }
   };
+
+  // After rendering, restore any open groups and scroll position
+  function restoreOpenPermitGroups() {
+    if (!window._openPermitGroups) return;
+    window._openPermitGroups.forEach(groupKey => {
+      const body = document.getElementById('permit-addr-body-' + groupKey);
+      const row = document.getElementById('permit-addr-row-' + groupKey);
+      if (body) body.classList.add('open');
+      if (row) row.classList.add('expanded');
+    });
+  }
 
   // Toggle bureau checkbox + selected class
   window.toggleBureau = function(groupKey, bureauId) {
