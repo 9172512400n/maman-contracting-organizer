@@ -4967,7 +4967,7 @@ Office: 631-651-1815`
       // Must be strongly horizontal — vertical must be less than 20% of horizontal
       if (absDy > absDx * 0.30) return;
       // Minimum: 120px — easy enough but not accidental
-      if (absDx < 120) return;
+      if (absDx < 160) return;
 
       const cs = window._currentSection !== undefined ? window._currentSection : currentSection;
       if (dx < 0 && cs < SECTION_COUNT - 1) navTo(cs + 1);
