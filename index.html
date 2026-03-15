@@ -4637,8 +4637,7 @@ function doSignOut() {
     // Build permit items HTML for a group
     function buildPermitItemsHtml(groupPermits, groupKey) {
       return groupPermits.map(p => {
-        const notifiedBadge = p.dotNotified
-          `<label onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;background:${p.dotNotified ? '#14532d' : '#1a1a1a'};border:1px solid ${p.dotNotified ? '#16a34a' : '#2a2a2a'};border-radius:6px;padding:3px 8px;margin-left:4px;">
+        const notifiedBadge = `<label onclick="event.stopPropagation()" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;background:${p.dotNotified ? '#14532d' : '#1a1a1a'};border:1px solid ${p.dotNotified ? '#16a34a' : '#2a2a2a'};border-radius:6px;padding:3px 8px;margin-left:4px;">
             <input type="checkbox" ${p.dotNotified ? 'checked' : ''} onchange="event.stopPropagation();toggleDotNotified('${p.id}',this.checked)" style="width:14px;height:14px;accent-color:#16a34a;cursor:pointer;"/>
             <span style="font-size:11px;font-weight:700;color:${p.dotNotified ? '#4ade80' : '#666'};">DOT Notified</span>
           </label>`;
