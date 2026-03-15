@@ -4726,19 +4726,20 @@ function doSignOut() {
             ${(function() {
               try {
                 const docs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [{url: p.docUrl, name: 'Permit Doc'}] : []);
-                if (!docs.length) return '';
+                if (!docs.length) {
+                  return '<div style="padding:6px 0;"><span style="font-size:11px;color:#444;font-style:italic;">No document uploaded — tap ✏️ Edit to upload</span></div>';
+                }
                 return docs.map(function(d, i) {
                   const url = typeof d === 'string' ? d : (d && d.url ? d.url : '');
                   const name = typeof d === 'string' ? ('Doc '+(i+1)) : (d && d.name ? d.name : ('Doc '+(i+1)));
                   if (!url) return '';
-                  return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;flex-wrap:wrap;">'+
-                    '<span style="font-size:12px;font-weight:700;color:#fff;flex:1;">📄 '+name+'</span>'+
-                    '<a href="'+url+'" target="_blank" onclick="event.stopPropagation()" style="color:#60a5fa;font-size:11px;font-weight:700;text-decoration:none;background:#1a2a3a;border:1px solid #3b82f6;border-radius:6px;padding:3px 8px;">👁️ View</a>'+
-                    '<span onclick="event.stopPropagation();window.open(\'mailto:?subject=Permit Doc&body='+encodeURIComponent(url)+'\')" style="color:#4ade80;font-size:11px;font-weight:700;cursor:pointer;background:#1a2a1a;border:1px solid #16a34a;border-radius:6px;padding:3px 8px;">✉️ Email</span>'+
-                    '<span onclick="event.stopPropagation();var w=window.open(\''+url+'\',\'_blank\');w&&setTimeout(function(){w.print()},1500)" style="color:#fbbf24;font-size:11px;font-weight:700;cursor:pointer;background:#1a1208;border:1px solid #78350f;border-radius:6px;padding:3px 8px;">🖨️ Print</span>'+
-                    '<span onclick="event.stopPropagation();navigator.share&&navigator.share({url:\''+url+'\',title:\''+name+'\'})" style="color:#a78bfa;font-size:11px;font-weight:700;cursor:pointer;background:#1a1a2e;border:1px solid #6d28d9;border-radius:6px;padding:3px 8px;">📤 Share</span>'+
+                  return '<div style="display:flex;align-items:center;gap:6px;padding:5px 0;flex-wrap:wrap;border-bottom:1px solid #222;">'+
+                    '<span style="font-size:12px;font-weight:700;color:#fff;flex:1;min-width:80px;">📄 '+name+'</span>'+
+                    '<a href="'+url+'" target="_blank" onclick="event.stopPropagation()" style="color:#60a5fa;font-size:12px;font-weight:700;text-decoration:none;background:#1a2a3a;border:1px solid #3b82f6;border-radius:6px;padding:5px 10px;">👁️ View</a>'+
+                    '<span onclick="event.stopPropagation();window.open(\'mailto:?subject=Permit&body='+encodeURIComponent(url)+'\')" style="color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;background:#1a2a1a;border:1px solid #16a34a;border-radius:6px;padding:5px 10px;">✉️</span>'+
+                    '<span onclick="event.stopPropagation();navigator.share&&navigator.share({url:\''+url+'\',title:\''+name+'\'})" style="color:#a78bfa;font-size:12px;font-weight:700;cursor:pointer;background:#1a1a2e;border:1px solid #6d28d9;border-radius:6px;padding:5px 10px;">📤</span>'+
                     '</div>';
-                }).filter(Boolean).join('<br>');
+                }).filter(Boolean).join('');
               } catch(e) { return ''; }
             })()}
           </div>
