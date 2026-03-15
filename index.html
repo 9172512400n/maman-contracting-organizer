@@ -3241,10 +3241,26 @@ function doSignOut() {
     }
 
     // Build bureau HTML for a group
+    // Load saved bureau prefs from localStorage
+    function getSavedBureauPrefs() {
+      try { return JSON.parse(localStorage.getItem('dot_bureau_prefs') || 'null'); } catch(e) { return null; }
+    }
+    function saveBureauPrefs(selectedIds) {
+      try { localStorage.setItem('dot_bureau_prefs', JSON.stringify(selectedIds)); } catch(e) {}
+    }
+
     function buildBureauHtml(addr, groupKey) {
+      const savedPrefs = getSavedBureauPrefs();
       const detectedBorough = detectBorough(addr);
       return DOT_BUREAUS.map(b => {
-        const isPreChecked = b.id === detectedBorough || (detectedBorough === 'manhattan' && (b.id === 'manhattan_hiqa' || b.id === 'manhattan_bpp'));
+        let isPreChecked;
+        if (savedPrefs !== null) {
+          // Use saved preferences — user already chose their default
+          isPreChecked = savedPrefs.includes(b.id);
+        } else {
+          // First time — auto-detect by borough
+          isPreChecked = b.id === detectedBorough || (detectedBorough === 'manhattan' && (b.id === 'manhattan_hiqa' || b.id === 'manhattan_bpp'));
+        }
         return `<label class="dot-bureau-item${isPreChecked ? ' selected' : ''}" id="bureau-lbl-${groupKey}-${b.id}" onclick="toggleBureau('${groupKey}','${b.id}')">
           <input type="checkbox" class="dot-bureau-cb" id="bureau-cb-${groupKey}-${b.id}" data-group="${groupKey}" data-bureau-id="${b.id}" data-email="${b.email}" ${isPreChecked ? 'checked' : ''} onchange="dotUpdateBtn('${groupKey}')" onclick="event.stopPropagation()" />
           <label for="bureau-cb-${groupKey}-${b.id}" style="pointer-events:none;margin:0;">${b.name}</label>
@@ -3322,7 +3338,10 @@ function doSignOut() {
                 <input type="time" id="dot-time-${groupKey}" onchange="dotUpdateBtn('${groupKey}')" />
               </div>
             </div>
-            <div class="dot-bureau-title">🏛️ Select Bureau(s)</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px;">
+              <div class="dot-bureau-title" style="margin:0;">🏛️ Select Bureau(s)</div>
+              <span onclick="localStorage.removeItem('dot_bureau_prefs');renderPermitsCards(allStandalonePermits);window.showToast('Bureau preferences reset','#4ade80');" style="font-size:11px;color:#666;cursor:pointer;text-decoration:underline;">Reset default</span>
+            </div>
             <div class="dot-bureau-list">
               ${buildBureauHtml(addr, groupKey)}
             </div>
@@ -3365,6 +3384,10 @@ function doSignOut() {
     cb.checked = !cb.checked;
     if (lbl) lbl.classList.toggle('selected', cb.checked);
     dotUpdateBtn(groupKey);
+    // Save bureau preferences to localStorage so they persist across sessions
+    const allChecked = Array.from(document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`))
+      .filter(c => c.checked).map(c => c.dataset.bureauId);
+    saveBureauPrefs(allChecked);
   };
 
   window.filterPermitsDirect = function() {
