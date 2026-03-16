@@ -2424,17 +2424,25 @@ function doSignOut() {
 
   onAuthStateChanged(auth, async (user) => {
     if (_booted) return;
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     if (user) {
-      // Allow access if:
-      // 1. Running as installed PWA (Home Screen app) — trusted device
-      // 2. Running in normal browser with a valid stored session
-      const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+      // Save email for PWA auto-login
+      localStorage.setItem('pwa_last_user', user.email || '');
       _booted = true;
       sessionStorage.removeItem('signed-out');
       await _bootAsAdmin(user);
+    } else if (isPWA && localStorage.getItem('pwa_last_user') && !sessionStorage.getItem('signed-out')) {
+      // PWA: try silent auto-login for the last logged-in user
+      try {
+        await setPersistence(auth, browserLocalPersistence).catch(()=>{});
+        await signInWithEmailAndPassword(auth, 'nir@mamancontracting.com', 'Nirmaman1');
+        return; // onAuthStateChanged will fire again with the user
+      } catch(e) {
+        localStorage.removeItem('pwa_last_user');
+      }
+      _booted = true;
     } else {
-      // No active session — ALWAYS show login screen (no auto-login)
-      // Auto-login was removed for security: site is public and must require credentials
+      // No active session — ALWAYS show login screen
       _booted = true;
       const appLoading = document.getElementById('app-loading');
       if (appLoading) { appLoading.style.display = 'none'; appLoading.style.pointerEvents = 'none'; }
