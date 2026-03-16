@@ -766,6 +766,8 @@ function doLogin() {
         body: JSON.stringify({email: email, password: pass, returnSecureToken: true})
       }).then(function(r) { return r.json(); }).then(function(d) {
         if (d.idToken) {
+          // Mark as authenticated before reload
+          sessionStorage.setItem('session_authenticated', '1');
           // Manually trigger the app with the user info
           window._manualToken = d.idToken;
           window._manualEmail = d.email;
@@ -2516,9 +2518,15 @@ function doSignOut() {
     const rememberMe = document.getElementById('remember-me');
     const persistence = (rememberMe && !rememberMe.checked) ? browserSessionPersistence : browserLocalPersistence;
     await setPersistence(auth, persistence);
-    await signInWithEmailAndPassword(auth, email, pass);
-    // Mark this session as explicitly authenticated (security gate)
+    // Set the flag BEFORE sign-in so onAuthStateChanged sees it immediately
     sessionStorage.setItem('session_authenticated', '1');
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch(e) {
+      // If login fails, remove the flag
+      sessionStorage.removeItem('session_authenticated');
+      throw e;
+    }
   };
   window._firebaseSignOut = async function() {
     try { await signOut(auth); } catch(e) { console.log('signOut:', e); }
