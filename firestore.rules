@@ -1,7 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Only authenticated users can read or write any data
+    // Allow access only to authenticated Firebase users
+    // The app uses Firebase Auth + REST API — both work with auth tokens
     match /{document=**} {
       allow read, write: if request.auth != null;
     }

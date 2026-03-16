@@ -2545,6 +2545,18 @@ function doSignOut() {
   const API_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
   const FS_BASE = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
 
+  // Global auth-aware fetch for Firestore REST calls
+  window._authFetch = async function(url, options = {}) {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const token = await user.getIdToken();
+        options.headers = { ...(options.headers || {}), 'Authorization': 'Bearer ' + token };
+      }
+    } catch(e) {}
+    return fetch(url, options);
+  };
+
   function parseDoc(doc) {
     const id = doc.name.split('/').pop();
     const fields = {};
@@ -2564,12 +2576,23 @@ function doSignOut() {
     return { id, ...fields };
   }
 
+  // Get Firebase auth token for authenticated REST API calls
+  async function getAuthToken() {
+    try {
+      const user = auth.currentUser;
+      if (user) return await user.getIdToken();
+    } catch(e) {}
+    return null;
+  }
+
   async function restFetch(collection, pageSize = 300) {
     let all = [], token = null;
+    const authToken = await getAuthToken();
+    const headers = authToken ? { 'Authorization': 'Bearer ' + authToken } : {};
     do {
       let url = `${FS_BASE}/${collection}?key=${API_KEY}&pageSize=${pageSize}`;
       if (token) url += `&pageToken=${encodeURIComponent(token)}`;
-      const r = await fetch(url);
+      const r = await fetch(url, { headers });
       const data = await r.json();
       if (data.documents) all = [...all, ...data.documents.map(parseDoc)];
       token = data.nextPageToken || null;
