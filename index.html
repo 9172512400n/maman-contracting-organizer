@@ -2432,12 +2432,32 @@ function doSignOut() {
       sessionStorage.removeItem('signed-out');
       await _bootAsAdmin(user);
     } else if (isPWA && localStorage.getItem('pwa_last_user') && !sessionStorage.getItem('signed-out')) {
-      // PWA: try silent auto-login for the last logged-in user
+      // PWA Home Screen: silent auto-login with timeout fallback
+      const loginTimeout = setTimeout(() => {
+        // If login takes too long, show login screen as fallback
+        if (!_booted) {
+          _booted = true;
+          const appLoading = document.getElementById('app-loading');
+          if (appLoading) appLoading.style.display = 'none';
+          const ls = document.getElementById('login-screen');
+          if (ls) {
+            ls.style.display = 'flex';
+            ls.style.zIndex = '9999';
+            ls.style.pointerEvents = 'auto';
+            const welcomeWrap = document.getElementById('welcome-back-wrap');
+            if (welcomeWrap) welcomeWrap.style.display = 'none';
+            const loginFieldsWrap = document.getElementById('login-fields-wrap');
+            if (loginFieldsWrap) loginFieldsWrap.style.display = 'block';
+          }
+        }
+      }, 5000); // 5 second timeout
       try {
         await setPersistence(auth, browserLocalPersistence).catch(()=>{});
         await signInWithEmailAndPassword(auth, 'nir@mamancontracting.com', 'Nirmaman1');
+        clearTimeout(loginTimeout);
         return; // onAuthStateChanged will fire again with the user
       } catch(e) {
+        clearTimeout(loginTimeout);
         localStorage.removeItem('pwa_last_user');
       }
       _booted = true;
