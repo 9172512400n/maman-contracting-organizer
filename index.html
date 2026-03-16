@@ -767,7 +767,7 @@ function doLogin() {
       }).then(function(r) { return r.json(); }).then(function(d) {
         if (d.idToken) {
           // Mark as authenticated before reload
-          sessionStorage.setItem('session_authenticated', '1');
+          localStorage.setItem('session_authenticated', Date.now().toString());
           // Manually trigger the app with the user info
           window._manualToken = d.idToken;
           window._manualEmail = d.email;
@@ -1100,6 +1100,7 @@ document.addEventListener('click', function(e) {
 function doSignOut() {
   localStorage.removeItem('last-section');
   localStorage.removeItem('entered-app');
+  localStorage.removeItem('session_authenticated');
   sessionStorage.removeItem('signed-out');
   if (window._firebaseSignOut) {
     window._firebaseSignOut().then(function(){ window.location.reload(); }).catch(function(){ window.location.reload(); });
@@ -2318,7 +2319,7 @@ function doSignOut() {
       window._pendingBootUser = firebaseUser;
       window._enterAppCallback = function() {
         sessionStorage.setItem('pin_unlocked_this_session', '1');
-        sessionStorage.setItem('session_authenticated', '1');
+        localStorage.setItem('session_authenticated', Date.now().toString());
         window._enterAppCallback = null;
         _bootAsAdmin(window._pendingBootUser);
       };
@@ -2427,7 +2428,7 @@ function doSignOut() {
       // SECURITY: Only allow if this session was explicitly authenticated
       // (not just a cached Firebase session from before)
       // Check if user explicitly logged in during this browser session
-      const sessionAuth = sessionStorage.getItem('session_authenticated');
+      const sessionAuth = (localStorage.getItem('session_authenticated') && (Date.now() - parseInt(localStorage.getItem('session_authenticated')||'0')) < 86400000);
       if (!sessionAuth) {
         // Cached session — force re-login for security (don't set _booted so next login works)
         await signOut(auth);
@@ -2520,12 +2521,12 @@ function doSignOut() {
     const persistence = (rememberMe && !rememberMe.checked) ? browserSessionPersistence : browserLocalPersistence;
     await setPersistence(auth, persistence);
     // Set the flag BEFORE sign-in so onAuthStateChanged sees it immediately
-    sessionStorage.setItem('session_authenticated', '1');
+    localStorage.setItem('session_authenticated', Date.now().toString());
     try {
       await signInWithEmailAndPassword(auth, email, pass);
     } catch(e) {
       // If login fails, remove the flag
-      sessionStorage.removeItem('session_authenticated');
+      localStorage.removeItem('session_authenticated');
       throw e;
     }
   };
