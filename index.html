@@ -5596,6 +5596,10 @@ Cell: 516-306-3326`
   };
 
   window.doDeleteAllActivity = async function() {
+    if (!window._isAdmin || !currentUser) {
+      window.showToast('Only admin can clear activity', '#e53e3e');
+      return;
+    }
     try {
       // Fetch all activity IDs then delete each
       const r = await fetch(`${FS_BASE}/activity?key=${API_KEY}&pageSize=100`);
