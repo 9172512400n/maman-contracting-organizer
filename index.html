@@ -1122,8 +1122,8 @@ function doSignOut() {
 <div id="login-screen" style="display:none;">
   <div class="login-box">
     <img src="logo.jpg" class="login-logo" alt="Maman Contracting"/>
-    <div class="login-title">Maman Contracting</div>
-    <div class="login-sub">Organizer — Sign in to continue</div>
+    <div class="login-title" id="login-title">Maman Contracting</div>
+    <div class="login-sub" id="login-sub">Organizer — Sign in to continue</div>
 
     <!-- Welcome back screen (shown when already logged in) -->
     <div id="welcome-back-wrap" style="display:none;text-align:center;">
@@ -1163,6 +1163,33 @@ function doSignOut() {
       <button type="button" onclick="doForgotPassword()" style="background:none;border:none;color:#e53e3e;font-size:13px;cursor:pointer;text-decoration:underline;font-family:'Inter',sans-serif;padding:8px 0;">Forgot password?</button>
     </div>
     </div><!-- end login-fields-wrap -->
+
+    <!-- Invite acceptance flow -->
+    <div id="invite-setup-wrap" style="display:none;">
+      <div style="font-size:13px;color:#666;margin-bottom:22px;line-height:1.5;">This workspace is invite-only. Set your name and password to activate your worker account.</div>
+      <div class="login-field">
+        <label>Invited Email</label>
+        <input type="email" id="invite-setup-email" readonly style="opacity:0.75;cursor:not-allowed;"/>
+      </div>
+      <div class="login-field">
+        <label>Your Name</label>
+        <input type="text" id="invite-setup-name" placeholder="Full name" autocomplete="name"/>
+      </div>
+      <div class="login-field">
+        <label>Create Password</label>
+        <input type="password" id="invite-setup-password" placeholder="At least 8 characters" autocomplete="new-password"/>
+      </div>
+      <div class="login-field">
+        <label>Confirm Password</label>
+        <input type="password" id="invite-setup-password-confirm" placeholder="Repeat your password" autocomplete="new-password"
+          onkeydown="if(event.key==='Enter') acceptInvite()"/>
+      </div>
+      <button class="login-btn" id="invite-accept-btn" onclick="acceptInvite()">Create Password</button>
+      <div class="login-error" id="invite-setup-error"></div>
+      <div style="text-align:center;margin-top:14px;">
+        <button type="button" onclick="returnToLoginFromInvite()" style="background:none;border:none;color:#e53e3e;font-size:13px;cursor:pointer;text-decoration:underline;font-family:'Inter',sans-serif;padding:8px 0;">Back to sign in</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1186,7 +1213,7 @@ function doSignOut() {
 <div id="invite-modal">
   <div class="invite-box">
     <div class="invite-title">✉️ Invite User</div>
-    <div class="invite-sub">Add them to the app — your email will open to send the invite link.</div>
+    <div class="invite-sub">Add them to the app and send a secure password-setup link by email.</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
       <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Email Address</label>
       <input type="email" id="invite-email" placeholder="user@mamancontracting.com"
@@ -2177,9 +2204,9 @@ function doSignOut() {
 <!-- FIREBASE + MAIN SCRIPT -->
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence, signInAnonymously }
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendPasswordResetEmail, setPersistence, browserLocalPersistence, browserSessionPersistence, updateProfile }
     from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-  import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDoc, setDoc, onSnapshot, orderBy, query, limit, serverTimestamp, arrayUnion }
+  import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, getDoc, getDocs, setDoc, onSnapshot, orderBy, query, limit, where, serverTimestamp, arrayUnion }
     from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
   const firebaseConfig = {
@@ -2290,6 +2317,226 @@ function doSignOut() {
     return (phone || '').replace(/\D/g, '');
   }
 
+  let pendingInvite = null;
+  const PROD_APP_URL = 'https://maman-contracting-organizer.vercel.app';
+
+  function getInviteBaseUrl() {
+    const host = window.location.hostname;
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    if (isLocalHost) return PROD_APP_URL;
+    return window.location.origin;
+  }
+
+  function inviteEmailToDocId(email) {
+    const normalized = (email || '').trim().toLowerCase();
+    const slug = normalized.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    return 'invite-' + (slug || 'worker');
+  }
+
+  function generateInviteToken() {
+    try {
+      const bytes = new Uint8Array(24);
+      window.crypto.getRandomValues(bytes);
+      return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) {
+      return 'invite-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+    }
+  }
+
+  function buildInviteLink(email, token) {
+    const url = new URL(getInviteBaseUrl() + window.location.pathname);
+    url.searchParams.set('invite', token);
+    url.searchParams.set('email', (email || '').trim().toLowerCase());
+    return url.toString();
+  }
+
+  function clearInviteParams() {
+    const url = new URL(window.location.href);
+    let changed = false;
+    ['invite', 'email'].forEach((key) => {
+      if (url.searchParams.has(key)) {
+        url.searchParams.delete(key);
+        changed = true;
+      }
+    });
+    if (!changed) return;
+    const search = url.searchParams.toString();
+    const nextUrl = url.pathname + (search ? '?' + search : '') + url.hash;
+    window.history.replaceState({}, document.title, nextUrl);
+  }
+
+  function userRecordRank(user) {
+    let score = 0;
+    if (user && !user.removed) score += 10;
+    if (user && user.status === 'active') score += 100;
+    if (user && user.status === 'invited') score += 60;
+    if (user && user.authUid) score += 25;
+    if (user && (user.id || '').startsWith('invite-')) score += 5;
+    return score;
+  }
+
+  function userRecordTime(user) {
+    return Date.parse((user && (user.updatedAt || user.activatedAt || user.inviteAcceptedAt || user.invitedAt)) || '') || 0;
+  }
+
+  function dedupeUsersByEmail(users) {
+    const byKey = new Map();
+    (users || []).forEach((user) => {
+      if (!user) return;
+      const key = ((user.email || '').trim().toLowerCase()) || user.id;
+      if (!key) return;
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, user);
+        return;
+      }
+      const nextRank = userRecordRank(user);
+      const currentRank = userRecordRank(existing);
+      if (nextRank > currentRank || (nextRank === currentRank && userRecordTime(user) > userRecordTime(existing))) {
+        byKey.set(key, user);
+      }
+    });
+    return Array.from(byKey.values());
+  }
+
+  function setLoginCopy(title, subtitle) {
+    const titleEl = document.getElementById('login-title');
+    const subEl = document.getElementById('login-sub');
+    if (titleEl) titleEl.textContent = title || 'Maman Contracting';
+    if (subEl) subEl.textContent = subtitle || 'Organizer — Sign in to continue';
+  }
+
+  function showStandardLogin(prefillEmail, message, isSuccess) {
+    pendingInvite = null;
+    clearInviteParams();
+    setLoginCopy('Maman Contracting', 'Organizer — Sign in to continue');
+    const welcomeWrap = document.getElementById('welcome-back-wrap');
+    const loginFieldsWrap = document.getElementById('login-fields-wrap');
+    const inviteSetupWrap = document.getElementById('invite-setup-wrap');
+    if (welcomeWrap) welcomeWrap.style.display = 'none';
+    if (loginFieldsWrap) loginFieldsWrap.style.display = 'block';
+    if (inviteSetupWrap) inviteSetupWrap.style.display = 'none';
+    const emailEl = document.getElementById('login-email');
+    if (emailEl && prefillEmail) emailEl.value = prefillEmail;
+    const errEl = document.getElementById('login-error');
+    if (errEl) {
+      errEl.style.color = isSuccess ? '#4ade80' : '#f87171';
+      errEl.textContent = message || '';
+    }
+  }
+
+  function setInviteSetupMessage(message, isSuccess) {
+    const errEl = document.getElementById('invite-setup-error');
+    if (!errEl) return;
+    errEl.style.color = isSuccess ? '#4ade80' : '#f87171';
+    errEl.textContent = message || '';
+  }
+
+  function showInviteSetup(email) {
+    setLoginCopy('Create Your Password', 'Invite-only access for Maman Contracting workers');
+    const welcomeWrap = document.getElementById('welcome-back-wrap');
+    const loginFieldsWrap = document.getElementById('login-fields-wrap');
+    const inviteSetupWrap = document.getElementById('invite-setup-wrap');
+    if (welcomeWrap) welcomeWrap.style.display = 'none';
+    if (loginFieldsWrap) loginFieldsWrap.style.display = 'none';
+    if (inviteSetupWrap) inviteSetupWrap.style.display = 'block';
+    const emailEl = document.getElementById('invite-setup-email');
+    if (emailEl) emailEl.value = email || '';
+    const btn = document.getElementById('invite-accept-btn');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Create Password';
+    }
+    setInviteSetupMessage('', false);
+  }
+
+  async function resolveInviteRecord(email, token) {
+    const normalizedEmail = (email || '').trim().toLowerCase();
+    if (!normalizedEmail || !token) return null;
+
+    const deterministicRef = doc(db, 'users', inviteEmailToDocId(normalizedEmail));
+    const deterministicSnap = await getDoc(deterministicRef);
+    if (deterministicSnap.exists()) {
+      const data = deterministicSnap.data() || {};
+      if ((data.email || '').trim().toLowerCase() === normalizedEmail && data.inviteToken === token && !data.removed) {
+        return { id: deterministicSnap.id, ref: deterministicRef, ...data };
+      }
+    }
+
+    const fallbackQuery = query(collection(db, 'users'), where('email', '==', normalizedEmail), limit(5));
+    const fallbackSnap = await getDocs(fallbackQuery);
+    const fallbackDoc = fallbackSnap.docs.find((snap) => {
+      const data = snap.data() || {};
+      return data.inviteToken === token && !data.removed;
+    });
+    if (!fallbackDoc) return null;
+    return { id: fallbackDoc.id, ref: fallbackDoc.ref, ...(fallbackDoc.data() || {}) };
+  }
+
+  async function maybeHandleInviteLink() {
+    const params = new URLSearchParams(window.location.search);
+    const token = (params.get('invite') || '').trim();
+    const email = (params.get('email') || '').trim().toLowerCase();
+    if (!token || !email) {
+      showStandardLogin(email, '', false);
+      return false;
+    }
+
+    showInviteSetup(email);
+    const btn = document.getElementById('invite-accept-btn');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Checking invite...';
+    }
+    setInviteSetupMessage('Checking your invitation...', true);
+
+    try {
+      const invite = await resolveInviteRecord(email, token);
+      if (!invite) {
+        pendingInvite = null;
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Create Password';
+        }
+        setInviteSetupMessage('This invite link is invalid or expired. Ask admin to resend it.', false);
+        return true;
+      }
+      if (invite.status && invite.status !== 'invited') {
+        showStandardLogin(email, 'This invite was already used. Sign in or reset your password.', true);
+        return true;
+      }
+
+      pendingInvite = {
+        id: invite.id,
+        ref: invite.ref || doc(db, 'users', invite.id),
+        email: email,
+        token: token,
+        role: invite.role || 'Worker',
+        name: invite.name || '',
+        phone: invite.phone || '',
+        invitedBy: invite.invitedBy || ''
+      };
+
+      showInviteSetup(email);
+      const nameEl = document.getElementById('invite-setup-name');
+      if (nameEl) {
+        nameEl.value = pendingInvite.name || '';
+        nameEl.focus();
+      }
+      setInviteSetupMessage('Invite confirmed. Create your password to activate your account.', true);
+      return true;
+    } catch (e) {
+      console.error('invite resolve failed:', e);
+      pendingInvite = null;
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Create Password';
+      }
+      setInviteSetupMessage('Could not verify this invite right now. Please try again.', false);
+      return true;
+    }
+  }
+
   // ── AUTH — Boot app for any signed-in user ──────────────────────────────
   // Helper: get initials from displayName or email
   function _getInitials(displayName, email) {
@@ -2308,6 +2555,7 @@ function doSignOut() {
   }
 
   const _bootAsAdmin = async (firebaseUser) => {
+    clearInviteParams();
     // Hide loading/login screens
     const appLoading = document.getElementById('app-loading');
     if (appLoading) { appLoading.style.display = 'none'; appLoading.style.pointerEvents = 'none'; try { appLoading.remove(); } catch(e){} }
@@ -2440,10 +2688,7 @@ function doSignOut() {
         ls.style.display = 'flex';
         ls.style.zIndex = '9999';
         ls.style.pointerEvents = 'auto';
-        const welcomeWrap = document.getElementById('welcome-back-wrap');
-        if (welcomeWrap) welcomeWrap.style.display = 'none';
-        const loginFieldsWrap = document.getElementById('login-fields-wrap');
-        if (loginFieldsWrap) loginFieldsWrap.style.display = 'block';
+        await maybeHandleInviteLink();
       }
     }
   });
@@ -2511,6 +2756,95 @@ function doSignOut() {
       if (errEl) { errEl.style.color = '#4ade80'; errEl.textContent = '✅ Reset email sent! Check your inbox (and spam).'; }
     } catch(e) {
       if (errEl) { errEl.style.color = '#f87171'; errEl.textContent = e.code === 'auth/user-not-found' ? 'No account found. Ask admin to invite you first.' : e.message; }
+    }
+  };
+
+  window.returnToLoginFromInvite = function() {
+    const inviteEmail = pendingInvite && pendingInvite.email
+      ? pendingInvite.email
+      : ((document.getElementById('invite-setup-email') || {}).value || '');
+    showStandardLogin(inviteEmail, '', false);
+  };
+
+  window.acceptInvite = async function() {
+    const email = ((document.getElementById('invite-setup-email') || {}).value || '').trim().toLowerCase();
+    const name = ((document.getElementById('invite-setup-name') || {}).value || '').trim();
+    const password = ((document.getElementById('invite-setup-password') || {}).value || '');
+    const confirmPassword = ((document.getElementById('invite-setup-password-confirm') || {}).value || '');
+    const btn = document.getElementById('invite-accept-btn');
+
+    if (!pendingInvite || !email) {
+      setInviteSetupMessage('This invite is missing required details. Ask admin to resend it.', false);
+      return;
+    }
+    if (!name) {
+      setInviteSetupMessage('Please enter your name.', false);
+      return;
+    }
+    if (password.length < 8) {
+      setInviteSetupMessage('Password must be at least 8 characters.', false);
+      return;
+    }
+    if (password !== confirmPassword) {
+      setInviteSetupMessage('Passwords do not match.', false);
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Creating account...';
+    }
+    setInviteSetupMessage('', false);
+
+    try {
+      const latestInvite = await resolveInviteRecord(email, pendingInvite.token);
+      if (!latestInvite || latestInvite.status !== 'invited') {
+        throw new Error('This invite is no longer valid. Ask admin to resend it.');
+      }
+
+      await setPersistence(auth, browserLocalPersistence).catch(() => {});
+      _booted = false;
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      if (name) await updateProfile(cred.user, { displayName: name }).catch((err) => console.warn('profile update failed:', err));
+
+      await setDoc(latestInvite.ref || doc(db, 'users', latestInvite.id), {
+        email: email,
+        name: name,
+        role: latestInvite.role || 'Worker',
+        phone: latestInvite.phone || '',
+        invitedBy: latestInvite.invitedBy || '',
+        status: 'active',
+        authUid: cred.user.uid,
+        removed: false,
+        inviteAcceptedAt: serverTimestamp(),
+        activatedAt: serverTimestamp(),
+        inviteToken: '',
+        inviteLink: '',
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      addDoc(collection(db, 'activity'), {
+        action: 'Accepted invite: ' + email,
+        jobAddress: '',
+        doneBy: email,
+        timestamp: serverTimestamp()
+      }).catch((e) => console.error('Failed to log invite acceptance:', e));
+
+      clearInviteParams();
+    } catch (e) {
+      console.error('accept invite failed:', e);
+      if (e && e.code === 'auth/email-already-in-use') {
+        showStandardLogin(email, 'This invite was already accepted. Sign in or reset your password.', true);
+        return;
+      }
+      const msg = e && e.code === 'auth/weak-password'
+        ? 'Choose a stronger password.'
+        : (e && e.message) || 'Could not create your account.';
+      setInviteSetupMessage(msg, false);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Create Password';
+      }
     }
   };
 
@@ -2610,7 +2944,7 @@ function doSignOut() {
     try {
       // Users
       const users = await restFetch('users');
-      allUsers = users.sort((a,b) => (b.invitedAt||'') > (a.invitedAt||'') ? 1 : -1);
+      allUsers = dedupeUsersByEmail(users).sort((a,b) => (b.updatedAt || b.invitedAt || '') > (a.updatedAt || a.invitedAt || '') ? 1 : -1);
       renderUsers(allUsers);
     } catch(e) { console.error('users load failed:', e); }
     try {
@@ -4475,8 +4809,10 @@ function doSignOut() {
       const editBtn = `<button onclick="editUser('${u.id}','${(u.name||'').replace(/'/g,"\\'")}','${(u.role||'Worker').replace(/'/g,"\\'")}','${(u.phone||'').replace(/'/g,"\\'")}')"
             style="display:flex;align-items:center;gap:5px;background:#1e3a5f;border:1px solid #2d5a9e;border-radius:8px;color:#93c5fd;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;" title="Edit">✏️ Edit</button>`;
 
-      const resendBtn = `<button onclick="openInviteEmail('${(u.email||'').replace(/'/g,"\\'")}')"
-            style="display:flex;align-items:center;gap:5px;background:#14532d;border:1px solid #166534;border-radius:8px;color:#86efac;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;" title="Invite">📨</button>`;
+      const resendBtn = u.status === 'invited'
+        ? `<button onclick="sendInvite('${(u.email||'').replace(/'/g,"\\'")}')"
+            style="display:flex;align-items:center;gap:5px;background:#14532d;border:1px solid #166534;border-radius:8px;color:#86efac;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;" title="Resend invite">📨</button>`
+        : '';
 
       const removeBtn = !isCurrentUser
         ? `<button onclick="removeUser('${u.id}','${(u.email||'').replace(/'/g,"\\'")}','${(u.name||u.email||'').replace(/'/g,"\\'")}')"
@@ -4562,40 +4898,58 @@ function doSignOut() {
     document.getElementById('invite-modal').classList.remove('show');
   };
 
-  window.openInviteEmail = function(email) {
+  window.openInviteEmail = function(email, inviteLink) {
     const subject = encodeURIComponent("You're invited to Maman Contracting Organizer");
     const body = encodeURIComponent(
       'Hi,\n\nYou\'ve been invited to join the Maman Contracting Organizer app.\n\n' +
-      '1. Go to: https://maman-contracting-organizer.vercel.app\n' +
-      '2. Tap "Forgot Password" and enter your email: ' + email + '\n' +
-      '3. Check your email and set your password\n' +
-      '4. Log in and you\'re all set!\n\nWelcome to the team!'
+      'Open this secure invite link and create your password:\n' + inviteLink + '\n\n' +
+      'This invite is for: ' + email + '\n' +
+      'Role: Worker\n\n' +
+      'After setting your password, you can log in to the app.\n\nWelcome to the team!'
     );
     window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
   };
 
-  window.sendInvite = function() {
-    const email = document.getElementById('invite-email').value.trim();
+  window.sendInvite = function(prefillEmail) {
+    const email = (prefillEmail || document.getElementById('invite-email').value).trim().toLowerCase();
     const errEl = document.getElementById('invite-error');
     const btn = document.getElementById('invite-send-btn');
     if (!email) { errEl.textContent = 'Please enter an email address.'; return; }
+    const existingUser = (allUsers || []).find(u => ((u.email || '').trim().toLowerCase() === email) && !u.removed);
+    if (existingUser && (existingUser.status === 'active' || existingUser.authUid)) {
+      if (errEl) errEl.textContent = 'This user already has access. Use password reset instead.';
+      return;
+    }
     errEl.textContent = '';
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+    }
+
+    const inviteToken = generateInviteToken();
+    const inviteLink = buildInviteLink(email, inviteToken);
 
     // Open email FIRST (must happen synchronously on tap for iPhone Safari)
-    window.openInviteEmail(email);
+    window.openInviteEmail(email, inviteLink);
 
     // Then save to Firestore in background
     closeInviteModal();
-    window.showToast('✅ Invite sent!');
+    window.showToast('✅ Invite opened in your email app.');
 
-    addDoc(collection(db, 'users'), {
+    setDoc(doc(db, 'users', inviteEmailToDocId(email)), {
       email: email,
-      name: '',
+      name: existingUser ? (existingUser.name || '') : '',
       role: 'Worker',
-      phone: '',
+      phone: existingUser ? (existingUser.phone || '') : '',
       invitedBy: currentUser ? currentUser.email : '',
       invitedAt: serverTimestamp(),
-      status: 'invited'
+      status: 'invited',
+      inviteToken: inviteToken,
+      inviteLink: inviteLink,
+      removed: false,
+      updatedAt: serverTimestamp()
+    }, { merge: true }).then(() => {
+      loadAllData().catch((e) => console.error('reload after invite failed:', e));
     }).catch(e => console.error('Failed to save user:', e));
 
     addDoc(collection(db, 'activity'), {
@@ -4604,6 +4958,11 @@ function doSignOut() {
       doneBy: currentUser ? currentUser.email : '',
       timestamp: serverTimestamp()
     }).catch(e => console.error('Failed to log activity:', e));
+
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '📨 Send Invite';
+    }
 
   };
 
@@ -6463,7 +6822,8 @@ Cell: 516-306-3326`
         const dayName = d.toLocaleDateString('en-US', {weekday:'long'}).toUpperCase();
         const dayDate = d.toLocaleDateString('en-US', {month:'long', day:'numeric'});
         const isSunday = d.getDay() === 0;
-        const headerColor = isToday ? '#e53e3e' : isSunday ? '#60a5fa' : '#fff';
+        const isLightTheme = document.body.classList.contains('light');
+        const headerColor = isToday ? '#e53e3e' : isSunday ? '#60a5fa' : (isLightTheme ? '#111827' : '#fff');
         const headerBg = isToday ? 'rgba(229,62,62,0.08)' : isSunday ? 'rgba(96,165,250,0.06)' : 'transparent';
 
         // Build job address rows (simple tappable rows)
