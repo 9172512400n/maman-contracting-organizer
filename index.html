@@ -985,6 +985,14 @@ function showFullLogin() {
   if (ls) { ls.style.display = 'flex'; ls.style.opacity = '1'; ls.style.pointerEvents = 'auto'; }
 }
 
+function forceLockScreen() {
+  if (window._pinUnlocked) {
+    sessionStorage.removeItem('pin_unlocked_this_session');
+    window._pinUnlocked = false;
+    if (typeof showPINScreen === 'function') showPINScreen('verify');
+  }
+}
+
 function enterApp() {
   localStorage.setItem('entered-app', 'true');
   var ls = document.getElementById('login-screen');
@@ -1346,6 +1354,7 @@ function doSignOut() {
   <div class="drawer-header">
     <img src="logo.jpg" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;" alt="Maman Contracting"/>
     <div class="drawer-user-info">
+  <button onclick="forceLockScreen()" style="margin:6px 0 0 0;padding:8px 18px;background:#111;border:2px solid #e53e3e;border-radius:8px;color:#e53e3e;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🔒 Lock Screen</button>
       <div class="drawer-user-name" id="drawer-user-name">Maman Contracting</div>
       <div class="drawer-user-email" id="drawer-user-email">—</div>
     </div>
