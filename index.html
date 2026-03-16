@@ -2425,15 +2425,8 @@ function doSignOut() {
       sessionStorage.removeItem('signed-out');
       await _bootAsAdmin(user);
     } else {
-      // No session — try silent auto-login for admin first
-      try {
-        await setPersistence(auth, browserLocalPersistence).catch(()=>{});
-        await signInWithEmailAndPassword(auth, 'nir@mamancontracting.com', 'Nirmaman1');
-        // If successful, onAuthStateChanged will fire again with the user
-        return;
-      } catch(e) {
-        // Not Nir's device or wrong credentials — show login screen
-      }
+      // No active session — ALWAYS show login screen (no auto-login)
+      // Auto-login was removed for security: site is public and must require credentials
       _booted = true;
       const appLoading = document.getElementById('app-loading');
       if (appLoading) { appLoading.style.display = 'none'; appLoading.style.pointerEvents = 'none'; }
