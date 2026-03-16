@@ -2944,6 +2944,14 @@ function doSignOut() {
     try {
       // Users
       const users = await restFetch('users');
+      const currentEmail = (currentUser && currentUser.email ? currentUser.email : '').trim().toLowerCase();
+      const isCurrentUserRemoved = !!currentEmail && users.some(u => ((u.email || '').trim().toLowerCase() === currentEmail) && u.removed);
+      if (isCurrentUserRemoved && !window._isAdmin) {
+        try { await signOut(auth); } catch (err) { console.warn('signOut after user removal failed:', err); }
+        currentUser = null;
+        showStandardLogin(currentEmail, 'Your account was removed by an admin.', false);
+        return;
+      }
       allUsers = dedupeUsersByEmail(users).sort((a,b) => (b.updatedAt || b.invitedAt || '') > (a.updatedAt || a.invitedAt || '') ? 1 : -1);
       renderUsers(allUsers);
     } catch(e) { console.error('users load failed:', e); }
@@ -4882,6 +4890,8 @@ function doSignOut() {
     if (!confirm(`Remove ${name || email} from the app?`)) return;
     try {
       await updateDoc(doc(db, 'users', userId), { removed: true, removedAt: serverTimestamp(), removedBy: currentUser.email });
+      allUsers = (allUsers || []).filter(u => u.id !== userId);
+      renderUsers(allUsers);
       window.showToast(`🗑️ ${name || email} removed from app.`, '#374151');
     } catch(e) {
       window.showToast('Error: ' + e.message, '#e53e3e');
