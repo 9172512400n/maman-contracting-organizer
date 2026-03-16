@@ -2429,9 +2429,10 @@ function doSignOut() {
       // Check if user explicitly logged in during this browser session
       const sessionAuth = sessionStorage.getItem('session_authenticated');
       if (!sessionAuth) {
-        // Cached session — force re-login for security
+        // Cached session — force re-login for security (don't set _booted so next login works)
         await signOut(auth);
-        _booted = true;
+        // Reset _booted so the next onAuthStateChanged (after real login) processes correctly
+        _booted = false;
         const appLoading = document.getElementById('app-loading');
         if (appLoading) { appLoading.style.display = 'none'; appLoading.style.pointerEvents = 'none'; }
         const ls = document.getElementById('login-screen');
