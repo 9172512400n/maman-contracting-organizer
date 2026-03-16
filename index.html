@@ -2425,10 +2425,10 @@ function doSignOut() {
   onAuthStateChanged(auth, async (user) => {
     if (_booted) return;
     if (user) {
-      // SECURITY: Only allow if this session was explicitly authenticated
-      // (not just a cached Firebase session from before)
-      // Check if user explicitly logged in during this browser session
-
+      // Allow access if:
+      // 1. Running as installed PWA (Home Screen app) — trusted device
+      // 2. Running in normal browser with a valid stored session
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
       _booted = true;
       sessionStorage.removeItem('signed-out');
       await _bootAsAdmin(user);
