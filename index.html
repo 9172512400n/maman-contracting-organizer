@@ -2966,7 +2966,8 @@ function doSignOut() {
     activityUnsubscribe = onSnapshot(collection(db, 'activity'), snap => {
       const items = snap.docs.map(d => d.data()).sort((a,b)=>(b.timestamp?.seconds||0)-(a.timestamp?.seconds||0)).slice(0,10);
       renderActivityLog(items);
-      document.getElementById('notif-count').textContent = items.length;
+      const notifCount = document.getElementById('notif-count');
+      if (notifCount) notifCount.textContent = items.length;
     }, err => console.warn('activity SDK err (ok):', err));
 
     contactsUnsubscribe = () => {};
@@ -4778,7 +4779,8 @@ function doSignOut() {
   };
 
   window.renderUsers = function renderUsers(users) {
-    const list = document.getElementById('users-list');
+    const list = document.getElementById('users-list') || document.getElementById('users-list-panel');
+    if (!list) return;
     const isAdmin = window._isAdmin || (currentUser && currentUser.email === ADMIN_EMAIL);
 
     // Always show Nir at top
@@ -4840,7 +4842,7 @@ function doSignOut() {
     list.innerHTML = nirCard + invitedCards;
     // Also sync to users panel if open
     const panelList = document.getElementById('users-list-panel');
-    if (panelList) panelList.innerHTML = nirCard + invitedCards;
+    if (panelList && panelList !== list) panelList.innerHTML = nirCard + invitedCards;
   }
 
   window.editUser = function(userId, name, role, phone) {
