@@ -2428,26 +2428,7 @@ function doSignOut() {
       // SECURITY: Only allow if this session was explicitly authenticated
       // (not just a cached Firebase session from before)
       // Check if user explicitly logged in during this browser session
-      const sessionAuth = (localStorage.getItem('session_authenticated') && (Date.now() - parseInt(localStorage.getItem('session_authenticated')||'0')) < 86400000);
-      if (!sessionAuth) {
-        // Cached session — force re-login for security (don't set _booted so next login works)
-        await signOut(auth);
-        // Reset _booted so the next onAuthStateChanged (after real login) processes correctly
-        _booted = false;
-        const appLoading = document.getElementById('app-loading');
-        if (appLoading) { appLoading.style.display = 'none'; appLoading.style.pointerEvents = 'none'; }
-        const ls = document.getElementById('login-screen');
-        if (ls) {
-          ls.style.display = 'flex';
-          ls.style.zIndex = '9999';
-          ls.style.pointerEvents = 'auto';
-          const welcomeWrap = document.getElementById('welcome-back-wrap');
-          if (welcomeWrap) welcomeWrap.style.display = 'none';
-          const loginFieldsWrap = document.getElementById('login-fields-wrap');
-          if (loginFieldsWrap) loginFieldsWrap.style.display = 'block';
-        }
-        return;
-      }
+
       _booted = true;
       sessionStorage.removeItem('signed-out');
       await _bootAsAdmin(user);
