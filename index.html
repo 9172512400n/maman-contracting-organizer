@@ -2424,45 +2424,14 @@ function doSignOut() {
 
   onAuthStateChanged(auth, async (user) => {
     if (_booted) return;
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     if (user) {
-      // Save email for PWA auto-login
-      localStorage.setItem('pwa_last_user', user.email || '');
+      // User is authenticated — boot the app
       _booted = true;
+      localStorage.setItem('pwa_last_user', '1'); // mark device as trusted
       sessionStorage.removeItem('signed-out');
       await _bootAsAdmin(user);
-    } else if (isPWA && localStorage.getItem('pwa_last_user') && !sessionStorage.getItem('signed-out')) {
-      // PWA Home Screen: silent auto-login with timeout fallback
-      const loginTimeout = setTimeout(() => {
-        // If login takes too long, show login screen as fallback
-        if (!_booted) {
-          _booted = true;
-          const appLoading = document.getElementById('app-loading');
-          if (appLoading) appLoading.style.display = 'none';
-          const ls = document.getElementById('login-screen');
-          if (ls) {
-            ls.style.display = 'flex';
-            ls.style.zIndex = '9999';
-            ls.style.pointerEvents = 'auto';
-            const welcomeWrap = document.getElementById('welcome-back-wrap');
-            if (welcomeWrap) welcomeWrap.style.display = 'none';
-            const loginFieldsWrap = document.getElementById('login-fields-wrap');
-            if (loginFieldsWrap) loginFieldsWrap.style.display = 'block';
-          }
-        }
-      }, 5000); // 5 second timeout
-      try {
-        await setPersistence(auth, browserLocalPersistence).catch(()=>{});
-        await signInWithEmailAndPassword(auth, 'nir@mamancontracting.com', 'Nirmaman1');
-        clearTimeout(loginTimeout);
-        return; // onAuthStateChanged will fire again with the user
-      } catch(e) {
-        clearTimeout(loginTimeout);
-        localStorage.removeItem('pwa_last_user');
-      }
-      _booted = true;
     } else {
-      // No active session — ALWAYS show login screen
+      // No user — show login screen
       _booted = true;
       const appLoading = document.getElementById('app-loading');
       if (appLoading) { appLoading.style.display = 'none'; appLoading.style.pointerEvents = 'none'; }
@@ -2526,18 +2495,11 @@ function doSignOut() {
 
   // Expose Firebase functions for plain script
   window._firebaseSignIn = async function(email, pass) {
-    const rememberMe = document.getElementById('remember-me');
-    const persistence = (rememberMe && !rememberMe.checked) ? browserSessionPersistence : browserLocalPersistence;
-    await setPersistence(auth, persistence);
-    // Set the flag BEFORE sign-in so onAuthStateChanged sees it immediately
-    localStorage.setItem('session_authenticated', Date.now().toString());
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
-    } catch(e) {
-      // If login fails, remove the flag
-      localStorage.removeItem('session_authenticated');
-      throw e;
-    }
+    // Always use local persistence so iOS PWA remembers login
+    await setPersistence(auth, browserLocalPersistence).catch(()=>{});
+    // Reset _booted so onAuthStateChanged processes the new login
+    _booted = false;
+    await signInWithEmailAndPassword(auth, email, pass);
   };
   window._firebaseSignOut = async function() {
     try { await signOut(auth); } catch(e) { console.log('signOut:', e); }
