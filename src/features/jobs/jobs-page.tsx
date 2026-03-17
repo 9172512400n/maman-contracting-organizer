@@ -7,6 +7,7 @@ import { SectionCard } from "@/components/ui/section-card";
 import { StatusPill } from "@/components/ui/status-pill";
 import { jobStatusTone } from "@/domain/jobs/mapper";
 import type { Job } from "@/domain/jobs/types";
+import { JobEditorForm } from "@/features/jobs/job-editor-form";
 import { deleteJob, listJobs, saveJob } from "@/lib/firebase/client-data";
 import { useAuth } from "@/lib/firebase/auth-provider";
 import { formatDate } from "@/lib/utils";
@@ -209,109 +210,20 @@ export default function JobsPage() {
           setEditingJobId(null);
         }}
       >
-        <form key={currentJob?.id ?? "new"} className="form-grid" onSubmit={onSaveJob}>
-          <input name="id" type="hidden" value={currentJob?.id ?? ""} />
-          <div className="field">
-            <label htmlFor="customerName">Customer</label>
-            <input id="customerName" name="customerName" defaultValue={currentJob?.customerName} />
-          </div>
-          <div className="field">
-            <label htmlFor="phone">Phone</label>
-            <input id="phone" name="phone" defaultValue={currentJob?.phone} />
-          </div>
-          <div className="field">
-            <label htmlFor="email">Email</label>
-            <input id="email" name="email" defaultValue={currentJob?.email} />
-          </div>
-          <div className="field">
-            <label htmlFor="invoiceNumber">Invoice</label>
-            <input id="invoiceNumber" name="invoiceNumber" defaultValue={currentJob?.invoiceNumber} />
-          </div>
-          <div className="field" data-span="2">
-            <label htmlFor="address">Address</label>
-            <input id="address" name="address" defaultValue={currentJob?.address} />
-          </div>
-          <div className="field">
-            <label htmlFor="taskType">Task type</label>
-            <input id="taskType" name="taskType" defaultValue={currentJob?.taskType} />
-          </div>
-          <div className="field">
-            <label htmlFor="projectSize">Project size</label>
-            <input id="projectSize" name="projectSize" defaultValue={currentJob?.projectSize} />
-          </div>
-          <div className="field">
-            <label htmlFor="jobType">Crew</label>
-            <select id="jobType" name="jobType" defaultValue={currentJob?.jobType || ""}>
-              <option value="">None</option>
-              <option value="Asphalt">Asphalt</option>
-              <option value="Concrete">Concrete</option>
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="concreteSub">Concrete sub</label>
-            <input id="concreteSub" name="concreteSub" defaultValue={currentJob?.concreteSub} />
-          </div>
-          <div className="field">
-            <label htmlFor="status">Status</label>
-            <select id="status" name="status" defaultValue={currentJob?.status || "Pending"}>
-              <option>Pending</option>
-              <option>In Progress</option>
-              <option>Completed</option>
-              <option>On Hold</option>
-              <option>Cancelled</option>
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="blocked">Blocked</label>
-            <select id="blocked" name="blocked" defaultValue={currentJob?.blocked || "no"}>
-              <option value="no">No</option>
-              <option value="yes">Yes</option>
-            </select>
-          </div>
-          <div className="field">
-            <label htmlFor="scheduleDay">Schedule day</label>
-            <input id="scheduleDay" name="scheduleDay" type="date" defaultValue={currentJob?.scheduleDay} />
-          </div>
-          <div className="field">
-            <label htmlFor="completionDay">Completion day</label>
-            <input id="completionDay" name="completionDay" type="date" defaultValue={currentJob?.completionDay} />
-          </div>
-          <div className="field">
-            <label htmlFor="permitNumber">Permit number</label>
-            <input id="permitNumber" name="permitNumber" defaultValue={currentJob?.permitNumber} />
-          </div>
-          <div className="field">
-            <label htmlFor="permitCode">Permit code</label>
-            <input id="permitCode" name="permitCode" defaultValue={currentJob?.permitCode} />
-          </div>
-          <div className="field">
-            <label htmlFor="permitExpiry">Permit expiry</label>
-            <input id="permitExpiry" name="permitExpiry" type="date" defaultValue={currentJob?.permitExpiry} />
-          </div>
-          <div className="field">
-            <label htmlFor="permitFiles">Permit documents</label>
-            <input id="permitFiles" name="permitFiles" type="file" multiple />
-          </div>
-          <div className="field" data-span="2">
-            <label htmlFor="notes">Notes</label>
-            <textarea id="notes" name="notes" defaultValue={currentJob?.notes} />
-          </div>
-          <div className="dialog-actions" style={{ gridColumn: "1 / -1" }}>
-            <button
-              className="button-ghost"
-              type="button"
-              onClick={() => {
-                setDialogOpen(false);
-                setEditingJobId(null);
-              }}
-            >
-              Cancel
-            </button>
-            <button className="button" type="submit">
-              {currentJob ? "Save changes" : "Create job"}
-            </button>
-          </div>
-        </form>
+        <JobEditorForm
+          key={currentJob?.id ?? "new"}
+          job={currentJob}
+          onSubmit={onSaveJob}
+          onCancel={() => {
+            setDialogOpen(false);
+            setEditingJobId(null);
+          }}
+          onDelete={
+            currentJob
+              ? () => onDeleteJob(currentJob)
+              : undefined
+          }
+        />
       </Dialog>
     </>
   );

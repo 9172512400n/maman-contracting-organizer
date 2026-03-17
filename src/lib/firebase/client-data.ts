@@ -47,6 +47,12 @@ import { normalizePhone, buildInviteDocId } from "@/lib/utils";
 
 type Actor = Pick<AppSession, "email" | "name">;
 
+export type ScheduleNoteRecord = {
+  date: string;
+  note: string;
+  updatedAt: string;
+};
+
 function buildIsoNow() {
   return new Date().toISOString();
 }
@@ -425,8 +431,54 @@ export async function setPermitDotNotified(id: string, dotNotified: boolean) {
   );
 }
 
+export async function setPermitsDotNotified(ids: string[], dotNotified: boolean) {
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+  await Promise.all(uniqueIds.map((id) => setPermitDotNotified(id, dotNotified)));
+}
+
 export async function deletePermit(id: string) {
   await deleteDoc(doc(getClientDb(), "permits", id));
+}
+
+export async function listScheduleNotes() {
+  const snapshot = await getDocs(collection(getClientDb(), "scheduleNotes"));
+  const entries = snapshot.docs
+    .map((item) => {
+      const raw = item.data() ?? {};
+      return {
+        date: String(raw.date ?? item.id ?? ""),
+        note: String(raw.note ?? ""),
+        updatedAt: String(raw.updatedAt ?? ""),
+      } satisfies ScheduleNoteRecord;
+    })
+    .filter((item) => item.date);
+
+  return entries.reduce<Record<string, ScheduleNoteRecord>>((map, item) => {
+    map[item.date] = item;
+    return map;
+  }, {});
+}
+
+export async function saveScheduleNote(date: string, note: string) {
+  const trimmedDate = date.trim();
+  const trimmedNote = note.trim();
+  if (!trimmedDate) {
+    return;
+  }
+
+  await setDoc(
+    doc(getClientDb(), "scheduleNotes", trimmedDate),
+    {
+      date: trimmedDate,
+      note: trimmedNote,
+      updatedAt: buildIsoNow(),
+    },
+    { merge: true },
+  );
+}
+
+export async function deleteScheduleNote(date: string) {
+  await deleteDoc(doc(getClientDb(), "scheduleNotes", date));
 }
 
 export async function listContacts() {

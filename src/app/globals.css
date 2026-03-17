@@ -393,6 +393,11 @@ td {
   text-align: left;
 }
 
+.dialog-inline-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .record-meta-grid {
   display: grid;
   gap: 8px 12px;
@@ -507,6 +512,210 @@ td {
   flex-wrap: wrap;
 }
 
+.checkbox-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.checkbox-field input {
+  width: 18px;
+  height: 18px;
+}
+
+.permit-group-card {
+  padding: 18px;
+}
+
+.permit-group-body {
+  margin-top: 16px;
+}
+
+.permit-record-card {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.permit-select-row {
+  font-size: 1rem;
+}
+
+.permit-doc-block {
+  background: rgba(12, 14, 18, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 16px;
+  margin-top: 14px;
+  padding: 14px;
+}
+
+.permit-doc-header {
+  margin-bottom: 8px;
+}
+
+.permit-group-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.permit-dot-panel {
+  background: rgba(8, 39, 17, 0.8);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.permit-dot-grid {
+  margin-top: 12px;
+}
+
+.permit-bureau-list {
+  display: grid;
+  gap: 10px;
+}
+
+.permit-bureau-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  background: rgba(4, 25, 10, 0.76);
+  border: 1px solid rgba(34, 197, 94, 0.16);
+  border-radius: 14px;
+  color: #d1fae5;
+  padding: 12px 14px;
+}
+
+.permit-bureau-item[data-selected="true"] {
+  border-color: rgba(34, 197, 94, 0.38);
+  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.24);
+}
+
+.permit-bureau-item input {
+  width: 18px;
+  height: 18px;
+}
+
+.permit-bureau-item small {
+  color: #86efac;
+  font-size: 11px;
+}
+
+.schedule-week-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.schedule-week-select {
+  min-width: 260px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  padding: 10px 14px;
+}
+
+.schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.schedule-day-card {
+  background: rgba(16, 18, 23, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.schedule-day-card[data-today="true"] {
+  border-color: rgba(229, 62, 62, 0.32);
+  box-shadow: inset 0 0 0 1px rgba(229, 62, 62, 0.16);
+}
+
+.schedule-day-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.schedule-day-title {
+  font-size: 1.15rem;
+}
+
+.schedule-day-note {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.schedule-note-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.schedule-note-editor input {
+  width: 100%;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text);
+  padding: 12px 14px;
+}
+
+.schedule-job-card {
+  background: rgba(24, 26, 31, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.schedule-job-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 16px;
+  text-align: left;
+}
+
+.schedule-job-accent {
+  width: 4px;
+  border-radius: 999px;
+  min-height: 24px;
+}
+
+.schedule-job-accent[data-tone="warning"] {
+  background: #f59e0b;
+}
+
+.schedule-job-accent[data-tone="info"] {
+  background: #3b82f6;
+}
+
+.schedule-job-body {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+
 .code-block {
   background: #0f1115;
   border: 1px solid var(--border);
@@ -548,11 +757,16 @@ td {
 
   .record-header,
   .group-card-toggle,
-  .page-header {
+  .page-header,
+  .schedule-day-head {
     flex-direction: column;
   }
 
   .record-meta-grid {
     grid-template-columns: 1fr;
+  }
+
+  .schedule-week-select {
+    min-width: 100%;
   }
 }
