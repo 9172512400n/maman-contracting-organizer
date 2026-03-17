@@ -138,6 +138,11 @@ export async function logActivity(input: Record<string, unknown>) {
   });
 }
 
+export async function clearActivity() {
+  const snapshot = await getDocs(collection(getClientDb(), "activity"));
+  await Promise.all(snapshot.docs.map((item) => deleteDoc(item.ref)));
+}
+
 export async function listNotifications(limitCount = 20): Promise<Notification[]> {
   const snapshot = await getDocs(collection(getClientDb(), "notifications"));
   return sortByNewest(

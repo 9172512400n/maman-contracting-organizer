@@ -1,12 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionCard } from "@/components/ui/section-card";
 import { StatusPill } from "@/components/ui/status-pill";
-import { formatDate } from "@/lib/utils";
+import type { Job } from "@/domain/jobs/types";
+import type { Permit } from "@/domain/permits/types";
 import {
   deletePermit,
   listJobs,
@@ -16,18 +16,26 @@ import {
   setPermitDotNotified,
 } from "@/lib/firebase/client-data";
 import { useAuth } from "@/lib/firebase/auth-provider";
-import type { Job } from "@/domain/jobs/types";
-import type { Permit } from "@/domain/permits/types";
+import { formatDate } from "@/lib/utils";
+
+function groupPermitsByAddress(permits: Permit[]) {
+  return permits.reduce<Record<string, Permit[]>>((groups, permit) => {
+    const key = permit.jobAddress || "No address";
+    groups[key] = groups[key] ? [...groups[key], permit] : [permit];
+    return groups;
+  }, {});
+}
 
 export default function PermitsPage() {
   const { session } = useAuth();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const editId = searchParams.get("edit") ?? "";
   const [permits, setPermits] = useState<Permit[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingPermitId, setEditingPermitId] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   async function loadPermitsPage() {
     setLoading(true);
@@ -51,7 +59,26 @@ export default function PermitsPage() {
     void loadPermitsPage();
   }, [session?.isActive]);
 
-  const currentPermit = permits.find((item) => item.id === editId) ?? null;
+  const currentPermit = permits.find((item) => item.id === editingPermitId) ?? null;
+  const filteredPermits = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return permits.filter((permit) =>
+      !needle ||
+      [permit.jobAddress, permit.permitNumber, permit.permitHolder, permit.permitTypeCode]
+        .join(" ")
+        .toLowerCase()
+        .includes(needle),
+    );
+  }, [permits, search]);
+
+  const activePermitGroups = useMemo(
+    () => groupPermitsByAddress(filteredPermits.filter((permit) => !permit.archived)),
+    [filteredPermits],
+  );
+  const archivedPermits = useMemo(
+    () => filteredPermits.filter((permit) => permit.archived),
+    [filteredPermits],
+  );
 
   async function onSavePermit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,9 +88,10 @@ export default function PermitsPage() {
 
     setError(null);
     try {
-      const id = await savePermit(new FormData(event.currentTarget), session);
+      await savePermit(new FormData(event.currentTarget), session);
+      setDialogOpen(false);
+      setEditingPermitId(null);
       await loadPermitsPage();
-      router.replace(`/permits?edit=${id}`);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Could not save permit.");
     }
@@ -94,12 +122,23 @@ export default function PermitsPage() {
     try {
       await deletePermit(id);
       await loadPermitsPage();
-      if (editId === id) {
-        router.replace("/permits");
+      if (editingPermitId === id) {
+        setEditingPermitId(null);
+        setDialogOpen(false);
       }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Could not delete permit.");
     }
+  }
+
+  function openCreateDialog() {
+    setEditingPermitId(null);
+    setDialogOpen(true);
+  }
+
+  function openEditDialog(id: string) {
+    setEditingPermitId(id);
+    setDialogOpen(true);
   }
 
   return (
@@ -108,18 +147,152 @@ export default function PermitsPage() {
         <div>
           <p className="eyebrow">Permits</p>
           <h1>Permit management</h1>
-          <p className="muted">Same `permits` collection, client-side Firebase CRUD.</p>
+          <p className="muted">Grouped by address, with archived permits split out like the legacy view.</p>
         </div>
-        {currentPermit ? (
-          <Link className="button-ghost" href="/permits">
-            Clear edit
-          </Link>
-        ) : null}
+        <button className="button" type="button" onClick={openCreateDialog}>
+          + Add permit
+        </button>
       </div>
 
       {error ? <div className="callout">{error}</div> : null}
 
-      <SectionCard title={currentPermit ? "Edit permit" : "Create permit"}>
+      <SectionCard title="Permits" description="Search by address or permit number, then expand a location group.">
+        <div className="stack">
+          <input
+            className="search-input"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by address or permit #..."
+          />
+
+          {loading ? (
+            <p className="muted">Loading permits...</p>
+          ) : Object.keys(activePermitGroups).length === 0 ? (
+            <EmptyState title="No permits found" description="Try a different search or add a permit." />
+          ) : (
+            <div className="stack">
+              {Object.entries(activePermitGroups).map(([address, groupPermits]) => {
+                const expanded = expandedGroups[address] ?? true;
+                return (
+                  <div className="group-card" key={address}>
+                    <button
+                      className="group-card-toggle"
+                      type="button"
+                      onClick={() =>
+                        setExpandedGroups((current) => ({
+                          ...current,
+                          [address]: !expanded,
+                        }))
+                      }
+                    >
+                      <div className="inline-meta">
+                        <strong>{address}</strong>
+                      </div>
+                      <div className="inline-meta">
+                        <span className="pill" data-tone="default">
+                          {groupPermits.length} permit{groupPermits.length === 1 ? "" : "s"}
+                        </span>
+                        <span className="muted">{expanded ? "Hide" : "Show"}</span>
+                      </div>
+                    </button>
+
+                    {expanded ? (
+                      <div className="stack" style={{ marginTop: 12 }}>
+                        {groupPermits.map((permit) => (
+                          <div className="record-card" key={permit.id}>
+                            <div className="record-header">
+                              <div className="stack">
+                                <strong>{permit.permitNumber || "Untitled permit"}</strong>
+                                <div className="inline-meta">
+                                  {permit.permitHolder ? <span className="muted">{permit.permitHolder}</span> : null}
+                                  {permit.permitTypeCode ? <span className="muted">{permit.permitTypeCode}</span> : null}
+                                </div>
+                              </div>
+                              <div className="actions-row">
+                                <StatusPill label={permit.status || "Unknown"} tone="info" />
+                                {permit.dotNotified ? <StatusPill label="DOT notified" tone="success" /> : null}
+                              </div>
+                            </div>
+
+                            <div className="record-meta-grid">
+                              <span className="muted">Valid: {formatDate(permit.validFrom)}</span>
+                              <span className="muted">Expires: {formatDate(permit.expirationDate)}</span>
+                              <span className="muted">Linked job: {permit.linkedJobId || "—"}</span>
+                              <span className="muted">DOT: {permit.dotNotified ? "Notified" : "Pending"}</span>
+                            </div>
+
+                            {permit.docUrls.length ? (
+                              <div className="stack" style={{ marginTop: 12 }}>
+                                {permit.docUrls.map((item) => (
+                                  <a key={item.url} className="muted" href={item.url} target="_blank" rel="noreferrer">
+                                    {item.name}
+                                  </a>
+                                ))}
+                              </div>
+                            ) : null}
+
+                            <div className="actions-row" style={{ marginTop: 12 }}>
+                              <button className="button-ghost" type="button" onClick={() => openEditDialog(permit.id)}>
+                                Edit
+                              </button>
+                              <button className="button-ghost" type="button" onClick={() => void onToggleDot(permit)}>
+                                {permit.dotNotified ? "Clear DOT" : "Mark DOT"}
+                              </button>
+                              <button className="button-ghost" type="button" onClick={() => void onToggleArchive(permit)}>
+                                Archive
+                              </button>
+                              <button className="button-danger" type="button" onClick={() => void onDeletePermit(permit.id)}>
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Archived permits">
+        {loading ? (
+          <p className="muted">Loading archived permits...</p>
+        ) : archivedPermits.length === 0 ? (
+          <EmptyState title="No archived permits yet." description="Archived permits will show here." />
+        ) : (
+          <div className="stack">
+            {archivedPermits.map((permit) => (
+              <div className="record-card" key={permit.id}>
+                <div className="record-header">
+                  <div className="stack">
+                    <strong>{permit.jobAddress || "No address"}</strong>
+                    <span className="muted">{permit.permitNumber || "Untitled permit"}</span>
+                  </div>
+                  <div className="actions-row">
+                    <StatusPill label="Archived" tone="default" />
+                    <button className="button-ghost" type="button" onClick={() => void onToggleArchive(permit)}>
+                      Restore
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      <Dialog
+        open={dialogOpen}
+        title={currentPermit ? "Edit permit" : "Add permit"}
+        description="Writes to the same legacy `permits` collection."
+        onClose={() => {
+          setDialogOpen(false);
+          setEditingPermitId(null);
+        }}
+      >
         <form key={currentPermit?.id ?? "new"} className="form-grid" onSubmit={onSavePermit}>
           <input name="id" type="hidden" value={currentPermit?.id ?? ""} />
           <div className="field">
@@ -180,70 +353,23 @@ export default function PermitsPage() {
             <label htmlFor="notes">Notes</label>
             <textarea id="notes" name="notes" defaultValue={currentPermit?.notes} />
           </div>
-          <div className="actions-row" style={{ gridColumn: "1 / -1" }}>
+          <div className="dialog-actions" style={{ gridColumn: "1 / -1" }}>
+            <button
+              className="button-ghost"
+              type="button"
+              onClick={() => {
+                setDialogOpen(false);
+                setEditingPermitId(null);
+              }}
+            >
+              Cancel
+            </button>
             <button className="button" type="submit">
               {currentPermit ? "Save changes" : "Create permit"}
             </button>
           </div>
         </form>
-      </SectionCard>
-
-      <SectionCard title="Permits">
-        {loading ? (
-          <p className="muted">Loading permits...</p>
-        ) : permits.length === 0 ? (
-          <EmptyState title="No permits yet" description="Create the first permit from the form above." />
-        ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Permit</th>
-                  <th>Address</th>
-                  <th>Status</th>
-                  <th>Expires</th>
-                  <th>Flags</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {permits.map((permit) => (
-                  <tr key={permit.id}>
-                    <td>{permit.permitNumber || "—"}</td>
-                    <td>{permit.jobAddress || "—"}</td>
-                    <td>
-                      <StatusPill label={permit.status || "Unknown"} tone={permit.archived ? "default" : "info"} />
-                    </td>
-                    <td>{formatDate(permit.expirationDate)}</td>
-                    <td>
-                      <div className="inline-meta">
-                        {permit.archived ? <StatusPill label="Archived" tone="default" /> : null}
-                        {permit.dotNotified ? <StatusPill label="DOT notified" tone="success" /> : null}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="actions-row">
-                        <Link className="button-ghost" href={`/permits?edit=${permit.id}`}>
-                          Edit
-                        </Link>
-                        <button className="button-ghost" type="button" onClick={() => void onToggleArchive(permit)}>
-                          {permit.archived ? "Restore" : "Archive"}
-                        </button>
-                        <button className="button-ghost" type="button" onClick={() => void onToggleDot(permit)}>
-                          {permit.dotNotified ? "Clear DOT" : "Mark DOT"}
-                        </button>
-                        <button className="button-danger" type="button" onClick={() => void onDeletePermit(permit.id)}>
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+      </Dialog>
     </>
   );
 }

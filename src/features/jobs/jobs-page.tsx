@@ -1,25 +1,27 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionCard } from "@/components/ui/section-card";
 import { StatusPill } from "@/components/ui/status-pill";
 import { jobStatusTone } from "@/domain/jobs/mapper";
-import { formatDate } from "@/lib/utils";
+import type { Job } from "@/domain/jobs/types";
 import { deleteJob, listJobs, saveJob } from "@/lib/firebase/client-data";
 import { useAuth } from "@/lib/firebase/auth-provider";
-import type { Job } from "@/domain/jobs/types";
+import { formatDate } from "@/lib/utils";
+
+const jobFilters = ["All", "Open", "In Progress", "Completed", "Blocked", "On Hold"] as const;
 
 export default function JobsPage() {
   const { session } = useAuth();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const editId = searchParams.get("edit") ?? "";
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<(typeof jobFilters)[number]>("All");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingJobId, setEditingJobId] = useState<string | null>(null);
 
   async function loadJobs() {
     setLoading(true);
@@ -41,7 +43,37 @@ export default function JobsPage() {
     void loadJobs();
   }, [session?.isActive]);
 
-  const currentJob = jobs.find((job) => job.id === editId) ?? null;
+  const currentJob = jobs.find((job) => job.id === editingJobId) ?? null;
+  const filteredJobs = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return jobs.filter((job) => {
+      const matchesSearch =
+        !needle ||
+        [job.address, job.customerName, job.permitNumber, job.permitCode, job.taskType]
+          .join(" ")
+          .toLowerCase()
+          .includes(needle);
+
+      if (!matchesSearch) {
+        return false;
+      }
+
+      switch (filter) {
+        case "Open":
+          return job.status === "Pending" || job.status === "Open";
+        case "In Progress":
+          return job.status === "In Progress";
+        case "Completed":
+          return job.status === "Completed";
+        case "Blocked":
+          return job.blocked === "yes" || job.status === "Blocked";
+        case "On Hold":
+          return job.status === "On Hold";
+        default:
+          return true;
+      }
+    });
+  }, [filter, jobs, search]);
 
   async function onSaveJob(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -51,9 +83,10 @@ export default function JobsPage() {
 
     setError(null);
     try {
-      const id = await saveJob(new FormData(event.currentTarget), session);
+      await saveJob(new FormData(event.currentTarget), session);
+      setDialogOpen(false);
+      setEditingJobId(null);
       await loadJobs();
-      router.replace(`/jobs?edit=${id}`);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Could not save job.");
     }
@@ -68,12 +101,23 @@ export default function JobsPage() {
     try {
       await deleteJob(job.id, session, job.address);
       await loadJobs();
-      if (editId === job.id) {
-        router.replace("/jobs");
+      if (editingJobId === job.id) {
+        setEditingJobId(null);
+        setDialogOpen(false);
       }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Could not delete job.");
     }
+  }
+
+  function openCreateDialog() {
+    setEditingJobId(null);
+    setDialogOpen(true);
+  }
+
+  function openEditDialog(id: string) {
+    setEditingJobId(id);
+    setDialogOpen(true);
   }
 
   return (
@@ -82,20 +126,88 @@ export default function JobsPage() {
         <div>
           <p className="eyebrow">Jobs</p>
           <h1>Job management</h1>
-          <p className="muted">Client-side CRUD against the frozen `jobs` collection.</p>
+          <p className="muted">Search and filter the existing legacy job records.</p>
         </div>
-        {currentJob ? (
-          <Link className="button-ghost" href="/jobs">
-            Clear edit
-          </Link>
-        ) : null}
+        <button className="button" type="button" onClick={openCreateDialog}>
+          + New job
+        </button>
       </div>
 
       {error ? <div className="callout">{error}</div> : null}
 
-      <SectionCard
-        title={currentJob ? "Edit job" : "Create job"}
-        description="This form writes the same legacy field names directly with the Firebase Web SDK."
+      <SectionCard title="Jobs" description="List-first view with the legacy search and status filters restored.">
+        <div className="stack">
+          <input
+            className="search-input"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by address, customer, permit #, task type..."
+          />
+
+          <div className="filter-row">
+            {jobFilters.map((item) => (
+              <button
+                key={item}
+                className="filter-chip"
+                data-active={filter === item}
+                type="button"
+                onClick={() => setFilter(item)}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+
+          {loading ? (
+            <p className="muted">Loading jobs...</p>
+          ) : filteredJobs.length === 0 ? (
+            <EmptyState title="No jobs found" description="Try a different search or create a new job." />
+          ) : (
+            <div className="stack">
+              {filteredJobs.map((job) => (
+                <div className="record-card" key={job.id}>
+                  <div className="record-header">
+                    <div className="stack">
+                      <strong>{job.address || "Untitled job"}</strong>
+                      <div className="inline-meta">
+                        {job.taskType ? <span className="pill" data-tone="warning">{job.taskType}</span> : null}
+                        {job.customerName ? <span className="muted">{job.customerName}</span> : null}
+                        {job.permitNumber || job.permitCode ? (
+                          <span className="muted">{job.permitNumber || job.permitCode}</span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="actions-row">
+                      <StatusPill label={job.status || "Unknown"} tone={jobStatusTone(job.status)} />
+                      <button className="button-ghost" type="button" onClick={() => openEditDialog(job.id)}>
+                        Edit
+                      </button>
+                      <button className="button-danger" type="button" onClick={() => void onDeleteJob(job)}>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                  <div className="record-meta-grid">
+                    <span className="muted">Customer: {job.customerName || "—"}</span>
+                    <span className="muted">Scheduled: {formatDate(job.scheduleDay)}</span>
+                    <span className="muted">Blocked: {job.blocked === "yes" ? "Yes" : "No"}</span>
+                    <span className="muted">Crew: {job.jobType || "—"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </SectionCard>
+
+      <Dialog
+        open={dialogOpen}
+        title={currentJob ? "Edit job" : "Add job"}
+        description="Writes to the same legacy `jobs` collection."
+        onClose={() => {
+          setDialogOpen(false);
+          setEditingJobId(null);
+        }}
       >
         <form key={currentJob?.id ?? "new"} className="form-grid" onSubmit={onSaveJob}>
           <input name="id" type="hidden" value={currentJob?.id ?? ""} />
@@ -131,8 +243,8 @@ export default function JobsPage() {
             <label htmlFor="jobType">Crew</label>
             <select id="jobType" name="jobType" defaultValue={currentJob?.jobType || ""}>
               <option value="">None</option>
-              <option value="asphalt">Asphalt</option>
-              <option value="concrete">Concrete</option>
+              <option value="Asphalt">Asphalt</option>
+              <option value="Concrete">Concrete</option>
             </select>
           </div>
           <div className="field">
@@ -184,75 +296,23 @@ export default function JobsPage() {
             <label htmlFor="notes">Notes</label>
             <textarea id="notes" name="notes" defaultValue={currentJob?.notes} />
           </div>
-          <div className="actions-row" style={{ gridColumn: "1 / -1" }}>
+          <div className="dialog-actions" style={{ gridColumn: "1 / -1" }}>
+            <button
+              className="button-ghost"
+              type="button"
+              onClick={() => {
+                setDialogOpen(false);
+                setEditingJobId(null);
+              }}
+            >
+              Cancel
+            </button>
             <button className="button" type="submit">
               {currentJob ? "Save changes" : "Create job"}
             </button>
           </div>
         </form>
-        {currentJob?.permitDocUrls.length ? (
-          <div className="stack" style={{ marginTop: 16 }}>
-            <strong>Existing permit docs</strong>
-            {currentJob.permitDocUrls.map((item) => (
-              <a key={item.url} className="muted" href={item.url} target="_blank" rel="noreferrer">
-                {item.name}
-              </a>
-            ))}
-          </div>
-        ) : null}
-      </SectionCard>
-
-      <SectionCard title="Jobs" description="Current contents of the legacy collection.">
-        {loading ? (
-          <p className="muted">Loading jobs...</p>
-        ) : jobs.length === 0 ? (
-          <EmptyState title="No jobs yet" description="Create the first job from the form above." />
-        ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Customer</th>
-                  <th>Address</th>
-                  <th>Status</th>
-                  <th>Permit</th>
-                  <th>Scheduled</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jobs.map((job) => (
-                  <tr key={job.id}>
-                    <td>{job.customerName || "—"}</td>
-                    <td>{job.address || "—"}</td>
-                    <td>
-                      <StatusPill label={job.status || "Unknown"} tone={jobStatusTone(job.status)} />
-                    </td>
-                    <td>{job.permitNumber || job.permitCode || "—"}</td>
-                    <td>{formatDate(job.scheduleDay)}</td>
-                    <td>
-                      <div className="actions-row">
-                        <Link className="button-ghost" href={`/jobs?edit=${job.id}`}>
-                          Edit
-                        </Link>
-                        <button
-                          className="button-danger"
-                          type="button"
-                          onClick={() => {
-                            void onDeleteJob(job);
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </SectionCard>
+      </Dialog>
     </>
   );
 }

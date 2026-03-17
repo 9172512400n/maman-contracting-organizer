@@ -63,15 +63,11 @@ export function AppShell({
   return (
     <div className="app-shell">
       <aside className="app-sidebar">
-        <div className="brand-stack">
-          <span className="eyebrow">Next.js Migration</span>
+        <div className="app-sidebar-brand">
           <h1>Maman Contracting</h1>
-          <p className="muted">
-            Firebase schema frozen. UI, logic, and server boundaries are now separated.
-          </p>
         </div>
 
-        <div className="card">
+        <div className="card app-sidebar-profile">
           <div className="inline-meta">
             <span className="pill" data-tone="danger">
               {initialsFor(session.name, session.email)}
@@ -102,7 +98,7 @@ export function AppShell({
           ))}
         </nav>
 
-        <div style={{ marginTop: 24 }}>
+        <div className="app-sidebar-footer">
           <button
             className="button-ghost"
             type="button"
