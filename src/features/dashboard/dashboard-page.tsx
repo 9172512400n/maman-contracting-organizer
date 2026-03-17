@@ -169,11 +169,11 @@ export default function DashboardPage() {
     const filtered = !needle
       ? jobs
       : jobs.filter((job) =>
-          [job.customerName, job.address, job.permitNumber, job.permitCode, job.taskType]
-            .join(" ")
-            .toLowerCase()
-            .includes(needle),
-        );
+        [job.customerName, job.address, job.permitNumber, job.permitCode, job.taskType]
+          .join(" ")
+          .toLowerCase()
+          .includes(needle),
+      );
 
     return filtered.slice(0, 8);
   }, [jobs, recentJobsSearch]);
@@ -184,7 +184,7 @@ export default function DashboardPage() {
         <div>
           <p className="eyebrow">Operations hub</p>
           <h1>Dashboard</h1>
-          <p className="muted">Legacy Firebase collections, client-side Firebase data access.</p>
+          {/* <p className="muted">Legacy Firebase collections, client-side Firebase data access.</p> */}
         </div>
       </div>
 
