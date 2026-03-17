@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "maman-contracting-organizer"
+    "default": "maman-contracting-app"
   },
   "targets": {
     "maman-contracting-app": {

@@ -1,8 +1,60 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwnUserDoc() {
+      return isSignedIn() && (
+        resource.data.email == request.auth.token.email ||
+        resource.data.authUid == request.auth.uid
+      );
+    }
+
+    function isInviteAcceptance() {
+      return isSignedIn() &&
+        isOwnUserDoc() &&
+        resource.data.status == "invited" &&
+        resource.data.removed != true &&
+        request.resource.data.email == resource.data.email &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.phone == resource.data.phone &&
+        request.resource.data.invitedBy == resource.data.invitedBy &&
+        request.resource.data.status == "active" &&
+        request.resource.data.removed == false &&
+        request.resource.data.authUid == request.auth.uid &&
+        request.resource.data.inviteToken == "" &&
+        request.resource.data.inviteLink == "";
+    }
+
+    match /jobs/{jobId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /permits/{permitId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /contacts/{contactId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /tasks/{taskId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /activity/{activityId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /notifications/{notificationId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /users/{userId} {
+      allow read, create, delete: if isSignedIn();
+      allow update: if isSignedIn();
     }
   }
 }
