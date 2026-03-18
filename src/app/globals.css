@@ -683,6 +683,7 @@ td {
 
 .button,
 .button-secondary,
+.button-success,
 .button-danger,
 .button-ghost {
   border: 0;
@@ -697,6 +698,7 @@ td {
 
 .button:disabled,
 .button-secondary:disabled,
+.button-success:disabled,
 .button-danger:disabled,
 .button-ghost:disabled {
   cursor: wait;
@@ -716,6 +718,11 @@ td {
 .button-secondary {
   background: #1d4ed8;
   color: white;
+}
+
+.button-success {
+  background: #166534;
+  color: #dcfce7;
 }
 
 .button-danger {
@@ -815,6 +822,41 @@ td {
   gap: 8px 12px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 12px;
+}
+
+.schedule-job-header-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.toggle-chip {
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.job-actions-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.job-actions-grid > .button,
+.job-actions-grid > .button-secondary,
+.job-actions-grid > .button-success,
+.job-actions-grid > .button-danger,
+.job-actions-grid > .button-ghost {
+  width: 100%;
+  min-height: 48px;
 }
 
 .record-details summary {
@@ -1213,6 +1255,10 @@ td {
 
   .dialog-shell {
     max-height: calc(100dvh - 40px);
+  }
+
+  .job-actions-grid {
+    grid-template-columns: 1fr;
   }
 }
 

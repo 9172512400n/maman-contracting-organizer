@@ -294,8 +294,8 @@ export default function TasksPage() {
         <form key={currentTask?.id ?? "new"} className="form-grid" onSubmit={onSaveTask}>
           <input name="id" type="hidden" value={currentTask?.id ?? ""} />
           <div className="field" data-span="2">
-            <label htmlFor="title">Title</label>
-            <input id="title" name="title" defaultValue={currentTask?.title} />
+            <label htmlFor="title">Title *</label>
+            <input id="title" name="title" required defaultValue={currentTask?.title} />
           </div>
           <div className="field">
             <label htmlFor="dueDate">Due date</label>

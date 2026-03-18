@@ -45,6 +45,8 @@ export default function DashboardPage() {
   const [recentJobsSearch, setRecentJobsSearch] = useState("");
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
+  const [clearActivityDialogOpen, setClearActivityDialogOpen] = useState(false);
+  const [clearingActivity, setClearingActivity] = useState(false);
 
   async function loadDashboard() {
     setLoading(true);
@@ -127,16 +129,16 @@ export default function DashboardPage() {
       return;
     }
 
-    if (!window.confirm("Clear all activity log entries?")) {
-      return;
-    }
-
     setError(null);
+    setClearingActivity(true);
     try {
       await clearActivity();
+      setClearActivityDialogOpen(false);
       await loadDashboard();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Could not clear activity.");
+    } finally {
+      setClearingActivity(false);
     }
   }
 
@@ -363,7 +365,7 @@ export default function DashboardPage() {
         description="Recent records from the legacy `activity` collection."
         action={
           session?.isAdmin ? (
-            <button className="button-danger" type="button" onClick={() => void onClearActivity()}>
+            <button className="button-danger" type="button" onClick={() => setClearActivityDialogOpen(true)}>
               Clear
             </button>
           ) : null
@@ -407,8 +409,8 @@ export default function DashboardPage() {
       >
         <form className="form-grid" onSubmit={onSaveTask}>
           <div className="field" data-span="2">
-            <label htmlFor="dashboard-task-title">Title</label>
-            <input id="dashboard-task-title" name="title" />
+            <label htmlFor="dashboard-task-title">Title *</label>
+            <input id="dashboard-task-title" name="title" required />
           </div>
           <div className="field">
             <label htmlFor="dashboard-task-date">Due date</label>
@@ -431,6 +433,42 @@ export default function DashboardPage() {
             </button>
           </div>
         </form>
+      </Dialog>
+
+      <Dialog
+        open={clearActivityDialogOpen}
+        title="Clear activity log"
+        description="This will permanently remove all activity entries from the dashboard log."
+        onClose={() => {
+          if (clearingActivity) {
+            return;
+          }
+          setClearActivityDialogOpen(false);
+        }}
+      >
+        <div className="stack">
+          <div className="callout">
+            Clear every activity log entry? This action cannot be undone.
+          </div>
+          <div className="dialog-actions">
+            <button
+              className="button-ghost"
+              type="button"
+              disabled={clearingActivity}
+              onClick={() => setClearActivityDialogOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="button-danger"
+              type="button"
+              disabled={clearingActivity}
+              onClick={() => void onClearActivity()}
+            >
+              {clearingActivity ? "Clearing..." : "Clear activity"}
+            </button>
+          </div>
+        </div>
       </Dialog>
 
       <Dialog

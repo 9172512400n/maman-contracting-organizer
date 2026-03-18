@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import type { AttachmentLink, CustomField, PermitChip } from "@/domain/common/types";
 import type { Job } from "@/domain/jobs/types";
 import { formatDate } from "@/lib/utils";
@@ -15,6 +15,7 @@ type JobEditorFormProps = {
   onDelete?: () => void | Promise<void>;
   submitLabel?: string;
   isSubmitting?: boolean;
+  focusField?: "scheduleDay" | null;
 };
 
 function buildInitialPermitRows(job?: Job | null, prefill?: Partial<Job>) {
@@ -92,6 +93,7 @@ export function JobEditorForm({
   onDelete,
   submitLabel,
   isSubmitting,
+  focusField,
 }: JobEditorFormProps) {
   const initialTaskType = job?.taskType ?? prefill?.taskType ?? "";
   const initialAltParkingBlocked = job?.altParkingBlocked ?? prefill?.altParkingBlocked ?? false;
@@ -131,6 +133,24 @@ export function JobEditorForm({
     code: "",
     expiry: "",
   };
+
+  useEffect(() => {
+    if (!focusField) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const input = document.getElementById(focusField) as HTMLInputElement | null;
+      if (!input) {
+        return;
+      }
+      input.scrollIntoView({ behavior: "smooth", block: "center" });
+      input.focus();
+      input.select?.();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusField]);
 
   function updatePermitRow(index: number, patch: Partial<PermitChip>) {
     setPermitRows((current) =>
