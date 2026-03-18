@@ -14,7 +14,7 @@ export function mapLegacyPermit(id: string, raw: Record<string, unknown>): Permi
     notes: asString(raw.notes),
     linkedJobId: asString(raw.linkedJobId),
     docUrl: asString(raw.docUrl),
-    docUrls: asAttachmentLinks(raw.docUrls),
+    docUrls: asAttachmentLinks(raw.docUrls ?? raw.docUrl),
     dotNotified: asBoolean(raw.dotNotified),
     dotNotifiedDate: asString(raw.dotNotifiedDate),
     archived: asBoolean(raw.archived),

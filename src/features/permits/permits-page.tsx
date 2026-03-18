@@ -107,6 +107,102 @@ function formatDotTime(value: string) {
   }
 }
 
+async function fileToDataUrl(file: File) {
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(new Error("Could not read file for OCR."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function readOpenAiKey() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+  return window.localStorage.getItem("openai_api_key")?.trim() ?? "";
+}
+
+function ensureOpenAiKey() {
+  const existing = readOpenAiKey();
+  if (existing) {
+    return existing;
+  }
+
+  if (typeof window === "undefined") {
+    throw new Error("OpenAI OCR is only available in the browser.");
+  }
+
+  const entered = window.prompt(
+    "Enter your OpenAI API key for permit OCR. It will be saved in this browser.",
+    "",
+  )?.trim();
+
+  if (!entered) {
+    throw new Error("OpenAI API key is required for permit OCR.");
+  }
+
+  window.localStorage.setItem("openai_api_key", entered);
+  return entered;
+}
+
+async function extractPermitDraftFromOcr(file: File) {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("OCR currently supports image scans. PDFs can still be attached as permit documents.");
+  }
+
+  const apiKey = ensureOpenAiKey();
+  const imageUrl = await fileToDataUrl(file);
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                'This is an NYC DOT permit document. Extract ONLY these fields as JSON: {"permitNumber":"","validFrom":"","expirationDate":"","permitHolder":"","permitTypeCode":"","jobAddress":""}. permitTypeCode = number only. jobAddress = house number + street name only if possible. validFrom and expirationDate should be YYYY-MM-DD when possible. Return valid JSON only.',
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: imageUrl,
+                detail: "high",
+              },
+            },
+          ],
+        },
+      ],
+      max_tokens: 400,
+    }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload?.error?.message || `OCR request failed (${response.status}).`);
+  }
+
+  const payload = await response.json();
+  const content = String(payload?.choices?.[0]?.message?.content ?? "").trim();
+  const cleaned = content.replace(/```json?/gi, "").replace(/```/g, "").trim();
+  const parsed = JSON.parse(cleaned) as PermitDialogDraft;
+  return {
+    permitNumber: parsed.permitNumber ?? "",
+    permitTypeCode: parsed.permitTypeCode ?? "",
+    validFrom: parsed.validFrom ?? "",
+    expirationDate: parsed.expirationDate ?? "",
+    permitHolder: parsed.permitHolder ?? "",
+    jobAddress: parsed.jobAddress ?? "",
+  } satisfies PermitDialogDraft;
+}
+
 function detectBorough(address: string) {
   const normalized = address.toLowerCase();
   const zipMatch = normalized.match(/\b(\d{5})\b/);
@@ -211,9 +307,23 @@ export default function PermitsPage() {
   const [dotDrafts, setDotDrafts] = useState<Record<string, DotDraft>>({});
   const [dialogDraft, setDialogDraft] = useState<PermitDialogDraft>({});
   const [stagedPermitFiles, setStagedPermitFiles] = useState<File[]>([]);
+  const [selectedPermitFiles, setSelectedPermitFiles] = useState<File[]>([]);
   const [dialogSeed, setDialogSeed] = useState(0);
   const [scanTargetAddress, setScanTargetAddress] = useState("");
-  const scanInputRef = useRef<HTMLInputElement | null>(null);
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const ocrCameraInputRef = useRef<HTMLInputElement | null>(null);
+  const ocrLibraryInputRef = useRef<HTMLInputElement | null>(null);
+  const ocrFileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    return () => {
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
+    };
+  }, []);
 
   async function loadPermitsPage() {
     setLoading(true);
@@ -287,6 +397,9 @@ export default function PermitsPage() {
     setError(null);
     try {
       const formData = new FormData(event.currentTarget);
+      selectedPermitFiles.forEach((file) => {
+        formData.append("permitFiles", file);
+      });
       stagedPermitFiles.forEach((file) => {
         formData.append("permitFiles", file);
       });
@@ -295,6 +408,8 @@ export default function PermitsPage() {
       setEditingPermitId(null);
       setDialogDraft({});
       setStagedPermitFiles([]);
+      setSelectedPermitFiles([]);
+      setCameraOpen(false);
       await loadPermitsPage();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Could not save permit.");
@@ -340,6 +455,10 @@ export default function PermitsPage() {
     setEditingPermitId(null);
     setDialogDraft({});
     setStagedPermitFiles([]);
+    setSelectedPermitFiles([]);
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    cameraStreamRef.current = null;
+    setCameraOpen(false);
     setDialogSeed((current) => current + 1);
   }
 
@@ -353,6 +472,7 @@ export default function PermitsPage() {
       linkedJobId: matchedLinkedJobId,
     });
     setStagedPermitFiles(files ?? []);
+    setSelectedPermitFiles([]);
     setDialogSeed((current) => current + 1);
     setDialogOpen(true);
   }
@@ -361,6 +481,7 @@ export default function PermitsPage() {
     setEditingPermitId(id);
     setDialogDraft({});
     setStagedPermitFiles([]);
+    setSelectedPermitFiles([]);
     setDialogSeed((current) => current + 1);
     setDialogOpen(true);
   }
@@ -430,22 +551,158 @@ export default function PermitsPage() {
 
   function onStartScan(address: string) {
     setScanTargetAddress(address);
-    scanInputRef.current?.click();
+    openCreateDialog({
+      jobAddress: address,
+      linkedJobId: findLinkedJobId(jobs, address),
+    });
   }
 
-  function onScannedFiles(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
-    event.target.value = "";
+  function applyDraftToPermitDialog(draft: PermitDialogDraft) {
+    const pairs = [
+      ["permitNumber", draft.permitNumber ?? ""],
+      ["permitTypeCode", draft.permitTypeCode ?? ""],
+      ["validFrom", draft.validFrom ?? ""],
+      ["expirationDate", draft.expirationDate ?? ""],
+      ["permitHolder", draft.permitHolder ?? ""],
+      ["jobAddress", draft.jobAddress ?? ""],
+    ] as const;
+
+    pairs.forEach(([id, value]) => {
+      const element = document.getElementById(id) as HTMLInputElement | null;
+      if (element) {
+        element.value = value;
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+
+    const linkedJobId = findLinkedJobId(jobs, draft.jobAddress ?? "");
+    const select = document.getElementById("linkedJobId") as HTMLSelectElement | null;
+    if (select && linkedJobId) {
+      select.value = linkedJobId;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }
+
+  async function processScannedFiles(files: File[]) {
     if (!files.length) {
       return;
     }
 
-    openCreateDialog(
-      {
-        jobAddress: scanTargetAddress,
-      },
-      files,
-    );
+    const baseDraft: PermitDialogDraft = {
+      jobAddress: scanTargetAddress,
+      linkedJobId: findLinkedJobId(jobs, scanTargetAddress),
+      status: "Pending",
+    };
+
+    if (!dialogOpen || editingPermitId) {
+      openCreateDialog(baseDraft, files);
+    } else {
+      setStagedPermitFiles((current) => [...current, ...files]);
+    }
+
+    const firstImage = files.find((file) => file.type.startsWith("image/"));
+    if (!firstImage) {
+      if (files.some((file) => file.type === "application/pdf")) {
+        setError("PDF attached. OCR currently runs on image scans only, so fill the permit details manually if needed.");
+      }
+      return;
+    }
+
+    setError(null);
+    setOcrBusy(true);
+    try {
+      const extracted = await extractPermitDraftFromOcr(firstImage);
+      const mergedDraft = {
+        ...baseDraft,
+        ...extracted,
+        jobAddress: extracted.jobAddress || baseDraft.jobAddress,
+      };
+      setDialogDraft(mergedDraft);
+      setDialogSeed((current) => current + 1);
+      setDialogOpen(true);
+      setTimeout(() => applyDraftToPermitDialog(mergedDraft), 0);
+    } catch (scanError) {
+      setError(
+        scanError instanceof Error
+          ? scanError.message
+          : "Permit OCR failed. The file is still attached so you can fill the fields manually.",
+      );
+    } finally {
+      setOcrBusy(false);
+    }
+  }
+
+  async function onScannedFiles(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    await processScannedFiles(files);
+  }
+
+  async function startCameraCapture() {
+    try {
+      const mediaDevices = navigator.mediaDevices;
+      if (!mediaDevices?.getUserMedia) {
+        ocrCameraInputRef.current?.click();
+        return;
+      }
+
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+      const stream = await mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+        },
+        audio: false,
+      });
+      cameraStreamRef.current = stream;
+      setCameraOpen(true);
+      setTimeout(() => {
+        if (cameraVideoRef.current) {
+          cameraVideoRef.current.srcObject = stream;
+          void cameraVideoRef.current.play().catch(() => undefined);
+        }
+      }, 0);
+    } catch (cameraError) {
+      setError(
+        cameraError instanceof Error
+          ? cameraError.message
+          : "Could not access the camera. You can still use Photo Library or File Upload.",
+      );
+    }
+  }
+
+  async function captureCameraImage() {
+    const video = cameraVideoRef.current;
+    if (!video) {
+      return;
+    }
+
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 720;
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      setError("Could not capture the camera frame.");
+      return;
+    }
+    context.drawImage(video, 0, 0, width, height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+    if (!blob) {
+      setError("Could not create the captured image.");
+      return;
+    }
+
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    cameraStreamRef.current = null;
+    setCameraOpen(false);
+    const file = new File([blob], `permit-capture-${Date.now()}.jpg`, { type: "image/jpeg" });
+    await processScannedFiles([file]);
+  }
+
+  function onPermitFilesPicked(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    setSelectedPermitFiles(files);
   }
 
   async function onNotifyDot(address: string, groupPermits: Permit[]) {
@@ -771,15 +1028,6 @@ export default function PermitsPage() {
         )}
       </SectionCard>
 
-      <input
-        ref={scanInputRef}
-        accept="image/*,application/pdf"
-        hidden
-        multiple
-        type="file"
-        onChange={onScannedFiles}
-      />
-
       <Dialog
         open={dialogOpen}
         title={currentPermit ? "Edit permit" : "Add permit"}
@@ -792,11 +1040,73 @@ export default function PermitsPage() {
           onSubmit={onSavePermit}
         >
           <input name="id" type="hidden" value={currentPermit?.id ?? ""} />
+          <div className="upload-card" data-span="2">
+            <div className="upload-card-title">Scan Permit (OCR)</div>
+            <div className="permit-ocr-actions">
+              <button className="button-ghost" type="button" onClick={() => void startCameraCapture()}>
+                Camera
+              </button>
+              <button className="button-ghost" type="button" onClick={() => ocrLibraryInputRef.current?.click()}>
+                Photo library
+              </button>
+              <button className="button-ghost" type="button" onClick={() => ocrFileInputRef.current?.click()}>
+                File upload
+              </button>
+            </div>
+            <input
+              ref={ocrCameraInputRef}
+              accept="image/*"
+              capture="environment"
+              hidden
+              type="file"
+              onChange={onScannedFiles}
+            />
+            <input
+              ref={ocrLibraryInputRef}
+              accept="image/*"
+              hidden
+              type="file"
+              onChange={onScannedFiles}
+            />
+            <input
+              ref={ocrFileInputRef}
+              accept=".pdf,image/*"
+              hidden
+              multiple
+              type="file"
+              onChange={onScannedFiles}
+            />
+            {cameraOpen ? (
+              <div className="stack">
+                <video ref={cameraVideoRef} className="camera-preview" autoPlay muted playsInline />
+                <div className="actions-row">
+                  <button className="button-secondary" type="button" onClick={() => void captureCameraImage()}>
+                    Capture and scan
+                  </button>
+                  <button
+                    className="button-ghost"
+                    type="button"
+                    onClick={() => {
+                      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+                      cameraStreamRef.current = null;
+                      setCameraOpen(false);
+                    }}
+                  >
+                    Cancel camera
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            <p className="muted">
+              {ocrBusy ? "Scanning permit..." : "Use OCR to prefill the permit fields from a camera photo, library image, or uploaded file."}
+            </p>
+          </div>
           <div className="field">
-            <label htmlFor="permitNumber">Permit number</label>
+            <label htmlFor="permitNumber">Permit number *</label>
             <input
               id="permitNumber"
               name="permitNumber"
+              required
               defaultValue={currentPermit?.permitNumber ?? dialogDraft.permitNumber ?? ""}
             />
           </div>
@@ -818,27 +1128,30 @@ export default function PermitsPage() {
             />
           </div>
           <div className="field">
-            <label htmlFor="expirationDate">Expiration</label>
+            <label htmlFor="expirationDate">Expiration *</label>
             <input
               id="expirationDate"
               name="expirationDate"
               type="date"
+              required
               defaultValue={currentPermit?.expirationDate ?? dialogDraft.expirationDate ?? ""}
             />
           </div>
           <div className="field" data-span="2">
-            <label htmlFor="permitHolder">Permit holder</label>
+            <label htmlFor="permitHolder">Permit holder *</label>
             <input
               id="permitHolder"
               name="permitHolder"
+              required
               defaultValue={currentPermit?.permitHolder ?? dialogDraft.permitHolder ?? ""}
             />
           </div>
           <div className="field" data-span="2">
-            <label htmlFor="jobAddress">Job address</label>
+            <label htmlFor="jobAddress">Job address *</label>
             <input
               id="jobAddress"
               name="jobAddress"
+              required
               defaultValue={currentPermit?.jobAddress ?? dialogDraft.jobAddress ?? ""}
             />
           </div>
@@ -876,9 +1189,29 @@ export default function PermitsPage() {
               <option value="Cancelled">Cancelled</option>
             </select>
           </div>
-          <div className="field">
-            <label htmlFor="permitFiles">Documents</label>
-            <input id="permitFiles" name="permitFiles" type="file" multiple />
+
+          <div className="upload-card" data-span="2">
+            <div className="upload-card-title">Permit Document</div>
+            <label className="upload-dropzone">
+              <input
+                id="permitFiles"
+                accept=".pdf,image/*"
+                hidden
+                multiple
+                type="file"
+                onChange={onPermitFilesPicked}
+              />
+              <span>Tap to upload PDF or photo (multiple OK)</span>
+            </label>
+            {selectedPermitFiles.length ? (
+              <div className="stack">
+                {selectedPermitFiles.map((file) => (
+                  <span className="muted" key={`${file.name}-${file.size}`}>
+                    {file.name}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           {stagedPermitFiles.length ? (

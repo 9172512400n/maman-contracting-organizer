@@ -18,6 +18,7 @@ export default function JobsPage() {
   const { session } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<(typeof jobFilters)[number]>("All");
@@ -83,6 +84,7 @@ export default function JobsPage() {
     }
 
     setError(null);
+    setSaving(true);
     try {
       await saveJob(new FormData(event.currentTarget), session);
       setDialogOpen(false);
@@ -90,6 +92,8 @@ export default function JobsPage() {
       await loadJobs();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Could not save job.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -214,7 +218,12 @@ export default function JobsPage() {
           key={currentJob?.id ?? "new"}
           job={currentJob}
           onSubmit={onSaveJob}
+          submitLabel={saving ? "Saving job..." : undefined}
+          isSubmitting={saving}
           onCancel={() => {
+            if (saving) {
+              return;
+            }
             setDialogOpen(false);
             setEditingJobId(null);
           }}

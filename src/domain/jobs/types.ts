@@ -34,6 +34,8 @@ export type Job = {
   customFields: CustomField[];
   permitDocUrl: string;
   permitDocUrls: AttachmentLink[];
+  completionPhotoUrls: AttachmentLink[];
+  materialReceiptUrls: AttachmentLink[];
   createdBy: string;
   createdAt: string;
   updatedBy: string;
@@ -42,7 +44,17 @@ export type Job = {
 
 export type JobUpsertInput = Omit<
   Job,
-  "id" | "permits" | "customFields" | "permitDocUrl" | "permitDocUrls" | "createdBy" | "createdAt" | "updatedBy" | "updatedAt"
+  | "id"
+  | "permits"
+  | "customFields"
+  | "permitDocUrl"
+  | "permitDocUrls"
+  | "completionPhotoUrls"
+  | "materialReceiptUrls"
+  | "createdBy"
+  | "createdAt"
+  | "updatedBy"
+  | "updatedAt"
 > & {
   id?: string;
 };

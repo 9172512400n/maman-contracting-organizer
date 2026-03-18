@@ -20,6 +20,20 @@ service firebase.storage {
         (isImage() || isPdf());
     }
 
+    match /jobs/completion-photos/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() &&
+        request.resource.size < 15 * 1024 * 1024 &&
+        isImage();
+    }
+
+    match /jobs/material-receipts/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() &&
+        request.resource.size < 15 * 1024 * 1024 &&
+        (isImage() || isPdf());
+    }
+
     match /permits/documents/{allPaths=**} {
       allow read: if isSignedIn();
       allow write: if isSignedIn() &&

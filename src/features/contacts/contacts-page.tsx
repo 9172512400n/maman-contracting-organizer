@@ -5,6 +5,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionCard } from "@/components/ui/section-card";
 import type { Contact } from "@/domain/contacts/types";
+import { ContactEditorForm } from "@/features/contacts/contact-editor-form";
 import { deleteContact, listContacts, saveContact } from "@/lib/firebase/client-data";
 import { useAuth } from "@/lib/firebase/auth-provider";
 
@@ -38,7 +39,6 @@ export default function ContactsPage() {
   }, [session?.isActive]);
 
   const currentContact = contacts.find((item) => item.id === editingContactId) ?? null;
-  const primaryPerson = currentContact?.persons[0];
   const filteredContacts = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return contacts.filter((contact) =>
@@ -161,70 +161,21 @@ export default function ContactsPage() {
       <Dialog
         open={dialogOpen}
         title={currentContact ? "Edit contact" : "Add contact"}
-        description="Preserves the same contact fields and person array structure."
+        description="Fill in contact details."
         onClose={() => {
           setDialogOpen(false);
           setEditingContactId(null);
         }}
       >
-        <form key={currentContact?.id ?? "new"} className="form-grid" onSubmit={onSaveContact}>
-          <input name="id" type="hidden" value={currentContact?.id ?? ""} />
-          <div className="field">
-            <label htmlFor="companyName">Company / customer</label>
-            <input id="companyName" name="companyName" defaultValue={currentContact?.companyName} />
-          </div>
-          <div className="field">
-            <label htmlFor="phone">Main phone</label>
-            <input id="phone" name="phone" defaultValue={currentContact?.phone} />
-          </div>
-          <div className="field">
-            <label htmlFor="email">Email</label>
-            <input id="email" name="email" defaultValue={currentContact?.email} />
-          </div>
-          <div className="field">
-            <label htmlFor="address">Address</label>
-            <input id="address" name="address" defaultValue={currentContact?.address} />
-          </div>
-          <div className="field">
-            <label htmlFor="primaryPersonName">Primary person</label>
-            <input id="primaryPersonName" name="primaryPersonName" defaultValue={primaryPerson?.name} />
-          </div>
-          <div className="field">
-            <label htmlFor="primaryPersonPhone">Primary person phone</label>
-            <input id="primaryPersonPhone" name="primaryPersonPhone" defaultValue={primaryPerson?.phone} />
-          </div>
-          <div className="field">
-            <label htmlFor="primaryPersonRole">Primary person role</label>
-            <input id="primaryPersonRole" name="primaryPersonRole" defaultValue={primaryPerson?.role} />
-          </div>
-          <div className="field">
-            <label htmlFor="photo">Profile photo</label>
-            <input id="photo" name="photo" type="file" accept="image/*" />
-          </div>
-          <div className="field">
-            <label htmlFor="bizCard">Business card</label>
-            <input id="bizCard" name="bizCard" type="file" accept="image/*,.pdf" />
-          </div>
-          <div className="field" data-span="2">
-            <label htmlFor="notes">Notes</label>
-            <textarea id="notes" name="notes" defaultValue={currentContact?.notes} />
-          </div>
-          <div className="dialog-actions" style={{ gridColumn: "1 / -1" }}>
-            <button
-              className="button-ghost"
-              type="button"
-              onClick={() => {
-                setDialogOpen(false);
-                setEditingContactId(null);
-              }}
-            >
-              Cancel
-            </button>
-            <button className="button" type="submit">
-              {currentContact ? "Save changes" : "Create contact"}
-            </button>
-          </div>
-        </form>
+        <ContactEditorForm
+          key={currentContact?.id ?? "new"}
+          contact={currentContact}
+          onSubmit={onSaveContact}
+          onCancel={() => {
+            setDialogOpen(false);
+            setEditingContactId(null);
+          }}
+        />
       </Dialog>
     </>
   );

@@ -20,14 +20,6 @@ async function loadLegacyUserRecord(user: User) {
   const db = getClientDb();
 
   try {
-    if (email) {
-      const deterministicRef = doc(db, "users", buildInviteDocId(email));
-      const deterministicSnapshot = await getDoc(deterministicRef);
-      if (deterministicSnapshot.exists()) {
-        return deterministicSnapshot.data();
-      }
-    }
-
     const byUid = await getDocs(
       query(collection(db, "users"), where("authUid", "==", authUid), limit(1)),
     );
@@ -41,6 +33,12 @@ async function loadLegacyUserRecord(user: User) {
       );
       if (!byEmail.empty) {
         return byEmail.docs[0]?.data() ?? null;
+      }
+
+      const deterministicRef = doc(db, "users", buildInviteDocId(email));
+      const deterministicSnapshot = await getDoc(deterministicRef);
+      if (deterministicSnapshot.exists()) {
+        return deterministicSnapshot.data();
       }
     }
   } catch {

@@ -105,6 +105,20 @@ function appendAttachments(existing: unknown, uploaded: AttachmentLink[]) {
   return [...asAttachmentLinks(existing), ...uploaded];
 }
 
+function readJsonArrayField<T>(formData: FormData, fieldName: string): T[] {
+  const raw = String(formData.get(fieldName) ?? "").trim();
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as T[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 async function listContactsInternal() {
   const snapshot = await getDocs(collection(getClientDb(), "contacts"));
   return snapshot.docs
@@ -113,6 +127,10 @@ async function listContactsInternal() {
 }
 
 function buildPeople(input: ContactUpsertInput, existing?: Contact) {
+  if (input.persons.length > 0) {
+    return input.persons.filter((person) => person.name || person.phone || person.role);
+  }
+
   const remaining = existing?.persons.slice(1) ?? [];
   if (!input.primaryPersonName && !input.primaryPersonPhone) {
     return existing?.persons ?? [];
@@ -259,12 +277,27 @@ export async function saveJob(formData: FormData, actor: Actor) {
   const permitFiles = formData
     .getAll("permitFiles")
     .filter((entry): entry is File => entry instanceof File && entry.size > 0);
+  const completionPhotoFiles = formData
+    .getAll("completionPhotoFiles")
+    .filter((entry): entry is File => entry instanceof File && entry.size > 0);
+  const materialReceiptFiles = formData
+    .getAll("materialReceiptFiles")
+    .filter((entry): entry is File => entry instanceof File && entry.size > 0);
   const uploadedDocs = await uploadFilesToStorage("jobs/permit-docs", permitFiles);
+  const uploadedCompletionPhotos = await uploadFilesToStorage("jobs/completion-photos", completionPhotoFiles);
+  const uploadedMaterialReceipts = await uploadFilesToStorage("jobs/material-receipts", materialReceiptFiles);
   const combinedDocs = appendAttachments(existingRaw.permitDocUrls ?? existingRaw.permitDocUrl, uploadedDocs);
-  const permits =
-    input.permitNumber || input.permitCode || input.permitExpiry
-      ? [{ number: input.permitNumber, code: input.permitCode, expiry: input.permitExpiry }]
-      : asPermitChips(existingRaw.permits);
+  const completionPhotoUrls = appendAttachments(
+    existingRaw.completionPhotoUrls ?? existingRaw.jobCompletionPhotoUrls ?? existingRaw.jobCompletionPhotos,
+    uploadedCompletionPhotos,
+  );
+  const materialReceiptUrls = appendAttachments(
+    existingRaw.materialReceiptUrls ?? existingRaw.receiptUrls ?? existingRaw.materialReceipts,
+    uploadedMaterialReceipts,
+  );
+  const permitsFromForm = asPermitChips(readJsonArrayField(formData, "permitsJson"));
+  const customFieldsFromForm = asCustomFields(readJsonArrayField(formData, "customFieldsJson"));
+  const permits = permitsFromForm;
 
   const payload = {
     customerName: input.customerName,
@@ -288,9 +321,11 @@ export async function saveJob(formData: FormData, actor: Actor) {
     permitNumber: input.permitNumber,
     permitExpiry: input.permitExpiry,
     notes: input.notes,
-    customFields: stringifyLegacyJson(asCustomFields(existingRaw.customFields)),
+    customFields: stringifyLegacyJson(customFieldsFromForm),
     permitDocUrls: stringifyLegacyJson(combinedDocs),
     permitDocUrl: combinedDocs[0]?.url ?? "",
+    completionPhotoUrls: stringifyLegacyJson(completionPhotoUrls),
+    materialReceiptUrls: stringifyLegacyJson(materialReceiptUrls),
     updatedBy: actor.email,
     updatedAt: serverTimestamp(),
   };
@@ -670,16 +705,39 @@ export async function getUserById(id: string) {
   return mapLegacyUser(snapshot.id, snapshot.data());
 }
 
+async function findUserDocsByEmail(email: string) {
+  const snapshot = await getDocs(
+    query(collection(getClientDb(), "users"), where("email", "==", email), limit(10)),
+  );
+  return snapshot.docs;
+}
+
+function pickInviteRecord(docs: Awaited<ReturnType<typeof findUserDocsByEmail>>) {
+  return (
+    docs.find((item) => {
+      const data = item.data() ?? {};
+      return data.removed !== true && !data.authUid && data.status === "invited";
+    }) ?? null
+  );
+}
+
 export async function createOrRefreshInvite(formData: FormData, invitedBy: Actor) {
   const input = parseInviteFormData(formData);
   const email = input.email.trim().toLowerCase();
-  const docId = buildInviteDocId(email);
-  const docRef = doc(getClientDb(), "users", docId);
-  const existing = (await getDoc(docRef)).data() ?? {};
+  const existingDocs = await findUserDocsByEmail(email);
+  const activeDoc = existingDocs.find((item) => {
+    const data = item.data() ?? {};
+    return data.removed !== true && (data.authUid || data.status === "active");
+  });
 
-  if (existing.authUid || existing.status === "active") {
+  if (activeDoc) {
     throw new Error("That user is already active.");
   }
+
+  const existingInvite = pickInviteRecord(existingDocs);
+  const docRef = existingInvite?.ref ?? doc(collection(getClientDb(), "users"));
+  const existing = existingInvite?.data() ?? {};
+
 
   const token = randomInviteToken();
   const inviteLink = `${appEnv.publicAppUrl}/invite?email=${encodeURIComponent(email)}&invite=${token}`;

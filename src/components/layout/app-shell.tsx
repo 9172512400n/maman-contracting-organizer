@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { initialsFor } from "@/lib/utils";
@@ -32,6 +32,10 @@ export function AppShell({
   const { status, session, signOutUser } = useAuth();
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isAccountMenuOpen, setAccountMenuOpen] = useState(false);
+  const closeNavigationMenus = useEffectEvent(() => {
+    setDrawerOpen(false);
+    setAccountMenuOpen(false);
+  });
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -41,8 +45,7 @@ export function AppShell({
   }, [pathname, router, status]);
 
   useEffect(() => {
-    setDrawerOpen(false);
-    setAccountMenuOpen(false);
+    closeNavigationMenus();
   }, [pathname]);
 
   useEffect(() => {

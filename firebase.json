@@ -3,7 +3,7 @@
     "source": "functions"
   },
   "hosting": {
-    "site": "maman-contracting-app",
+    "target": "main",
     "public": ".",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
   },

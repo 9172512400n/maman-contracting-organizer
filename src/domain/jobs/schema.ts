@@ -33,7 +33,7 @@ export function parseJobFormData(formData: FormData): JobUpsertInput {
     email: String(formData.get("email") ?? ""),
     invoiceNumber: String(formData.get("invoiceNumber") ?? ""),
     address: String(formData.get("address") ?? ""),
-    taskType: String(formData.get("taskType") ?? ""),
+    taskType: String(formData.get("resolvedTaskType") ?? formData.get("taskType") ?? ""),
     projectSize: String(formData.get("projectSize") ?? ""),
     jobType: String(formData.get("jobType") ?? ""),
     concreteSub: String(formData.get("concreteSub") ?? ""),

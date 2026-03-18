@@ -22,6 +22,7 @@ export type ContactUpsertInput = {
   email: string;
   address: string;
   notes: string;
+  persons: ContactPerson[];
   primaryPersonName: string;
   primaryPersonPhone: string;
   primaryPersonRole: string;

@@ -12,7 +12,7 @@ This branch contains the Next.js rewrite of the legacy Firebase single-page app.
 
 ## Environment
 
-Public Firebase config can be provided through `NEXT_PUBLIC_FIREBASE_*` variables. If omitted, the legacy project defaults are used.
+Firebase supports both explicit env files and a built-in environment preset. Local development defaults to the development Firebase project, and production commands default to the production Firebase project. `.env.development.local` and `.env.production.local` override those defaults when present.
 
 Server-side Firebase admin access expects either service-account env vars or application default credentials:
 
@@ -28,7 +28,11 @@ Optional variables:
 
 ## Commands
 
-- `npm run dev`
-- `npm run build`
-- `npm run lint`
-- `npm run test:run`
+- Development Firebase: `npm run dev`
+- Development Firebase build: `npm run build:dev && npm run start:dev`
+- Production Firebase locally: `npm run build && npm run start`
+- Production Firebase with hot reload: `npm run dev:prod`
+- Lint: `npm run lint`
+- Tests: `npm run test:run`
+
+See [docs/firebase-environments.md](./docs/firebase-environments.md) for the exact file setup and Firebase CLI project aliases.

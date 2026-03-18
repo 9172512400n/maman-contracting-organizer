@@ -3,12 +3,12 @@ import type { PermitUpsertInput } from "@/domain/permits/types";
 
 const permitSchema = z.object({
   id: z.string().optional(),
-  permitNumber: z.string().trim().default(""),
+  permitNumber: z.string().trim().min(1, "Permit number is required"),
   permitTypeCode: z.string().trim().default(""),
   validFrom: z.string().trim().default(""),
-  expirationDate: z.string().trim().default(""),
-  permitHolder: z.string().trim().default(""),
-  jobAddress: z.string().trim().default(""),
+  expirationDate: z.string().trim().min(1, "Expiration date is required"),
+  permitHolder: z.string().trim().min(1, "Permit holder is required"),
+  jobAddress: z.string().trim().min(1, "Job address is required"),
   status: z.string().trim().default("Pending"),
   notes: z.string().trim().default(""),
   linkedJobId: z.string().trim().default(""),

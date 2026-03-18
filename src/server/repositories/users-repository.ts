@@ -23,16 +23,40 @@ export async function getUserById(id: string) {
   return mapLegacyUser(snapshot.id, snapshot.data() ?? {});
 }
 
+async function findUserDocsByEmail(email: string) {
+  const snapshot = await usersCollection()
+    .where("email", "==", email)
+    .limit(10)
+    .get();
+
+  return snapshot.docs;
+}
+
+function pickInviteRecord(docs: Awaited<ReturnType<typeof findUserDocsByEmail>>) {
+  return (
+    docs.find((doc) => {
+      const data = doc.data() ?? {};
+      return data.removed !== true && !data.authUid && data.status === "invited";
+    }) ?? null
+  );
+}
+
 export async function createOrRefreshInvite(formData: FormData, invitedBy: string) {
   const input = parseInviteFormData(formData);
   const email = input.email.trim().toLowerCase();
-  const docId = buildInviteDocId(email);
-  const docRef = usersCollection().doc(docId);
-  const existing = (await docRef.get()).data() ?? {};
+  const existingDocs = await findUserDocsByEmail(email);
+  const activeDoc = existingDocs.find((doc) => {
+    const data = doc.data() ?? {};
+    return data.removed !== true && (data.authUid || data.status === "active");
+  });
 
-  if (existing.authUid || existing.status === "active") {
+  if (activeDoc) {
     throw new Error("That user is already active.");
   }
+
+  const existingInvite = pickInviteRecord(existingDocs);
+  const docRef = existingInvite?.ref ?? usersCollection().doc();
+  const existing = existingInvite?.data() ?? {};
 
   const token = randomInviteToken();
   const inviteLink = `${appEnv.publicAppUrl}/invite?email=${encodeURIComponent(email)}&invite=${token}`;

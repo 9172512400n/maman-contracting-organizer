@@ -37,7 +37,13 @@ export function mapLegacyJob(id: string, raw: Record<string, unknown>): Job {
     notes: asString(raw.notes),
     customFields: asCustomFields(raw.customFields),
     permitDocUrl: asString(raw.permitDocUrl),
-    permitDocUrls: asAttachmentLinks(raw.permitDocUrls),
+    permitDocUrls: asAttachmentLinks(raw.permitDocUrls ?? raw.permitDocUrl),
+    completionPhotoUrls: asAttachmentLinks(
+      raw.completionPhotoUrls ?? raw.jobCompletionPhotoUrls ?? raw.jobCompletionPhotos,
+    ),
+    materialReceiptUrls: asAttachmentLinks(
+      raw.materialReceiptUrls ?? raw.receiptUrls ?? raw.materialReceipts,
+    ),
     createdBy: asString(raw.createdBy),
     createdAt: timestampToIso(raw.createdAt),
     updatedBy: asString(raw.updatedBy),

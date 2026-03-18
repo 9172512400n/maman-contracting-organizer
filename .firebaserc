@@ -1,8 +1,17 @@
 {
   "projects": {
-    "default": "maman-contracting-app"
+    "default": "maman-contracting-dev",
+    "development": "maman-contracting-dev",
+    "production": "maman-contracting-app"
   },
   "targets": {
+    "maman-contracting-dev": {
+      "hosting": {
+        "main": [
+          "maman-contracting-dev"
+        ]
+      }
+    },
     "maman-contracting-app": {
       "hosting": {
         "main": [
