@@ -5,7 +5,13 @@ import type { AttachmentLink, CustomField, PermitChip } from "@/domain/common/ty
 import type { Job } from "@/domain/jobs/types";
 import { formatDate } from "@/lib/utils";
 
-const KNOWN_TASK_TYPES = ["Parking Lot", "Sidewalk", "Custom"] as const;
+const KNOWN_TASK_TYPES = [
+  "Parking Lot",
+  "Sidewalk",
+  "Roadway",
+  "Roadway + Sidewalk",
+  "Custom",
+] as const;
 
 type JobEditorFormProps = {
   job?: Job | null;
@@ -266,6 +272,8 @@ export function JobEditorForm({
           <option value="">Select task type...</option>
           <option value="Parking Lot">Parking Lot</option>
           <option value="Sidewalk">Sidewalk</option>
+          <option value="Roadway">Roadway</option>
+          <option value="Roadway + Sidewalk">Roadway + Sidewalk</option>
           <option value="Custom">Custom</option>
         </select>
       </div>
