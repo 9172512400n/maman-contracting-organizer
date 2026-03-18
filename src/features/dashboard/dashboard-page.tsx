@@ -214,7 +214,7 @@ export default function DashboardPage() {
       <div className="panel-grid">
         <SectionCard
           title="Recent jobs"
-          description="Latest records from the legacy `jobs` collection."
+          description="Quick view of the latest work and schedule status."
         >
           <div className="toolbar-row" style={{ marginBottom: 16 }}>
             <input
@@ -233,8 +233,9 @@ export default function DashboardPage() {
               <table>
                 <thead>
                   <tr>
-                    <th>Customer</th>
                     <th>Address</th>
+                    <th>Task Type</th>
+                    <th>Crew</th>
                     <th>Status</th>
                     <th>Scheduled</th>
                   </tr>
@@ -242,8 +243,9 @@ export default function DashboardPage() {
                 <tbody>
                   {recentJobs.map((job) => (
                     <tr key={job.id}>
-                      <td>{job.customerName || "—"}</td>
                       <td>{job.address || "—"}</td>
+                      <td>{job.taskType || "—"}</td>
+                      <td>{job.jobType || "—"}</td>
                       <td>
                         <StatusPill label={job.status || "Unknown"} tone={jobStatusTone(job.status)} />
                       </td>
@@ -313,7 +315,7 @@ export default function DashboardPage() {
 
         <SectionCard
           title="Notifications"
-          description="Still backed by the legacy `notifications` collection."
+          description="Team updates and broadcast messages."
           action={
             session?.isAdmin ? (
               <button
@@ -362,7 +364,7 @@ export default function DashboardPage() {
 
       <SectionCard
         title="Activity log"
-        description="Recent records from the legacy `activity` collection."
+        description="Latest changes across jobs, permits, tasks, and users."
         action={
           session?.isAdmin ? (
             <button className="button-danger" type="button" onClick={() => setClearActivityDialogOpen(true)}>

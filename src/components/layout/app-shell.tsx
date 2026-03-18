@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { initialsFor } from "@/lib/utils";
@@ -16,7 +16,7 @@ const navigation = [
   { href: "/users", label: "Users", short: "Users" },
 ];
 
-const mobilePrimaryHrefs = new Set(["/dashboard", "/jobs", "/permits", "/schedule"]);
+const mobilePrimaryHrefs = new Set(["/dashboard", "/jobs", "/permits", "/schedule", "/contacts"]);
 
 function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -32,10 +32,11 @@ export function AppShell({
   const { status, session, signOutUser } = useAuth();
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isAccountMenuOpen, setAccountMenuOpen] = useState(false);
-  const closeNavigationMenus = useEffectEvent(() => {
+
+  function closeNavigationMenus() {
     setDrawerOpen(false);
     setAccountMenuOpen(false);
-  });
+  }
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -45,7 +46,8 @@ export function AppShell({
   }, [pathname, router, status]);
 
   useEffect(() => {
-    closeNavigationMenus();
+    setDrawerOpen(false);
+    setAccountMenuOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -99,7 +101,6 @@ export function AppShell({
 
   const visibleNavigation = navigation.filter((item) => item.href !== "/users" || session.isAdmin);
   const primaryMobileNavigation = visibleNavigation.filter((item) => mobilePrimaryHrefs.has(item.href));
-  const secondaryNavigation = visibleNavigation.filter((item) => !mobilePrimaryHrefs.has(item.href));
   const currentNavItem = visibleNavigation.find((item) => isActivePath(pathname, item.href)) ?? visibleNavigation[0];
 
   return (
@@ -131,6 +132,7 @@ export function AppShell({
               className="app-sidebar-link"
               data-active={isActivePath(pathname, item.href)}
               href={item.href}
+              onClick={closeNavigationMenus}
             >
               <span>{item.label}</span>
               <span className="muted">{item.short}</span>
@@ -167,7 +169,7 @@ export function AppShell({
             <span />
             <span />
           </button>
-          <Link className="app-topbar-brand" href="/dashboard">
+          <Link className="app-topbar-brand" href="/dashboard" onClick={closeNavigationMenus}>
             <span className="eyebrow">Maman Contracting</span>
             <strong>{currentNavItem?.label ?? "Workspace"}</strong>
           </Link>
@@ -234,6 +236,7 @@ export function AppShell({
                 className="app-drawer-link"
                 data-active={isActivePath(pathname, item.href)}
                 href={item.href}
+                onClick={closeNavigationMenus}
               >
                 <span>{item.label}</span>
                 <span className="muted">{item.short}</span>
@@ -250,7 +253,7 @@ export function AppShell({
           </div>
 
           {session.isAdmin ? (
-            <Link className="app-account-link" href="/users">
+            <Link className="app-account-link" href="/users" onClick={closeNavigationMenus}>
               <span>Manage users</span>
               <span className="muted">Admin</span>
             </Link>
@@ -280,23 +283,11 @@ export function AppShell({
             className="app-bottom-link"
             data-active={isActivePath(pathname, item.href)}
             href={item.href}
+            onClick={closeNavigationMenus}
           >
             {item.short}
           </Link>
         ))}
-        {secondaryNavigation.length ? (
-          <button
-            className="app-bottom-link app-bottom-link-secondary"
-            data-active={secondaryNavigation.some((item) => isActivePath(pathname, item.href))}
-            type="button"
-            onClick={() => {
-              setDrawerOpen(true);
-              setAccountMenuOpen(false);
-            }}
-          >
-            More
-          </button>
-        ) : null}
       </nav>
     </div>
   );

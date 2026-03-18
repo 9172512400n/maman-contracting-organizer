@@ -1031,7 +1031,7 @@ export default function PermitsPage() {
       <Dialog
         open={dialogOpen}
         title={currentPermit ? "Edit permit" : "Add permit"}
-        description="Writes to the same legacy `permits` collection."
+        description="Scan or enter permit details, attach documents, and save."
         onClose={resetDialogState}
       >
         <form

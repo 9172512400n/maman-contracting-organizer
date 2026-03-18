@@ -154,7 +154,7 @@ export default function JobsPage() {
         <div>
           <p className="eyebrow">Jobs</p>
           <h1>Job management</h1>
-          <p className="muted">Search and filter the existing legacy job records.</p>
+          <p className="muted">Search jobs, update details, and keep the schedule moving.</p>
         </div>
         <button className="button" type="button" onClick={openCreateDialog}>
           + New job
@@ -163,7 +163,7 @@ export default function JobsPage() {
 
       {error ? <div className="callout">{error}</div> : null}
 
-      <SectionCard title="Jobs" description="List-first view with the legacy search and status filters restored.">
+      <SectionCard title="Jobs" description="Browse, filter, and expand jobs to manage the next step.">
         <div className="stack">
           <input
             className="search-input"
@@ -289,7 +289,7 @@ export default function JobsPage() {
       <Dialog
         open={dialogOpen}
         title={currentJob ? "Edit job" : "Add job"}
-        description="Writes to the same legacy `jobs` collection."
+        description="Enter the job details and save when you're ready."
         onClose={closeDialog}
       >
         <JobEditorForm

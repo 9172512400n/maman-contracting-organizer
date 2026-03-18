@@ -64,8 +64,7 @@ export function InviteAcceptForm({
           <span className="eyebrow">Invite activation</span>
           <h1>Create your password</h1>
           <p className="muted">
-            This uses the same legacy invite record in the `users` collection. Only the app
-            structure changed.
+            Finish setting up your account and choose a password to continue.
           </p>
           <strong>{email}</strong>
         </div>

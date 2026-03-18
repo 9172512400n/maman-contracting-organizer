@@ -274,7 +274,7 @@ export default function SchedulePage() {
         <div>
           <p className="eyebrow">Schedule</p>
           <h1>Weekly schedule</h1>
-          <p className="muted">Crew filters, day notes, add-job actions, and Date TBD cards restored from the legacy schedule flow.</p>
+          <p className="muted">View the week, sort by crew, and place jobs where they need to go.</p>
         </div>
       </div>
 
@@ -552,7 +552,7 @@ export default function SchedulePage() {
       <Dialog
         open={dialogOpen}
         title={currentJob ? "Edit job" : "Add job"}
-        description="Uses the same legacy `jobs` collection fields as the old schedule flow."
+        description="Update the job details and assign the right schedule day."
         onClose={closeDialog}
       >
         <JobEditorForm

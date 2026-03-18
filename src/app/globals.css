@@ -14,6 +14,17 @@
   --shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
 }
 
+:root[data-theme="light"] {
+  --bg: #f3f5f9;
+  --bg-elevated: #ffffff;
+  --bg-panel: #ffffff;
+  --bg-soft: #eef2f7;
+  --border: #d6dce6;
+  --text: #111827;
+  --muted: #667085;
+  --shadow: 0 24px 48px rgba(15, 23, 42, 0.08);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -34,6 +45,11 @@ body {
 body {
   line-height: 1.5;
   overflow-x: hidden;
+}
+
+html[data-theme="light"],
+html[data-theme="light"] body {
+  background: radial-gradient(circle at top, #ffffff 0%, #eef2f7 58%);
 }
 
 a {
@@ -133,18 +149,21 @@ img {
 .app-sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   margin-top: 0;
   flex: 1 1 auto;
 }
 
 .app-sidebar-link {
-  border: 1px solid transparent;
-  border-radius: 14px;
+  min-height: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 18px;
   color: var(--muted);
   display: flex;
-  justify-content: space-between;
-  padding: 12px 14px;
+  align-items: center;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  font-weight: 600;
   transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
 }
 
@@ -310,20 +329,20 @@ img {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1 1 auto;
 }
 
 .app-drawer-link {
   min-width: 0;
   min-height: 52px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 13px 14px;
+  padding: 13px 16px;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.02);
   color: var(--muted);
+  font-weight: 600;
   transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
 }
 
@@ -456,6 +475,77 @@ img {
   border-radius: 20px;
   box-shadow: var(--shadow);
   min-width: 0;
+}
+
+:root[data-theme="light"] .public-card,
+:root[data-theme="light"] .card,
+:root[data-theme="light"] .section-card,
+:root[data-theme="light"] .data-card,
+:root[data-theme="light"] .record-card,
+:root[data-theme="light"] .group-card,
+:root[data-theme="light"] .schedule-day-card,
+:root[data-theme="light"] .schedule-job-card,
+:root[data-theme="light"] .app-topbar,
+:root[data-theme="light"] .app-sidebar,
+:root[data-theme="light"] .app-drawer,
+:root[data-theme="light"] .dialog-shell,
+:root[data-theme="light"] .app-account-menu {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+:root[data-theme="light"] .app-shell-backdrop {
+  background: rgba(148, 163, 184, 0.22);
+}
+
+:root[data-theme="light"] .app-sidebar-footer,
+:root[data-theme="light"] .app-drawer-footer,
+:root[data-theme="light"] .app-responsive-shell {
+  background: linear-gradient(180deg, rgba(243, 245, 249, 0) 0%, rgba(243, 245, 249, 0.96) 36%);
+}
+
+:root[data-theme="light"] .app-sidebar-link:hover,
+:root[data-theme="light"] .app-sidebar-link[data-active="true"],
+:root[data-theme="light"] .app-drawer-link:hover,
+:root[data-theme="light"] .app-drawer-link[data-active="true"],
+:root[data-theme="light"] .app-bottom-link[data-active="true"] {
+  background: rgba(229, 62, 62, 0.08);
+  border-color: rgba(229, 62, 62, 0.22);
+}
+
+:root[data-theme="light"] .app-bottom-nav {
+  background: rgba(243, 245, 249, 0.94);
+  border-top-color: var(--border);
+}
+
+:root[data-theme="light"] .app-bottom-link,
+:root[data-theme="light"] .icon-button,
+:root[data-theme="light"] .app-account-trigger,
+:root[data-theme="light"] .app-account-card,
+:root[data-theme="light"] .app-account-link,
+:root[data-theme="light"] .field input,
+:root[data-theme="light"] .field select,
+:root[data-theme="light"] .field textarea,
+:root[data-theme="light"] .search-input,
+:root[data-theme="light"] .schedule-week-select,
+:root[data-theme="light"] .schedule-note-editor input {
+  background: var(--bg-soft);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .button-ghost,
+:root[data-theme="light"] .filter-chip {
+  border-color: var(--border);
+}
+
+:root[data-theme="light"] .app-account-link:hover {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+:root[data-theme="light"] .callout {
+  background: rgba(229, 62, 62, 0.08);
 }
 
 .card {
@@ -1347,10 +1437,6 @@ td {
     font-size: 0.92rem;
     font-weight: 700;
     white-space: nowrap;
-  }
-
-  .app-bottom-link-secondary {
-    background: rgba(255, 255, 255, 0.04);
   }
 
   .app-bottom-link[data-active="true"] {

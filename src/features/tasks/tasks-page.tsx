@@ -285,7 +285,7 @@ export default function TasksPage() {
       <Dialog
         open={dialogOpen}
         title={currentTask ? "Edit task" : "Add task"}
-        description="Create a task or reminder in the same legacy collection."
+        description="Capture a reminder, due date, and details for the team."
         onClose={() => {
           setDialogOpen(false);
           setEditingTaskId(null);
