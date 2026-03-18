@@ -5,16 +5,11 @@ import { sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/aut
 import { useRouter } from "next/navigation";
 import { getClientAuth } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/firebase/auth-provider";
-import { BootstrapAdminForm } from "@/features/auth/bootstrap-admin-form";
 
 export function LoginForm({
   nextPath,
-  showBootstrapAdmin,
-  bootstrapAdminEmail,
 }: {
   nextPath?: string;
-  showBootstrapAdmin?: boolean;
-  bootstrapAdminEmail?: string;
 }) {
   const router = useRouter();
   const { status } = useAuth();
@@ -126,9 +121,6 @@ export function LoginForm({
           </div>
         </form>
 
-        {showBootstrapAdmin && bootstrapAdminEmail ? (
-          <BootstrapAdminForm adminEmail={bootstrapAdminEmail} />
-        ) : null}
       </div>
     </div>
   );
