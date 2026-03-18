@@ -4,6 +4,7 @@ import type { UserInviteInput, UserUpdateInput } from "@/domain/users/types";
 const inviteSchema = z.object({
   email: z.string().trim().email(),
   role: z.string().trim().default("Worker"),
+  inviteToken: z.string().trim().optional(),
 });
 
 const updateSchema = z.object({
@@ -17,6 +18,7 @@ export function parseInviteFormData(formData: FormData): UserInviteInput {
   return inviteSchema.parse({
     email: String(formData.get("email") ?? ""),
     role: String(formData.get("role") ?? "Worker"),
+    inviteToken: String(formData.get("inviteToken") ?? "").trim() || undefined,
   });
 }
 

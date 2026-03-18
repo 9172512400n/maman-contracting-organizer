@@ -6,9 +6,34 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SectionCard } from "@/components/ui/section-card";
 import { StatusPill } from "@/components/ui/status-pill";
+import { appEnv } from "@/lib/env";
 import { useAuth } from "@/lib/firebase/auth-provider";
 import { createOrRefreshInvite, listUsers, removeUser, updateUser } from "@/lib/firebase/client-data";
 import type { UserAccount } from "@/domain/users/types";
+
+function randomInviteToken() {
+  if (typeof crypto !== "undefined" && "getRandomValues" in crypto) {
+    const bytes = new Uint8Array(24);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("");
+  }
+
+  return `${Date.now().toString(16)}${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2)}`;
+}
+
+function openInviteEmail(email: string, role: string, inviteLink: string) {
+  const subject = encodeURIComponent("You're invited to Maman Contracting Organizer");
+  const body = encodeURIComponent(
+    "Hi,\n\n" +
+      "You've been invited to join the Maman Contracting Organizer app.\n\n" +
+      `Open this secure invite link and create your password:\n${inviteLink}\n\n` +
+      `This invite is for: ${email}\n` +
+      `Role: ${role}\n\n` +
+      "After setting your password, you can log in to the app.\n\n" +
+      "Welcome to the team!",
+  );
+  window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+}
 
 export default function UsersPage() {
   const { session } = useAuth();
@@ -49,9 +74,23 @@ export default function UsersPage() {
     }
 
     const form = event.currentTarget;
+    const formData = new FormData(form);
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
+    const role = String(formData.get("role") ?? "Worker").trim() || "Worker";
+    if (!email) {
+      setError("Please enter an email address.");
+      return;
+    }
+
+    const inviteToken = randomInviteToken();
+    const inviteLink = `${appEnv.publicAppUrl}/invite?email=${encodeURIComponent(email)}&invite=${inviteToken}`;
+
+    openInviteEmail(email, role, inviteLink);
+    formData.set("inviteToken", inviteToken);
+
     setError(null);
     try {
-      const link = await createOrRefreshInvite(new FormData(form), session);
+      const link = await createOrRefreshInvite(formData, session);
       setInviteLink(link);
       form.reset();
       await loadUsers();

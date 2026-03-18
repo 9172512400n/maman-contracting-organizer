@@ -21,6 +21,7 @@ export type UserAccount = {
 export type UserInviteInput = {
   email: string;
   role: string;
+  inviteToken?: string;
 };
 
 export type UserUpdateInput = {

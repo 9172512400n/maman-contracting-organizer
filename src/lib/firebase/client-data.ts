@@ -738,8 +738,7 @@ export async function createOrRefreshInvite(formData: FormData, invitedBy: Actor
   const docRef = existingInvite?.ref ?? doc(collection(getClientDb(), "users"));
   const existing = existingInvite?.data() ?? {};
 
-
-  const token = randomInviteToken();
+  const token = input.inviteToken || randomInviteToken();
   const inviteLink = `${appEnv.publicAppUrl}/invite?email=${encodeURIComponent(email)}&invite=${token}`;
 
   await setDoc(

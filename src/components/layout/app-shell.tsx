@@ -46,11 +46,6 @@ export function AppShell({
   }, [pathname, router, status]);
 
   useEffect(() => {
-    setDrawerOpen(false);
-    setAccountMenuOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
     if (!isDrawerOpen && !isAccountMenuOpen) {
       return;
     }
@@ -135,7 +130,6 @@ export function AppShell({
               onClick={closeNavigationMenus}
             >
               <span>{item.label}</span>
-              <span className="muted">{item.short}</span>
             </Link>
           ))}
         </nav>
@@ -239,7 +233,6 @@ export function AppShell({
                 onClick={closeNavigationMenus}
               >
                 <span>{item.label}</span>
-                <span className="muted">{item.short}</span>
               </Link>
             ))}
           </nav>
