@@ -4746,9 +4746,19 @@ function doSignOut() {
     window.showToast('✅ DOT bureau emails saved', '#4ade80');
   };
 
-  function detectBorough(address) {
+  function detectBorough(address, permitNumber) {
+    // • First: detect from permit number prefix (most reliable)
+    // Q = Queens, B = Brooklyn, M = Manhattan, X = Bronx, R = Staten Island
+    if (permitNumber) {
+      const prefix = (permitNumber || '').trim().toUpperCase().charAt(0);
+      if (prefix === 'Q') return 'queens';
+      if (prefix === 'B') return 'brooklyn';
+      if (prefix === 'M') return 'manhattan';
+      if (prefix === 'X') return 'bronx';
+      if (prefix === 'R') return 'staten_island';
+    }
+    // • Second: detect from address zip code
     const a = (address || '').toLowerCase();
-    // Check zip codes first (5-digit patterns)
     const zipMatch = a.match(/\b(\d{5})\b/);
     if (zipMatch) {
       const zip = zipMatch[1];
@@ -4757,13 +4767,13 @@ function doSignOut() {
       if (zip.startsWith('104')) return 'bronx';
       if (zip.startsWith('103')) return 'staten_island';
     }
-    // Check borough name keywords
+    // • Third: detect from borough name in address
     if (a.includes('brooklyn')) return 'brooklyn';
     if (a.includes('queens')) return 'queens';
     if (a.includes('bronx')) return 'bronx';
     if (/staten island|staten isl/.test(a)) return 'staten_island';
-    if (a.includes('manhattan')) return 'manhattan_hiqa';
-    return 'manhattan'; // default (triggers both manhattan bureaus via isPreChecked logic)
+    if (a.includes('manhattan')) return 'manhattan';
+    return 'manhattan'; // default
   }
 
   function renderPermitsCards(permits) {
@@ -4829,9 +4839,9 @@ function doSignOut() {
       try { localStorage.setItem('dot_bureau_prefs', JSON.stringify(selectedIds)); } catch(e) {}
     }
 
-    function buildBureauHtml(addr, groupKey) {
+    function buildBureauHtml(addr, groupKey, permitNumber) {
       const savedPrefs = getSavedBureauPrefs();
-      const detectedBorough = detectBorough(addr);
+      const detectedBorough = detectBorough(addr, permitNumber);
       return DOT_BUREAUS.map(b => {
         let isPreChecked;
         if (savedPrefs !== null) {
@@ -4841,11 +4851,11 @@ function doSignOut() {
           // First time — auto-detect by borough
           isPreChecked = b.id === detectedBorough || (detectedBorough === 'manhattan' && (b.id === 'manhattan_hiqa' || b.id === 'manhattan_bpp'));
         }
-        return `<label class="dot-bureau-item${isPreChecked ? ' selected' : ''}" id="bureau-lbl-${groupKey}-${b.id}" onclick="toggleBureau('${groupKey}','${b.id}')">
-          <input type="checkbox" class="dot-bureau-cb" id="bureau-cb-${groupKey}-${b.id}" data-group="${groupKey}" data-bureau-id="${b.id}" data-email="${b.email}" ${isPreChecked ? 'checked' : ''} onchange="dotUpdateBtn('${groupKey}')" onclick="event.stopPropagation()" />
-          <label for="bureau-cb-${groupKey}-${b.id}" style="pointer-events:none;margin:0;">${b.name}</label>
-          <span style="font-size:10px;color:#666;margin-left:auto;">${b.email}</span>
-        </label>`;
+        return `<div class="dot-bureau-item${isPreChecked ? ' selected' : ''}" id="bureau-lbl-${groupKey}-${b.id}" onclick="toggleBureau('${groupKey}','${b.id}')" style="cursor:pointer;">
+          <input type="checkbox" class="dot-bureau-cb" id="bureau-cb-${groupKey}-${b.id}" data-group="${groupKey}" data-bureau-id="${b.id}" data-email="${b.email}" ${isPreChecked ? 'checked' : ''} onclick="event.stopPropagation()" onchange="event.stopPropagation()" style="pointer-events:none;" />
+          <span style="pointer-events:none;margin:0;font-size:12px;font-weight:700;color:#ccc;">${b.name}</span>
+          <span style="font-size:10px;color:#666;margin-left:auto;pointer-events:none;">${b.email}</span>
+        </div>`;
       }).join('');
     }
 
@@ -4951,7 +4961,7 @@ function doSignOut() {
               <span onclick="localStorage.removeItem('dot_bureau_prefs');renderPermitsCards(allStandalonePermits);window.showToast('Bureau preferences reset','#4ade80');" style="font-size:11px;color:#666;cursor:pointer;text-decoration:underline;">Reset default</span>
             </div>
             <div class="dot-bureau-list">
-              ${buildBureauHtml(addr, groupKey)}
+              ${buildBureauHtml(addr, groupKey, groupPermits[0]?.permitNumber || '')}
             </div>
             <div id="dot-expired-msg-${groupKey}" style="display:none;background:#450a0a;border:1px solid #7f1d1d;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;color:#f87171;margin-bottom:8px;">⚠️ This permit has expired. Please upload a renewal to schedule inspection.</div>
             <button class="btn-notify-dot" id="dot-btn-${groupKey}" disabled
