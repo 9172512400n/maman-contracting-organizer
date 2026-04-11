@@ -2465,20 +2465,72 @@ function doSignOut() {
   window.addJobToSchedule = function(jobId) {
     const job = allJobs.find(j => j.id === jobId);
     if (!job) return;
-    // Navigate to Schedule tab
-    navTo(3);
-    // Open edit modal for this job pre-focused on scheduleDay field
+
+    // Create a quick date picker overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'quick-schedule-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    const today = new Date().toISOString().split('T')[0];
+    const currentDate = job.scheduleDay || today;
+
+    overlay.innerHTML = `
+      <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:24px;max-width:360px;width:100%;">
+        <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;">📅 Schedule Job</div>
+        <div style="font-size:13px;color:#9ca3af;margin-bottom:20px;">${job.address || 'Job #' + jobId}</div>
+        <label style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px;">Pick a date</label>
+        <input type="date" id="quick-schedule-date" value="${currentDate}"
+          style="width:100%;padding:12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;margin-bottom:20px;box-sizing:border-box;"
+        />
+        <div style="display:flex;gap:10px;">
+          <button onclick="confirmQuickSchedule('${jobId}')" style="flex:1;padding:12px;background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">✅ Schedule</button>
+          <button onclick="document.getElementById('quick-schedule-overlay').remove()" style="flex:1;padding:12px;background:#2a2a2a;border:none;border-radius:8px;color:#9ca3af;font-size:14px;cursor:pointer;">Cancel</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    // Auto-focus the date input
     setTimeout(() => {
-      openEditJob(jobId);
-      // Scroll to scheduleDay field
-      const sd = document.getElementById('field-scheduleDay');
-      if (sd) {
-        sd.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        sd.focus();
-        sd.style.borderColor = '#22c55e';
-        setTimeout(() => sd.style.borderColor = '', 2000);
+      const di = document.getElementById('quick-schedule-date');
+      if (di) di.focus();
+    }, 100);
+  };
+
+  window.confirmQuickSchedule = async function(jobId) {
+    const dateInput = document.getElementById('quick-schedule-date');
+    if (!dateInput || !dateInput.value) return;
+    const scheduleDay = dateInput.value;
+
+    const job = allJobs.find(j => j.id === jobId);
+    if (!job) return;
+
+    try {
+      // Update the job's scheduleDay in Firestore
+      const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+      await updateDoc(doc(window._db, 'jobs', jobId), { scheduleDay });
+
+      // Update local cache
+      job.scheduleDay = scheduleDay;
+
+      // Remove overlay
+      const overlay = document.getElementById('quick-schedule-overlay');
+      if (overlay) overlay.remove();
+
+      // Navigate to Schedule tab and refresh
+      navTo(3);
+      window._schedWeekOffset = 0;
+      if (typeof window.renderSchedule === 'function') window.renderSchedule();
+
+      // Show confirmation toast
+      if (typeof showToast === 'function') {
+        const d = new Date(scheduleDay + 'T12:00:00');
+        const label = d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+        showToast('📅 Scheduled for ' + label);
       }
-    }, 300);
+    } catch(e) {
+      alert('Error scheduling job: ' + (e.message || e));
+    }
   };
 
   window.togglePasswordVisibility = function() {
