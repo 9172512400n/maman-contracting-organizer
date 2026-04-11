@@ -4766,14 +4766,16 @@ function doSignOut() {
       if (/^(113|114|116)/.test(zip)) return 'queens';
       if (zip.startsWith('104')) return 'bronx';
       if (zip.startsWith('103')) return 'staten_island';
+      if (/^(100|101|102)/.test(zip)) return 'manhattan'; // Manhattan zips
     }
     // • Third: detect from borough name in address
     if (a.includes('brooklyn')) return 'brooklyn';
     if (a.includes('queens')) return 'queens';
     if (a.includes('bronx')) return 'bronx';
     if (/staten island|staten isl/.test(a)) return 'staten_island';
+    // Manhattan always returns 'manhattan' so BOTH manhattan bureaus get pre-checked
     if (a.includes('manhattan')) return 'manhattan';
-    return 'manhattan'; // default
+    return 'manhattan'; // default — NYC defaults to Manhattan (both bureaus)
   }
 
   function renderPermitsCards(permits) {
