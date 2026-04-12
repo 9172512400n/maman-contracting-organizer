@@ -3073,21 +3073,12 @@ function doSignOut() {
         window._schedTabJustOpened = true;
         window._schedUserNavigated = false;
         // Re-render schedule if visible OR if it was the last section (restores correctly on load)
-        const activeSection = window._currentSection || parseInt(localStorage.getItem('last-section') || '0');
-        if (activeSection === 3) {
-          window._schedCrewFilter = 'all';
-          document.querySelectorAll('.crew-pill').forEach(b => {
-            b.classList.toggle('active', b.dataset.crew === 'all');
-          });
-          loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
-        } else if (window._schedPendingRender) {
-          // Schedule was waiting for jobs — render it now
-          window._schedCrewFilter = 'all';
-          document.querySelectorAll('.crew-pill').forEach(b => {
-            b.classList.toggle('active', b.dataset.crew === 'all');
-          });
-          loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
-        }
+        // Always render schedule when jobs load — it checks visibility internally
+        window._schedCrewFilter = window._schedCrewFilter || 'all';
+        document.querySelectorAll('.crew-pill').forEach(b => {
+          b.classList.toggle('active', b.dataset.crew === window._schedCrewFilter);
+        });
+        loadScheduleNotes().then(() => { window._schedWeekOffset = window._schedUserNavigated ? window._schedWeekOffset : (new Date().getDay()===0?1:0); renderSchedule(); });
       }).catch(e => console.error('jobs load failed:', e)),
 
       // Contacts (needed for customer autocomplete in New Job)
@@ -7011,12 +7002,6 @@ Cell: 516-306-3326`
   };
 
   window.renderSchedule = function() {
-    // If jobs haven't loaded yet, wait — don't render an empty schedule
-    if (!allJobs || allJobs.length === 0) {
-      window._schedPendingRender = true; // re-render when jobs load
-      return;
-    }
-    window._schedPendingRender = false;
     // Always show current (or upcoming) work week unless user has explicitly navigated
     if (!window._schedUserNavigated) {
       const _todayDow = new Date().getDay(); // 0=Sun, 1=Mon...6=Sat
