@@ -8536,16 +8536,44 @@ Cell: 516-306-3326`
       for (let i=e.resultIndex; i<e.results.length; i++) {
         if (e.results[i].isFinal) {
           const t = e.results[i][0].transcript.trim();
-          const box = document.getElementById('sf-measurements');
-          if (!box) return;
-          if (t.toLowerCase()==='delete'||t.toLowerCase()==='undo') {
-            const lines = box.value.split('\n').filter(Boolean);
-            lines.pop();
-            box.value = lines.join('\n');
-          } else {
-            box.value = (box.value ? box.value+'\n' : '') + t;
+          const tLower = t.toLowerCase();
+
+          // Voice command: delete removes last filled row
+          if (tLower==='delete'||tLower==='undo'||tLower==='remove') {
+            const rows = document.querySelectorAll('#sf-area-rows > div');
+            for (let r=rows.length-1; r>=0; r--) {
+              const id = rows[r].id.replace('sf-area-row-','');
+              const wv = document.getElementById('sf-aw-'+id)?.value;
+              if (wv) { sfDelAreaRow(id); break; }
+            }
+            return;
           }
-          calcSFPrice();
+
+          // Convert word numbers to digits
+          const wm={'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000};
+          let norm = tLower;
+          Object.keys(wm).sort((a,b)=>b.length-a.length).forEach(w=>{norm=norm.replace(new RegExp('\\b'+w+'\\b','g'),wm[w]);});
+          const parts = norm.split(/\s*(?:by|x|times|×|\*)\s*/i);
+          let w = NaN, h = NaN;
+          if (parts.length>=2) { w=parseFloat(parts[0].replace(/[^\d.]/g,'')); h=parseFloat(parts[1].replace(/[^\d.]/g,'')); }
+          else { const nums=norm.match(/[\d]+\.?[\d]*/g); if(nums&&nums.length>=2){w=parseFloat(nums[0]);h=parseFloat(nums[1]);} }
+
+          if (!isNaN(w)&&!isNaN(h)&&w>0&&h>0) {
+            // Find next empty row, or add new one
+            let filled = false;
+            document.querySelectorAll('#sf-area-rows > div').forEach(row => {
+              if (filled) return;
+              const id = row.id.replace('sf-area-row-','');
+              const wEl=document.getElementById('sf-aw-'+id), hEl=document.getElementById('sf-al-'+id);
+              if (wEl&&hEl&&!wEl.value&&!hEl.value) {
+                wEl.value=w; wEl.dispatchEvent(new Event('input'));
+                hEl.value=h; hEl.dispatchEvent(new Event('input'));
+                sfAreaRowSF(id);
+                filled=true;
+              }
+            });
+            if (!filled) sfAddAreaRow('', w, h);
+          }
         }
       }
     };
