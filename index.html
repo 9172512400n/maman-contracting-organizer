@@ -3080,6 +3080,13 @@ function doSignOut() {
             b.classList.toggle('active', b.dataset.crew === 'all');
           });
           loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
+        } else if (window._schedPendingRender) {
+          // Schedule was waiting for jobs — render it now
+          window._schedCrewFilter = 'all';
+          document.querySelectorAll('.crew-pill').forEach(b => {
+            b.classList.toggle('active', b.dataset.crew === 'all');
+          });
+          loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
         }
       }).catch(e => console.error('jobs load failed:', e)),
 
@@ -7004,6 +7011,12 @@ Cell: 516-306-3326`
   };
 
   window.renderSchedule = function() {
+    // If jobs haven't loaded yet, wait — don't render an empty schedule
+    if (!allJobs || allJobs.length === 0) {
+      window._schedPendingRender = true; // re-render when jobs load
+      return;
+    }
+    window._schedPendingRender = false;
     // Always show current (or upcoming) work week unless user has explicitly navigated
     if (!window._schedUserNavigated) {
       const _todayDow = new Date().getDay(); // 0=Sun, 1=Mon...6=Sat
