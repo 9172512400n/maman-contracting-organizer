@@ -1231,8 +1231,7 @@ function doSignOut() {
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
       <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Email Address</label>
       <input type="email" id="invite-email" placeholder="user@mamancontracting.com"
-        style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
-        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
     </div>
     <div id="invite-error" style="color:#f87171;font-size:12px;margin-bottom:12px;min-height:16px;"></div>
     <div style="display:flex;gap:10px;">
@@ -1251,20 +1250,17 @@ function doSignOut() {
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Name</label>
         <input type="text" id="sig-name" placeholder="Nir Maman"
-          style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
-          onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+          style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Cell 1</label>
         <input type="text" id="sig-cell1" placeholder="917-251-2400"
-          style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
-          onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+          style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Cell 2 (optional)</label>
         <input type="text" id="sig-cell2" placeholder="516-306-3326"
-          style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
-          onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+          style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="background:#111;border:1px solid #2a2a2a;border-radius:8px;padding:12px;font-size:12px;color:#aaa;font-family:'Inter',sans-serif;line-height:1.6;">
         <div style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Preview</div>
@@ -1284,7 +1280,7 @@ function doSignOut() {
 </div>
 
 <!-- PERMIT MODAL -->
-<div id="permit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;overflow-y:auto;padding:20px 20px 100px;">
+<div id="permit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;overflow-y:auto;padding:20px 20px 100px;-webkit-overflow-scrolling:touch;will-change:transform;">
   <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;max-width:600px;margin:auto;padding:28px;position:relative;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
       <div>
@@ -1324,31 +1320,31 @@ function doSignOut() {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Permit Number <span style="color:#e53e3e">*</span></label>
-        <input type="text" id="pm-permitNumber" placeholder="e.g. 2024-089" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="text" id="pm-permitNumber" placeholder="e.g. 2024-089" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Permit Type Code</label>
-        <input type="text" id="pm-permitTypeCode" placeholder="e.g. 115" inputmode="numeric" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="text" id="pm-permitTypeCode" placeholder="e.g. 115" inputmode="numeric" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Valid From</label>
-        <input type="date" id="pm-validFrom" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="date" id="pm-validFrom" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Expiration Date <span style="color:#e53e3e">*</span></label>
-        <input type="date" id="pm-expirationDate" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="date" id="pm-expirationDate" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Permit Holder <span style="color:#e53e3e">*</span></label>
-        <input type="text" id="pm-permitHolder" placeholder="e.g. Maman Contracting Inc." style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="text" id="pm-permitHolder" placeholder="e.g. Maman Contracting Inc." style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Job Address <span style="color:#e53e3e">*</span></label>
-        <input type="text" id="pm-jobAddress" placeholder="e.g. 145 Main St" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="text" id="pm-jobAddress" placeholder="e.g. 145 Main St" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Status</label>
-        <select id="pm-status" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
+        <select id="pm-status" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;">
           <option value="Pending">⏳ Pending</option>
           <option value="Submitted">📤 Submitted</option>
           <option value="Under Review">🔍 Under Review</option>
@@ -1364,13 +1360,13 @@ function doSignOut() {
       <!-- Link to Job -->
       <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">🔗 Link to Job (optional)</label>
-        <select id="pm-linked-job" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
+        <select id="pm-linked-job" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;">
           <option value="">— No job linked —</option>
         </select>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Notes</label>
-        <textarea id="pm-notes" placeholder="Any notes…" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;min-height:70px;resize:vertical;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
+        <textarea id="pm-notes" placeholder="Any notes…" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;min-height:70px;resize:vertical;"></textarea>
       </div>
     </div>
 
@@ -1770,25 +1766,25 @@ function doSignOut() {
                   <label style="font-size:14px;color:#ccc;font-weight:600;white-space:nowrap;">Width (feet)</label>
                   <input type="number" id="asp-width" placeholder="0" inputmode="decimal"
                     style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
-                    oninput="calcAsphalt()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                    oninput="calcAsphalt()"/>
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
                   <label style="font-size:14px;color:#ccc;font-weight:600;">Length (feet)</label>
                   <input type="number" id="asp-length" placeholder="0" inputmode="decimal"
                     style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
-                    oninput="calcAsphalt()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                    oninput="calcAsphalt()"/>
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
                   <label style="font-size:14px;color:#ccc;font-weight:600;">Thickness (inches)</label>
                   <input type="number" id="asp-thickness" placeholder="0" inputmode="decimal"
                     style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
-                    oninput="calcAsphalt()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                    oninput="calcAsphalt()"/>
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
                   <label style="font-size:14px;color:#aaa;font-weight:600;">Cost per ton ($) <span style="font-size:11px;color:#555;">optional</span></label>
                   <input type="number" id="asp-cost" placeholder="optional" inputmode="decimal"
                     style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
-                    oninput="calcAsphalt()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                    oninput="calcAsphalt()"/>
                 </div>
               </div>
             </div>
@@ -1830,25 +1826,25 @@ function doSignOut() {
                   <label style="font-size:14px;color:#ccc;font-weight:600;">Width (feet)</label>
                   <input type="number" id="con-width" placeholder="0" inputmode="decimal"
                     style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
-                    oninput="calcConcrete()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                    oninput="calcConcrete()"/>
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
                   <label style="font-size:14px;color:#ccc;font-weight:600;">Length (feet)</label>
                   <input type="number" id="con-length" placeholder="0" inputmode="decimal"
                     style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
-                    oninput="calcConcrete()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                    oninput="calcConcrete()"/>
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
                   <label style="font-size:14px;color:#ccc;font-weight:600;">Thickness (inches)</label>
                   <input type="number" id="con-thickness" placeholder="0" inputmode="decimal"
                     style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
-                    oninput="calcConcrete()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                    oninput="calcConcrete()"/>
                 </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
                   <label style="font-size:14px;color:#aaa;font-weight:600;">Cost per yard ($) <span style="font-size:11px;color:#555;">optional</span></label>
                   <input type="number" id="con-cost" placeholder="optional" inputmode="decimal"
                     style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
-                    oninput="calcConcrete()" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+                    oninput="calcConcrete()"/>
                 </div>
               </div>
             </div>
@@ -1924,8 +1920,7 @@ function doSignOut() {
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                 <label style="color:#aaa;font-size:14px;">$ Price per SF</label>
                 <input type="number" id="mp-price-sf" placeholder="0.00" inputmode="decimal" oninput="mpUpdateTotals()"
-                  style="width:120px;padding:10px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
-                  onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
+                  style="width:120px;padding:10px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;" />
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center;">
                 <span style="color:#aaa;font-size:14px;">Total Cost</span>
@@ -1954,7 +1949,6 @@ function doSignOut() {
                 <textarea id="sf-measurements"
                   placeholder="10x10&#10;8x26&#10;90x50&#10;Hundred by 20&#10;Say 'delete' to undo last"
                   oninput="calcSFPrice()"
-                  onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"
                   style="flex:1;min-height:140px;padding:12px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:10px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;resize:vertical;line-height:1.7;outline:none;"></textarea>
                 <button id="sf-mic-btn" onclick="sfStartVoice()"
                   style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#e53e3e,#b91c1c);border:none;color:white;font-size:22px;cursor:pointer;flex-shrink:0;box-shadow:0 3px 12px rgba(229,62,62,0.4);">
@@ -1989,7 +1983,6 @@ function doSignOut() {
                 <span style="color:#aaa;font-size:15px;font-weight:600;white-space:nowrap;">$ Price per SF</span>
                 <input type="number" id="sf-price-per-sf" placeholder="e.g. 4.75" inputmode="decimal" min="0" step="0.01"
                   oninput="calcSFPrice()"
-                  onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"
                   style="flex:1;padding:11px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:16px;font-family:'Inter',sans-serif;outline:none;"/>
               </div>
               <div style="padding:12px 16px;background:#111;border-radius:10px;border:1px solid #2a2a2a;">
@@ -2042,23 +2035,23 @@ function doSignOut() {
 
     <div class="contact-form-field">
       <label>Company / Customer Name *</label>
-      <input type="text" id="cf-companyName" placeholder="e.g. Smith Family or ABC Corp" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <input type="text" id="cf-companyName" placeholder="e.g. Smith Family or ABC Corp"/>
     </div>
     <div class="contact-form-field">
       <label>Phone</label>
-      <input type="tel" id="cf-phone" placeholder="e.g. (917) 555-1234" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <input type="tel" id="cf-phone" placeholder="e.g. (917) 555-1234"/>
     </div>
     <div class="contact-form-field">
       <label>Email</label>
-      <input type="email" id="cf-email" placeholder="e.g. contact@company.com" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <input type="email" id="cf-email" placeholder="e.g. contact@company.com"/>
     </div>
     <div class="contact-form-field">
       <label>Address</label>
-      <input type="text" id="cf-address" placeholder="e.g. 145 Main St, Brooklyn, NY" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <input type="text" id="cf-address" placeholder="e.g. 145 Main St, Brooklyn, NY"/>
     </div>
     <div class="contact-form-field">
       <label>Notes</label>
-      <textarea id="cf-notes" placeholder="Any notes about this contact…" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
+      <textarea id="cf-notes" placeholder="Any notes about this contact…"></textarea>
     </div>
 
     <!-- PEOPLE SECTION -->
@@ -2109,7 +2102,7 @@ function doSignOut() {
 </div>
 
 <!-- NEW JOB MODAL -->
-<div id="job-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;overflow-y:auto;padding:12px 12px 100px;box-sizing:border-box;">
+<div id="job-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;overflow-y:auto;padding:12px 12px 100px;box-sizing:border-box;-webkit-overflow-scrolling:touch;will-change:transform;">
   <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;max-width:640px;width:100%;margin:auto;padding:20px;position:relative;box-sizing:border-box;overflow:hidden;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
       <div>
@@ -2131,7 +2124,7 @@ function doSignOut() {
         <div style="position:relative;">
           <input type="text" id="f-customerName" placeholder="e.g. John Smith" autocomplete="off"
             style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;width:100%;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#e53e3e';customerSearchOpen(this.value)"
+            onfocus="this.style.borderColor='#e53e3e'"
             oninput="customerSearchOpen(this.value)"
             onblur="setTimeout(()=>{ var d=document.getElementById('customer-suggestions'); if(d) d.style.display='none'; },200)"/>
           <div id="customer-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:#1a1a1a;border:1.5px solid #e53e3e;border-radius:8px;z-index:99999;max-height:200px;overflow-y:auto;margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>
@@ -2139,23 +2132,23 @@ function doSignOut() {
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Phone Number</label>
-        <input type="tel" id="f-phone" placeholder="e.g. (718) 555-0100" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="tel" id="f-phone" placeholder="e.g. (718) 555-0100" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Email</label>
-        <input type="email" id="f-email" placeholder="e.g. customer@email.com" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="email" id="f-email" placeholder="e.g. customer@email.com" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Invoice / Estimate #</label>
-        <input type="text" id="f-invoiceNumber" placeholder="e.g. INV-2025" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="text" id="f-invoiceNumber" placeholder="e.g. INV-2025" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Job Address</label>
-        <input type="text" id="f-address" placeholder="e.g. 145 Main St, Brooklyn, NY" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="text" id="f-address" placeholder="e.g. 145 Main St, Brooklyn, NY" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Task Type</label>
-        <select id="f-taskType" onchange="handleTaskTypeChange()" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
+        <select id="f-taskType" onchange="handleTaskTypeChange()" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;">
           <option value="">Select task type…</option>
           <option value="Parking Lot">Parking Lot</option>
           <option value="Sidewalk">Sidewalk</option>
@@ -2164,15 +2157,15 @@ function doSignOut() {
       </div>
       <div id="f-customTaskWrap" style="display:none;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Custom Task Type</label>
-        <input type="text" id="f-customTask" placeholder="e.g. Driveway, Roof Repair…" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="text" id="f-customTask" placeholder="e.g. Driveway, Roof Repair…" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Project Size</label>
-        <input type="text" id="f-projectSize" placeholder="e.g. 44.66' × 22'" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="text" id="f-projectSize" placeholder="e.g. 44.66' × 22'" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Job Type (Crew)</label>
-        <select id="f-jobType" onchange="handleJobTypeChange()" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
+        <select id="f-jobType" onchange="handleJobTypeChange()" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;">
           <option value="">Select job type…</option>
           <option value="asphalt">Asphalt</option>
           <option value="concrete">Concrete</option>
@@ -2180,7 +2173,7 @@ function doSignOut() {
       </div>
       <div id="f-concreteSubWrap" style="display:none;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Concrete Sub Name</label>
-        <input type="text" id="f-concreteSub" placeholder="e.g. Central Concrete" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="text" id="f-concreteSub" placeholder="e.g. Central Concrete" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Alternate Side Parking Days</label>
@@ -2190,22 +2183,22 @@ function doSignOut() {
             Fully Blocked
           </label>
         </div>
-        <input type="text" id="f-altParkingDays" placeholder="e.g. Mon &amp; Thu" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="text" id="f-altParkingDays" placeholder="e.g. Mon &amp; Thu" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div id="f-parkingTimeRow" style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Parking Time</label>
-        <input type="text" id="f-altParkingTime" placeholder="e.g. 8:00am – 9:30am" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="text" id="f-altParkingTime" placeholder="e.g. 8:00am – 9:30am" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Job Blocked?</label>
-        <select id="f-blocked" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
+        <select id="f-blocked" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;">
           <option value="no">No</option>
           <option value="yes">Yes</option>
         </select>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Job Status</label>
-        <select id="f-status" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'">
+        <select id="f-status" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;">
           <option>Pending</option>
           <option>In Progress</option>
           <option>Completed</option>
@@ -2215,11 +2208,11 @@ function doSignOut() {
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Schedule Day</label>
-        <input type="date" id="f-scheduleDay" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="date" id="f-scheduleDay" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Completion Day</label>
-        <input type="date" id="f-completionDay" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        <input type="date" id="f-completionDay" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"/>
       </div>
       <!-- MULTI-PERMIT SECTION -->
       <div style="grid-column:1/-1;">
@@ -2232,7 +2225,6 @@ function doSignOut() {
         <div style="display:flex;gap:8px;margin-bottom:10px;">
           <input type="text" id="permit-chip-input" placeholder="Enter permit number…" 
             style="flex:1;padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
-            onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"
             onkeydown="if(event.key==='Enter'){event.preventDefault();addPermitChip();}"/>
           <button type="button" onclick="addPermitChip()" 
             style="padding:10px 16px;background:#1e3a5f;border:1.5px solid #2d5a9e;border-radius:8px;color:#60a5fa;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;">+ Add</button>
@@ -2244,7 +2236,7 @@ function doSignOut() {
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1;">
         <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Notes</label>
-        <textarea id="f-notes" placeholder="Add any notes or special instructions…" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;min-height:80px;resize:vertical;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"></textarea>
+        <textarea id="f-notes" placeholder="Add any notes or special instructions…" style="padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;min-height:80px;resize:vertical;"></textarea>
       </div>
 
       <!-- PERMIT UPLOAD (multiple files) -->
@@ -4703,21 +4695,18 @@ function doSignOut() {
         <div>
           <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Permit Number</div>
           <input type="text" class="pr-number" placeholder="e.g. B01-2026069-C32" value="${number||''}"
-            style="width:100%;padding:10px 12px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+            style="width:100%;padding:10px 12px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;box-sizing:border-box;"/>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <div>
             <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Location / Code</div>
             <input type="text" class="pr-code" placeholder="e.g. 8th Ave" value="${code||''}"
-              style="width:100%;padding:10px 12px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;box-sizing:border-box;"
-              onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+              style="width:100%;padding:10px 12px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;box-sizing:border-box;"/>
           </div>
           <div>
             <div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Expiry Date</div>
             <input type="date" class="pr-expiry" value="${expiry||''}"
-              style="width:100%;padding:10px 12px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;box-sizing:border-box;"
-              onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+              style="width:100%;padding:10px 12px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;box-sizing:border-box;"/>
           </div>
         </div>
       </div>
@@ -4745,12 +4734,9 @@ function doSignOut() {
     const safePhone = (phone || '').replace(/"/g,'&quot;');
     const safeRole = (role || '').replace(/"/g,'&quot;');
     row.innerHTML = `
-      <input type="text" class="person-name-input" placeholder="Name" value="${safeName}"
-        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
-      <input type="tel" class="person-phone-input" placeholder="Phone" value="${safePhone}"
-        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
-      <input type="text" class="person-role-input" placeholder="Role (optional)" value="${safeRole}"
-        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <input type="text" class="person-name-input" placeholder="Name" value="${safeName}"/>
+      <input type="tel" class="person-phone-input" placeholder="Phone" value="${safePhone}"/>
+      <input type="text" class="person-role-input" placeholder="Role (optional)" value="${safeRole}"/>
       <button class="btn-remove-person" onclick="removePersonRow('${rowId}')" title="Remove person">×</button>`;
     list.appendChild(row);
   };
@@ -5174,8 +5160,7 @@ function doSignOut() {
         <div style="margin-bottom:14px;">
           <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;display:block;margin-bottom:5px;">${b.name}</label>
           <input type="email" id="dot-email-${b.id}" value="${b.email}" placeholder="${b.email}"
-            style="width:100%;padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:Inter,sans-serif;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+            style="width:100%;padding:10px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:Inter,sans-serif;box-sizing:border-box;"/>
         </div>`).join('')}
       <div style="display:flex;gap:10px;margin-top:20px;">
         <button onclick="saveDOTEmailSettings()" style="flex:1;padding:12px;background:#e53e3e;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">💾 Save</button>
@@ -5196,8 +5181,7 @@ function doSignOut() {
       <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px;">🤖 OpenAI API Key</div>
       <div style="font-size:12px;color:#666;margin-bottom:16px;">Required for permit OCR scanning. Get your key at platform.openai.com</div>
       <input type="password" id="openai-key-input" value="${current}" placeholder="sk-proj-..." 
-        style="width:100%;padding:11px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:Inter,sans-serif;box-sizing:border-box;margin-bottom:14px;"
-        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+        style="width:100%;padding:11px 12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:Inter,sans-serif;box-sizing:border-box;margin-bottom:14px;"/>
       <div style="display:flex;gap:10px;">
         <button onclick="const k=document.getElementById('openai-key-input').value.trim();if(k){localStorage.setItem('openai_api_key',k);document.getElementById('openai-key-overlay').remove();window.showToast&&window.showToast('✅ API key saved — OCR is ready','#4ade80');}else{window.showToast&&window.showToast('Please enter a key','#e53e3e');}" style="flex:1;padding:12px;background:#e53e3e;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">💾 Save</button>
         <button onclick="document.getElementById('openai-key-overlay').remove()" style="flex:1;padding:12px;background:transparent;border:1px solid #333;border-radius:10px;color:#888;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">Cancel</button>
@@ -8207,11 +8191,9 @@ Cell: 516-306-3326`);
     const safeValue = (value || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
     row.innerHTML = `
       <input type="text" placeholder="Label…" value="${safeLabel}"
-        style="flex:1;min-width:0;padding:9px 11px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
-        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" data-cf="label"/>
+        style="flex:1;min-width:0;padding:9px 11px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" data-cf="label"/>
       <input type="text" placeholder="Value…" value="${safeValue}"
-        style="flex:2;min-width:0;padding:9px 11px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;"
-        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" data-cf="value"/>
+        style="flex:2;min-width:0;padding:9px 11px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" data-cf="value"/>
       <button type="button" onclick="document.getElementById('${id}').remove()"
         style="width:32px;height:32px;flex-shrink:0;background:#2a2a2a;border:none;border-radius:8px;color:#888;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif;transition:all 0.15s;"
         onmouseover="this.style.background='#450a0a';this.style.color='#f87171'"
@@ -8316,16 +8298,23 @@ Cell: 516-306-3326`);
 
   // ── JOB MODAL ─────────────────────────────────────────────────────────────
   function openJobModal(prefillDate) {
-    // Show modal immediately — then clear form in next frame for instant response
+    // Show modal instantly — do all form work after two frames for maximum responsiveness
     const modal = document.getElementById('job-modal');
     modal.style.display = 'block';
     modal.scrollTop = 0;
+    // First frame: nothing (let browser paint the modal immediately)
     requestAnimationFrame(function() {
-      if (window.clearJobForm) window.clearJobForm();
-      if (prefillDate) {
-        const sd = document.getElementById('field-scheduleDay');
-        if (sd) sd.value = prefillDate;
-      }
+      // Second frame: clear form fields async
+      requestAnimationFrame(function() {
+        if (window.clearJobForm) window.clearJobForm();
+        if (prefillDate) {
+          const sd = document.getElementById('f-scheduleDay');
+          if (sd) sd.value = prefillDate;
+        }
+        // Focus first field only after form is ready
+        const firstField = document.getElementById('f-customerName');
+        if (firstField) firstField.focus();
+      });
     });
   }
   function closeJobModal() {
@@ -8434,15 +8423,12 @@ Cell: 516-306-3326`);
     row.innerHTML = `
       <span style="font-size:12px;font-weight:800;color:#e53e3e;min-width:18px;">${idx}</span>
       <input type="text" placeholder="Area name" value="${name||''}" oninput="mpUpdateTotals()"
-        style="flex:2;background:#111;border:1.5px solid #2a2a2a;border-radius:6px;padding:7px 8px;color:#fff;font-size:13px;outline:none;font-family:'Inter',sans-serif;"
-        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
+        style="flex:2;background:#111;border:1.5px solid #2a2a2a;border-radius:6px;padding:7px 8px;color:#fff;font-size:13px;outline:none;font-family:'Inter',sans-serif;" />
       <input type="number" id="mp-w-${idx}" placeholder="W" inputmode="decimal" value="${w||''}" oninput="mpRowSF(${idx})"
-        style="width:52px;background:#111;border:1.5px solid #2a2a2a;border-radius:6px;padding:7px;color:#fff;font-size:13px;outline:none;text-align:center;font-family:'Inter',sans-serif;"
-        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
+        style="width:52px;background:#111;border:1.5px solid #2a2a2a;border-radius:6px;padding:7px;color:#fff;font-size:13px;outline:none;text-align:center;font-family:'Inter',sans-serif;" />
       <span style="color:#555;font-size:13px;">×</span>
       <input type="number" id="mp-h-${idx}" placeholder="L" inputmode="decimal" value="${h||''}" oninput="mpRowSF(${idx})"
-        style="width:52px;background:#111;border:1.5px solid #2a2a2a;border-radius:6px;padding:7px;color:#fff;font-size:13px;outline:none;text-align:center;font-family:'Inter',sans-serif;"
-        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
+        style="width:52px;background:#111;border:1.5px solid #2a2a2a;border-radius:6px;padding:7px;color:#fff;font-size:13px;outline:none;text-align:center;font-family:'Inter',sans-serif;" />
       <span style="font-size:11px;color:#555;">ft</span>
       <button onclick="mpVoiceRow(${idx})" id="mp-mic-${idx}" style="background:none;border:none;font-size:18px;cursor:pointer;padding:2px 4px;flex-shrink:0;">🎙️</button>
       <span id="mp-sf-${idx}" style="font-size:12px;color:#4ade80;font-weight:700;min-width:52px;text-align:right;">—</span>
@@ -8994,7 +8980,7 @@ Cell: 516-306-3326`);
     <input type="hidden" id="eu-id"/>
     <div style="margin-bottom:14px;">
       <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Full Name</label>
-      <input type="text" id="eu-name" placeholder="e.g. Mike Smith" style="width:100%;padding:11px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;box-sizing:border-box;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <input type="text" id="eu-name" placeholder="e.g. Mike Smith" style="width:100%;padding:11px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;box-sizing:border-box;"/>
     </div>
     <div style="margin-bottom:14px;">
       <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Role</label>
@@ -9008,7 +8994,7 @@ Cell: 516-306-3326`);
     </div>
     <div style="margin-bottom:20px;">
       <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Phone</label>
-      <input type="tel" id="eu-phone" placeholder="e.g. (917) 555-1234" style="width:100%;padding:11px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;box-sizing:border-box;" onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'"/>
+      <input type="tel" id="eu-phone" placeholder="e.g. (917) 555-1234" style="width:100%;padding:11px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;box-sizing:border-box;"/>
     </div>
     <div style="display:flex;gap:10px;">
       <button onclick="document.getElementById('edit-user-modal').style.display='none'" style="flex:1;padding:12px;background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
