@@ -1960,6 +1960,13 @@ function doSignOut() {
               </div>
             </div>
 
+            <!-- Areas / Rooms -->
+            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:14px;">
+              <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Areas / Rooms</div>
+              <div id="sf-area-rows" style="display:flex;flex-direction:column;gap:10px;"></div>
+              <button onclick="sfAddAreaRow()" style="width:100%;margin-top:12px;padding:13px;background:transparent;border:2px dashed #2a2a2a;border-radius:10px;color:#555;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">+ Add Area</button>
+            </div>
+
             <!-- Section 2: Pricing -->
             <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:14px;">
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Pricing</div>
@@ -8404,6 +8411,114 @@ Cell: 516-306-3326`
     document.getElementById('sf-total-display').textContent = '0 SF';
     document.getElementById('sf-total-cost').textContent = '—';
   };
+
+  // SF Area Rows
+  let _sfRowCount = 0;
+
+  window.sfAddAreaRow = function(name, w, h) {
+    _sfRowCount++;
+    const idx = _sfRowCount;
+    const row = document.createElement('div');
+    row.id = 'sf-area-row-' + idx;
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#111;border:1.5px solid #2a2a2a;border-radius:12px;padding:12px 14px;';
+    row.innerHTML = `
+      <div style="width:28px;height:28px;border-radius:50%;background:#e53e3e;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0;">${idx}</div>
+      <input type="text" placeholder="Area name" value="${name||''}" oninput="sfUpdateAreaTotals()"
+        style="flex:2;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;padding:8px 10px;color:#fff;font-size:13px;outline:none;font-family:'Inter',sans-serif;min-width:0;"
+        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
+      <input type="number" id="sf-aw-${idx}" placeholder="W" inputmode="decimal" value="${w||''}" oninput="sfAreaRowSF(${idx})"
+        style="width:52px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;padding:8px;color:#fff;font-size:13px;outline:none;text-align:center;font-family:'Inter',sans-serif;"
+        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
+      <span style="color:#555;font-size:14px;font-weight:800;">×</span>
+      <input type="number" id="sf-al-${idx}" placeholder="L" inputmode="decimal" value="${h||''}" oninput="sfAreaRowSF(${idx})"
+        style="width:52px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;padding:8px;color:#fff;font-size:13px;outline:none;text-align:center;font-family:'Inter',sans-serif;"
+        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
+      <span style="color:#555;font-size:12px;">ft</span>
+      <button onclick="sfVoiceAreaRow(${idx})" id="sf-armic-${idx}" style="background:none;border:none;font-size:18px;cursor:pointer;padding:2px;flex-shrink:0;opacity:0.7;">🎙️</button>
+      <span id="sf-arsf-${idx}" style="font-size:12px;color:#4ade80;font-weight:800;min-width:48px;text-align:right;">—</span>
+      <button onclick="sfDelAreaRow(${idx})" style="width:26px;height:26px;border-radius:50%;background:#450a0a;border:none;color:#f87171;font-size:14px;font-weight:900;cursor:pointer;flex-shrink:0;">×</button>`;
+    document.getElementById('sf-area-rows').appendChild(row);
+    if (w && h) sfAreaRowSF(idx);
+    sfUpdateAreaTotals();
+  };
+
+  window.sfAreaRowSF = function(idx) {
+    const w = parseFloat(document.getElementById('sf-aw-'+idx)?.value)||0;
+    const h = parseFloat(document.getElementById('sf-al-'+idx)?.value)||0;
+    const el = document.getElementById('sf-arsf-'+idx);
+    if (el) el.textContent = (w&&h) ? ((w*h).toLocaleString()+' SF') : '—';
+    sfUpdateAreaTotals();
+  };
+
+  window.sfDelAreaRow = function(idx) {
+    const r = document.getElementById('sf-area-row-'+idx);
+    if (r) r.remove();
+    sfUpdateAreaTotals();
+  };
+
+  window.sfUpdateAreaTotals = function() {
+    let total = 0;
+    document.querySelectorAll('#sf-area-rows > div').forEach(row => {
+      const id = row.id.replace('sf-area-row-','');
+      const w = parseFloat(document.getElementById('sf-aw-'+id)?.value)||0;
+      const h = parseFloat(document.getElementById('sf-al-'+id)?.value)||0;
+      if (w>0&&h>0) total += w*h;
+    });
+    // Also add textarea measurements
+    const lines = (document.getElementById('sf-measurements')?.value||'').split('\n');
+    const wordMap={'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000};
+    lines.forEach(line => {
+      let norm = line.trim().toLowerCase();
+      if (!norm) return;
+      Object.keys(wordMap).sort((a,b)=>b.length-a.length).forEach(w=>{norm=norm.replace(new RegExp('\\b'+w+'\\b','g'),wordMap[w]);});
+      const parts = norm.split(/\s*(?:by|x|times|×|\*)\s*/i);
+      if (parts.length>=2) { const a=parseFloat(parts[0].replace(/[^\d.]/g,'')),b=parseFloat(parts[1].replace(/[^\d.]/g,'')); if(a>0&&b>0) total+=a*b; }
+      else { const nums=norm.match(/[\d]+\.?[\d]*/g); if(nums&&nums.length>=2){const a=parseFloat(nums[0]),b=parseFloat(nums[1]);if(a>0&&b>0)total+=a*b;} }
+    });
+    const sfDisplay = document.getElementById('sf-total-display');
+    if (sfDisplay) sfDisplay.textContent = total>0 ? total.toLocaleString('en-US',{maximumFractionDigits:2})+' SF' : '0 SF';
+    const pricePerSF = parseFloat(document.getElementById('sf-price-per-sf')?.value)||0;
+    const costDisplay = document.getElementById('sf-total-cost');
+    if (costDisplay) {
+      if (total>0&&pricePerSF>0) { costDisplay.textContent='$'+(total*pricePerSF).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); costDisplay.style.color='#4ade80'; }
+      else { costDisplay.textContent='—'; }
+    }
+  };
+
+  window.sfVoiceAreaRow = function(idx) {
+    const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){alert('Voice not supported');return;}
+    const btn=document.getElementById('sf-armic-'+idx);
+    const r=new SR(); r.lang='en-US'; r.interimResults=false; r.maxAlternatives=1;
+    r.onstart=()=>{if(btn){btn.textContent='🔴';btn.style.opacity='1';}};
+    r.onend=()=>{if(btn){btn.textContent='🎙️';btn.style.opacity='0.7';}};
+    r.onresult=e=>{
+      const t=e.results[0][0].transcript;
+      const wm={'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000};
+      let norm=t.toLowerCase();
+      Object.keys(wm).sort((a,b)=>b.length-a.length).forEach(w=>{norm=norm.replace(new RegExp('\\b'+w+'\\b','g'),wm[w]);});
+      const nums=norm.match(/[\d]+\.?[\d]*/g);
+      if(nums&&nums.length>=2){
+        const wEl=document.getElementById('sf-aw-'+idx),hEl=document.getElementById('sf-al-'+idx);
+        if(wEl){wEl.value=nums[0];wEl.dispatchEvent(new Event('input'));}
+        if(hEl){hEl.value=nums[1];hEl.dispatchEvent(new Event('input'));}
+        sfAreaRowSF(idx);
+      }
+    };
+    r.start();
+  };
+
+  // Also override calcSFPrice to use sfUpdateAreaTotals
+  window.calcSFPrice = (function(original) {
+    return function() { original(); sfUpdateAreaTotals && sfUpdateAreaTotals(); };
+  })(window.calcSFPrice || function(){});
+
+  // Init 3 rows on load
+  document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('sf-area-rows')) {
+      sfAddAreaRow(); sfAddAreaRow(); sfAddAreaRow();
+    }
+  });
 
   // SF Calculator voice mic
   let _sfListening = false, _sfRec = null;
