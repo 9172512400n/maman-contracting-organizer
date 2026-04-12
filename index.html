@@ -8825,7 +8825,8 @@ Cell: 516-306-3326`);
       const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
       await updateDoc(doc(window._db, 'jobs', jobId), { notes: newNotes, projectSize: newSize, updatedAt: new Date().toISOString() });
     } catch(e) {
-      await fetch(\`https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents/jobs/\${jobId}?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c&updateMask.fieldPaths=notes&updateMask.fieldPaths=projectSize\`, {
+      const url = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents/jobs/' + jobId + '?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c&updateMask.fieldPaths=notes&updateMask.fieldPaths=projectSize';
+      await fetch(url, {
         method: 'PATCH', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ fields: { notes: { stringValue: newNotes }, projectSize: { stringValue: newSize || '' } } })
       });
