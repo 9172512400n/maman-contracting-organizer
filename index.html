@@ -3072,16 +3072,12 @@ function doSignOut() {
         window._schedWeekOffset = 0;
         window._schedTabJustOpened = true;
         window._schedUserNavigated = false;
-        // Re-render schedule if visible or was last section (handles page restore)
-        const _activeSection = window._currentSection !== undefined ? window._currentSection : parseInt(localStorage.getItem('last-section') || '0');
-        if (_activeSection === 3) {
-          window._schedCrewFilter = 'all';
-          document.querySelectorAll('.crew-pill').forEach(b => { b.classList.toggle('active', b.dataset.crew === 'all'); });
-          loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
-        } else {
-          // Schedule pending — will render when user navigates to it
-          window._schedNeedsRender = true;
-        }
+        // Always render schedule when jobs load
+        window._schedCrewFilter = window._schedCrewFilter || 'all';
+        document.querySelectorAll('.crew-pill').forEach(b => {
+          b.classList.toggle('active', b.dataset.crew === window._schedCrewFilter);
+        });
+        loadScheduleNotes().then(() => { window._schedWeekOffset = window._schedUserNavigated ? window._schedWeekOffset : (new Date().getDay()===0?1:0); renderSchedule(); });
       }).catch(e => console.error('jobs load failed:', e)),
 
       // Contacts (needed for customer autocomplete in New Job)
