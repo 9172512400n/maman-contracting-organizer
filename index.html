@@ -3062,10 +3062,15 @@ function doSignOut() {
         allJobs = jobs.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
         window.allJobs = allJobs;
         renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); checkPermitExpiry();
-        window._schedWeekOffset = 0; // always show current week when fresh data loads
+        // Mark other sections as needing refresh when user visits them
+        window._jobsNeedRefresh = false; window._permitsNeedRefresh = true; window._contactsNeedRefresh = true;
+        window._schedWeekOffset = 0;
         window._schedTabJustOpened = true;
         window._schedUserNavigated = false;
-        loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
+        // Only re-render schedule if currently visible (avoid blocking main thread)
+        if (window._currentSection === 3) {
+          loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
+        }
       }).catch(e => console.error('jobs load failed:', e)),
 
       // Contacts (needed for customer autocomplete in New Job)
@@ -3117,7 +3122,10 @@ function doSignOut() {
     // Load immediately then poll every 30s
     loadAllData();
     if (_pollInterval) clearInterval(_pollInterval);
-    _pollInterval = setInterval(loadAllData, 30000);
+    // Poll every 60s instead of 30s, and only when tab is visible
+    _pollInterval = setInterval(function() {
+      if (!document.hidden) loadAllData();
+    }, 60000);
 
     // Keep unsubscribe stubs so cleanup code doesn't break
     jobsUnsubscribe = () => {};
@@ -8278,7 +8286,8 @@ Cell: 516-306-3326`);
   let _csTimer = null;
   window.customerSearchOpen = function(val) {
     clearTimeout(_csTimer);
-    _csTimer = setTimeout(function() { _customerSearchNow(val); }, 250);
+    if (!val || val.length < 2) { var d=document.getElementById("customer-suggestions"); if(d) d.style.display="none"; return; }
+    _csTimer = setTimeout(function() { _customerSearchNow(val); }, 300);
   };
   function _customerSearchNow(val) {
     const dropdown = document.getElementById('customer-suggestions');
