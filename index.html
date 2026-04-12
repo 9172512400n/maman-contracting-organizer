@@ -7005,6 +7005,15 @@ Cell: 516-306-3326`
   };
 
   window.renderSchedule = function() {
+    // If jobs not loaded yet, wait and retry
+    if (!allJobs || allJobs.length === 0) {
+      setTimeout(function() {
+        if (window._currentSection === 3 || parseInt(localStorage.getItem('last-section')||'0') === 3) {
+          window.renderSchedule();
+        }
+      }, 500);
+      return;
+    }
     // Always show current (or upcoming) work week unless user has explicitly navigated
     if (!window._schedUserNavigated) {
       const _todayDow = new Date().getDay(); // 0=Sun, 1=Mon...6=Sat
