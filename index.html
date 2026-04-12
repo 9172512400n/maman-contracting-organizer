@@ -6996,9 +6996,11 @@ Cell: 516-306-3326`
   };
 
   window.renderSchedule = function() {
-    // Always show current week unless user has explicitly navigated weeks
+    // Always show current (or upcoming) work week unless user has explicitly navigated
     if (!window._schedUserNavigated) {
-      window._schedWeekOffset = 0;
+      const _todayDow = new Date().getDay(); // 0=Sun, 1=Mon...6=Sat
+      // On Sundays, show the upcoming week (the work week that starts tomorrow)
+      window._schedWeekOffset = (_todayDow === 0) ? 1 : 0;
     }
     const filter = window._schedCrewFilter || 'all';
     const jobs = allJobs.filter(j => jobMatchesCrew(j, filter));
