@@ -841,6 +841,11 @@ function navTo(idx) {
     window._schedWeekOffset = 0; // always reset to current week when opening schedule
     window._schedTabJustOpened = true;
     window._schedUserNavigated = false;
+    window._schedCrewFilter = 'all'; // always reset to All Crews on open
+    // Reset crew pill active state
+    document.querySelectorAll('.crew-pill').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.crew === 'all');
+    });
     window.renderSchedule();
   }
   // Also call module navTo if available (for any extra logic)
@@ -7899,6 +7904,11 @@ Cell: 516-306-3326`);
       window._schedWeekOffset = 0; // always show current week on open
       window._schedTabJustOpened = true;
       window._schedUserNavigated = false;
+      window._schedCrewFilter = 'all'; // always reset to All Crews on open
+      // Reset crew pill active state
+      document.querySelectorAll('.crew-pill').forEach(b => {
+        b.classList.toggle('active', b.dataset.crew === 'all');
+      });
       loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
     }
   }
