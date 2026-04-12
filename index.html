@@ -839,6 +839,7 @@ function navTo(idx) {
   if (idx === 3 && typeof window.renderSchedule === 'function') {
     window._schedWeekOffset = 0; // always reset to current week when opening schedule
     window._schedTabJustOpened = true;
+    window._schedUserNavigated = false;
     window.renderSchedule();
   }
   // Also call module navTo if available (for any extra logic)
@@ -3065,6 +3066,7 @@ function doSignOut() {
         renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); checkPermitExpiry();
         window._schedWeekOffset = 0; // always show current week when fresh data loads
         window._schedTabJustOpened = true;
+        window._schedUserNavigated = false;
         loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
       }).catch(e => console.error('jobs load failed:', e)),
 
@@ -6986,13 +6988,14 @@ Cell: 516-306-3326`
   }
 
   window.schedChangeWeek = function(delta) {
+    window._schedUserNavigated = true;
     window._schedWeekOffset = (window._schedWeekOffset || 0) + delta;
     loadScheduleNotes().then(() => renderSchedule());
   };
 
   window.renderSchedule = function() {
-    // If tab was just opened, always force current week
-    if (window._schedTabJustOpened) {
+    // Always force current week until the user manually navigates
+    if (!window._schedUserNavigated || window._schedTabJustOpened) {
       window._schedWeekOffset = 0;
       window._schedTabJustOpened = false;
     }
@@ -7604,6 +7607,7 @@ Cell: 516-306-3326`);
 
   // Navigate to a specific week offset from current week (wi = index 0-7)
   window.schedChangeWeekTo = function(wi) {
+    window._schedUserNavigated = true;
     window._schedWeekOffset = wi;
     loadScheduleNotes().then(() => renderSchedule());
   };
@@ -7834,6 +7838,7 @@ Cell: 516-306-3326`);
     if (idx === 3 && typeof renderSchedule === 'function') {
       window._schedWeekOffset = 0; // always show current week on open
       window._schedTabJustOpened = true;
+      window._schedUserNavigated = false;
       loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
     }
   }
