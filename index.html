@@ -8762,6 +8762,61 @@ Cell: 516-306-3326`);
     r.start();
   };
 
+
+  // ── QUICK SF MODE FOR ASPHALT & CONCRETE ─────────────────────────────────
+  window.aspSetMode = function(mode) {
+    const fullBox = document.getElementById('asp-full-box');
+    const sfBox = document.getElementById('asp-quicksf-box');
+    const btnFull = document.getElementById('asp-mode-full');
+    const btnSF = document.getElementById('asp-mode-quicksf');
+    if (mode === 'quicksf') {
+      if (fullBox) fullBox.style.display = 'none';
+      if (sfBox) sfBox.style.display = 'block';
+      if (btnFull) { btnFull.style.background = '#2a2a2a'; btnFull.style.color = '#aaa'; }
+      if (btnSF) { btnSF.style.background = '#e53e3e'; btnSF.style.color = '#fff'; }
+    } else {
+      if (fullBox) fullBox.style.display = 'block';
+      if (sfBox) sfBox.style.display = 'none';
+      if (btnFull) { btnFull.style.background = '#e53e3e'; btnFull.style.color = '#fff'; }
+      if (btnSF) { btnSF.style.background = '#2a2a2a'; btnSF.style.color = '#aaa'; }
+    }
+  };
+  window.aspCalcFromSF = function() {
+    const sf = parseFloat(document.getElementById('asp-quicksf').value) || 0;
+    const cost = parseFloat(document.getElementById('asp-qsf-cost').value) || 0;
+    if (!sf) { document.getElementById('asp-qsf-tons').textContent='—'; document.getElementById('asp-qsf-total').textContent='—'; return; }
+    const tons = (sf * (3/12) / 27) * 2.025;
+    document.getElementById('asp-qsf-tons').textContent = tons.toFixed(2);
+    document.getElementById('asp-qsf-total').textContent = cost ? '$' + (tons * cost).toFixed(2) : '—';
+  };
+  window.conSetMode = function(mode) {
+    const fullBox = document.getElementById('con-full-box');
+    const sfBox = document.getElementById('con-quicksf-box');
+    const btnFull = document.getElementById('con-mode-full');
+    const btnSF = document.getElementById('con-mode-quicksf');
+    if (mode === 'quicksf') {
+      if (fullBox) fullBox.style.display = 'none';
+      if (sfBox) sfBox.style.display = 'block';
+      if (btnFull) { btnFull.style.background = '#2a2a2a'; btnFull.style.color = '#aaa'; }
+      if (btnSF) { btnSF.style.background = '#e53e3e'; btnSF.style.color = '#fff'; }
+    } else {
+      if (fullBox) fullBox.style.display = 'block';
+      if (sfBox) sfBox.style.display = 'none';
+      if (btnFull) { btnFull.style.background = '#e53e3e'; btnFull.style.color = '#fff'; }
+      if (btnSF) { btnSF.style.background = '#2a2a2a'; btnSF.style.color = '#aaa'; }
+    }
+  };
+  window.conCalcFromSF = function() {
+    const sf = parseFloat(document.getElementById('con-quicksf').value) || 0;
+    const cost = parseFloat(document.getElementById('con-qsf-cost').value) || 0;
+    if (!sf) { document.getElementById('con-qsf-cy').textContent='—'; document.getElementById('con-qsf-bags').textContent='—'; document.getElementById('con-qsf-total').textContent='—'; return; }
+    const cy = (sf * (4/12)) / 27;
+    const bags = Math.ceil(cy * 45);
+    document.getElementById('con-qsf-cy').textContent = cy.toFixed(2);
+    document.getElementById('con-qsf-bags').textContent = bags;
+    document.getElementById('con-qsf-total').textContent = cost ? '$' + (cy * cost).toFixed(2) : '—';
+  };
+
   window.calcAsphalt = function() {
     const w = parseFloat(document.getElementById('asp-width').value) || 0;
     const l = parseFloat(document.getElementById('asp-length').value) || 0;
