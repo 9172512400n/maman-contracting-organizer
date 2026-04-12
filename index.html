@@ -7166,6 +7166,7 @@ Cell: 516-306-3326`
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid #2a2a2a;display:flex;gap:10px;flex-wrap:wrap;">
           <button onclick="event.stopPropagation();openEditJob('${j.id}')" style="background:#e53e3e;border:none;border-radius:8px;padding:10px 18px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit Job</button>
           <button onclick="event.stopPropagation();exportSingleJob('${j.id}')" style="background:#1a3a2a;border:1px solid #22c55e;border-radius:8px;padding:10px 18px;color:#4ade80;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📤 Share</button>
+          <button onclick="event.stopPropagation();openSchedInspection('${j.id}')" style="background:#1a2a3a;border:1px solid #60a5fa;border-radius:8px;padding:10px 18px;color:#60a5fa;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📧 Schedule Inspection</button>
         </div>
       </div>
     </div>`;
@@ -7175,6 +7176,170 @@ Cell: 516-306-3326`
     const card = document.getElementById('sched-card-' + jobId);
     if (!card) return;
     card.classList.toggle('expanded');
+  };
+
+  // ── SCHEDULE INSPECTION (from Schedule tab) ───────────────────────────────
+  window.openSchedInspection = function(jobId) {
+    const j = allJobs.find(x => x.id === jobId);
+    if (!j) return;
+
+    // Find permits matching this job's address
+    const jobAddr = (j.address || '').trim().toLowerCase();
+    const matchedPermits = (allStandalonePermits || []).filter(p => {
+      const pAddr = (p.jobAddress || '').trim().toLowerCase();
+      return pAddr && jobAddr && (pAddr === jobAddr || pAddr.includes(jobAddr) || jobAddr.includes(pAddr));
+    }).filter(p => !p.archived);
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const defaultTime = '08:00';
+
+    // Build permit checkboxes
+    const permitHtml = matchedPermits.length
+      ? matchedPermits.map(p => `
+        <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#111;border:1px solid #2a2a2a;border-radius:8px;margin-bottom:6px;cursor:pointer;">
+          <input type="checkbox" class="si-permit-cb" data-permit-id="${p.id}" data-permit-num="${(p.permitNumber||'').replace(/"/g,'&quot;')}" data-holder="${(p.permitHolder||'').replace(/"/g,'&quot;')}" checked style="width:16px;height:16px;accent-color:#60a5fa;" />
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#fff;">#${p.permitNumber||'—'}</div>
+            <div style="font-size:11px;color:#888;">${p.permitHolder||''} ${p.expirationDate ? '· Exp: '+p.expirationDate : ''}</div>
+          </div>
+          ${p.dotNotified ? '<span style="margin-left:auto;font-size:11px;color:#4ade80;font-weight:700;">✅ DOT Notified</span>' : ''}
+        </label>`).join('')
+      : `<div style="padding:12px;background:#1a1a1a;border-radius:8px;color:#888;font-size:13px;">⚠️ No permits found for this address. <span style="color:#60a5fa;cursor:pointer;text-decoration:underline;" onclick="closeSchedInspectionModal();navTo(2);">Go to Permits tab to add one.</span></div>`;
+
+    // Build bureau checkboxes
+    const savedPrefs = (() => { try { const s = localStorage.getItem('dot_bureau_prefs'); return s ? JSON.parse(s) : null; } catch(e) { return null; } })();
+    const detectedBorough = (() => {
+      const addr = (j.address||'').toLowerCase();
+      if (addr.includes('brooklyn') || addr.includes(' bk') || addr.includes(', bk')) return 'brooklyn';
+      if (addr.includes('queens')) return 'queens';
+      if (addr.includes('bronx')) return 'bronx';
+      if (addr.includes('staten island')) return 'staten';
+      return 'manhattan';
+    })();
+    const bureaus = window._dotBureauList || [
+      { id: 'manhattan_hiqa', name: 'Manhattan HIQA', email: 'HIQA@dot.nyc.gov' },
+      { id: 'manhattan_bpp', name: 'Manhattan BPP', email: 'BPP@dot.nyc.gov' },
+      { id: 'brooklyn', name: 'Brooklyn', email: 'BrooklynPermits@dot.nyc.gov' },
+      { id: 'queens', name: 'Queens', email: 'QueensPermits@dot.nyc.gov' },
+      { id: 'bronx', name: 'Bronx', email: 'BronxPermits@dot.nyc.gov' },
+      { id: 'staten', name: 'Staten Island', email: 'SIPermits@dot.nyc.gov' },
+      { id: 'construction', name: 'DOT Construction', email: 'ConstructionPermits@dot.nyc.gov' }
+    ];
+    const bureauHtml = bureaus.map(b => {
+      let isChecked = savedPrefs ? savedPrefs.includes(b.id) : (b.id === detectedBorough || (detectedBorough === 'manhattan' && (b.id === 'manhattan_hiqa' || b.id === 'manhattan_bpp')));
+      return `<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:${isChecked ? '#1a2a3a' : '#111'};border:1px solid ${isChecked ? '#60a5fa' : '#2a2a2a'};border-radius:8px;margin-bottom:6px;cursor:pointer;" id="si-bureau-lbl-${b.id}">
+        <input type="checkbox" class="si-bureau-cb" data-bureau-id="${b.id}" data-email="${b.email}" ${isChecked ? 'checked' : ''} style="width:16px;height:16px;accent-color:#60a5fa;" onchange="document.getElementById('si-bureau-lbl-${b.id}').style.background=this.checked?'#1a2a3a':'#111';document.getElementById('si-bureau-lbl-${b.id}').style.border='1px solid '+(this.checked?'#60a5fa':'#2a2a2a');" />
+        <span style="font-size:12px;font-weight:700;color:#ccc;flex:1;">${b.name}</span>
+        <span style="font-size:10px;color:#666;">${b.email}</span>
+      </label>`;
+    }).join('');
+
+    const modal = document.createElement('div');
+    modal.id = 'sched-inspection-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:20000;overflow-y:auto;padding:20px 16px 100px;';
+    modal.innerHTML = `
+      <div style="max-width:480px;margin:0 auto;background:#141414;border-radius:16px;padding:20px;border:1.5px solid #2a2a2a;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div style="font-size:16px;font-weight:800;color:#fff;">📧 Schedule Inspection</div>
+          <button onclick="closeSchedInspectionModal()" style="background:none;border:none;color:#888;font-size:22px;cursor:pointer;padding:0 4px;">✕</button>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:#60a5fa;margin-bottom:14px;">${j.address || '(No address)'}${j.customerName ? ' · ' + j.customerName : ''}</div>
+
+        <div style="font-size:11px;font-weight:800;color:#4ade80;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Permits</div>
+        ${permitHtml}
+
+        <div style="display:flex;gap:10px;margin:14px 0;">
+          <div style="flex:1;">
+            <div style="font-size:11px;font-weight:800;color:#4ade80;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">📅 Date</div>
+            <input type="date" id="si-date" value="${todayStr}" style="width:100%;box-sizing:border-box;padding:10px;background:#111;border:1.5px solid #1a3a1a;border-radius:8px;color:#fff;font-size:13px;font-family:Inter,sans-serif;font-weight:700;" />
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:11px;font-weight:800;color:#4ade80;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">⏰ Time</div>
+            <input type="time" id="si-time" value="${defaultTime}" step="900" style="width:100%;box-sizing:border-box;padding:10px;background:#111;border:1.5px solid #1a3a1a;border-radius:8px;color:#fff;font-size:13px;font-family:Inter,sans-serif;font-weight:700;" />
+          </div>
+        </div>
+
+        <div style="font-size:11px;font-weight:800;color:#4ade80;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">🏛️ Bureau(s)</div>
+        ${bureauHtml}
+
+        <button onclick="sendSchedInspectionEmail('${j.id}')" style="width:100%;margin-top:16px;padding:14px;background:#1a2a3a;border:2px solid #60a5fa;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">📧 Notify DOT</button>
+      </div>`;
+    document.body.appendChild(modal);
+  };
+
+  window.closeSchedInspectionModal = function() {
+    const m = document.getElementById('sched-inspection-modal');
+    if (m) m.remove();
+  };
+
+  window.sendSchedInspectionEmail = function(jobId) {
+    const j = allJobs.find(x => x.id === jobId);
+    if (!j) return;
+    const dateVal = (document.getElementById('si-date') || {}).value || '';
+    const timeVal = (document.getElementById('si-time') || {}).value || '';
+    if (!dateVal || !timeVal) { window.showToast && window.showToast('Please fill in date and time', '#e53e3e'); return; }
+
+    const permitCbs = Array.from(document.querySelectorAll('.si-permit-cb')).filter(cb => cb.checked);
+    if (!permitCbs.length) { window.showToast && window.showToast('Please select at least one permit', '#e53e3e'); return; }
+
+    const bureauCbs = Array.from(document.querySelectorAll('.si-bureau-cb')).filter(cb => cb.checked);
+    if (!bureauCbs.length) { window.showToast && window.showToast('Please select at least one bureau', '#e53e3e'); return; }
+
+    const permitNums = permitCbs.map(cb => cb.dataset.permitNum).filter(Boolean);
+    const permitIds = permitCbs.map(cb => cb.dataset.permitId).filter(Boolean);
+    const holder = permitCbs[0].dataset.holder || j.customerName || '';
+    const bureauEmails = bureauCbs.map(cb => cb.dataset.email).filter(Boolean);
+
+    // Format date nicely
+    const fmtDOTDate = (d) => { const parts = d.split('-'); const months = ['January','February','March','April','May','June','July','August','September','October','November','December']; return `${months[parseInt(parts[1])-1]} ${parseInt(parts[2])}, ${parts[0]}`; };
+    const fmtDOTTime = (t) => { const [h,m] = t.split(':'); const hNum = parseInt(h); return `${hNum > 12 ? hNum-12 : hNum || 12}:${m} ${hNum >= 12 ? 'PM' : 'AM'}`; };
+
+    const permitNumStr = permitNums.map(n => '#' + n).join(', ');
+    const subject = encodeURIComponent(`${j.address}#${permitNums.join(', #')}`);
+    const body = encodeURIComponent(
+`Hi,
+
+Please Schedule milling inspection for the above mentioned location
+
+Day: ${fmtDOTDate(dateVal)}
+Time: ${fmtDOTTime(timeVal)}
+
+Permit holder: ${holder}
+Permit Number: ${permitNumStr}
+
+My contact information is below
+Thank you
+Nir Maman
+Cell: 917-251-2400
+Cell: 516-306-3326`);
+
+    const bcc = encodeURIComponent('nir@mamancontracting.com');
+    window.location.href = `mailto:${bureauEmails.join(',')}?subject=${subject}&body=${body}&bcc=${bcc}`;
+
+    // Mark DOT notified
+    const now = new Date().toISOString();
+    permitIds.forEach(async (pid) => {
+      try {
+        const permRef = doc(db, 'permits', pid);
+        await updateDoc(permRef, { dotNotified: true, dotNotifiedDate: now });
+        const localP = allStandalonePermits.find(x => x.id === pid);
+        if (localP) { localP.dotNotified = true; localP.dotNotifiedDate = now; }
+      } catch(e) {
+        try {
+          await fetch(`https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents/permits/${pid}?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c&updateMask.fieldPaths=dotNotified&updateMask.fieldPaths=dotNotifiedDate`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: { dotNotified: { booleanValue: true }, dotNotifiedDate: { stringValue: now } } })
+          });
+          const localP = allStandalonePermits.find(x => x.id === pid);
+          if (localP) { localP.dotNotified = true; localP.dotNotifiedDate = now; }
+        } catch(e2) { console.error('DOT notify update failed:', e2); }
+      }
+    });
+
+    closeSchedInspectionModal();
+    window.showToast && window.showToast('✅ DOT inspection email sent!', '#4ade80');
   };
 
   // Toggle inline address row expansion (new schedule layout)
