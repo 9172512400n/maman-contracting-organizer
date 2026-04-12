@@ -9096,9 +9096,23 @@ Cell: 516-306-3326`);
     _sfRec = new SR();
     _sfRec.lang = 'en-US'; _sfRec.interimResults = false; _sfRec.continuous = true;
     _sfRec.onstart = () => { _sfListening=true; if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';} };
-    _sfRec.onend   = () => { _sfListening=false; if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';} };
+    _sfRec.onend   = () => { _sfListening=false; clearTimeout(_sfAutoStopTimer); if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';} };
     _sfRec.onerror = () => { _sfListening=false; if(btn) btn.textContent='🎙️'; };
+    // Auto-stop after 5 minutes of no voice input
+    let _sfAutoStopTimer = null;
+    const resetAutoStop = () => {
+      clearTimeout(_sfAutoStopTimer);
+      _sfAutoStopTimer = setTimeout(() => {
+        if (_sfListening && _sfRec) {
+          _sfRec.stop();
+          window.showToast && window.showToast('🎙️ Microphone auto-stopped after 5 minutes', '#888');
+        }
+      }, 5 * 60 * 1000); // 5 minutes
+    };
+    resetAutoStop(); // start the timer when mic turns on
+
     _sfRec.onresult = e => {
+      resetAutoStop(); // reset timer on every voice input
       for (let i=e.resultIndex; i<e.results.length; i++) {
         if (e.results[i].isFinal) {
           const t = e.results[i][0].transcript.trim();
