@@ -7903,6 +7903,13 @@ Cell: 516-306-3326`
     if (!dropdown) return;
     const q = (val || '').trim().toLowerCase();
     if (!q || q.length < 1) { dropdown.style.display = 'none'; return; }
+    // Show loading if contacts haven't loaded yet
+    const contactsLoaded = (window.allContacts||[]).length > 0 || (window.allJobs||[]).length > 0;
+    if (!contactsLoaded) {
+      dropdown.innerHTML = '<div style="padding:12px 14px;color:#888;font-size:13px;">Loading contacts...</div>';
+      dropdown.style.display = 'block';
+      return;
+    }
 
     // Search contacts + past jobs for matching names
     const seen = new Set();
