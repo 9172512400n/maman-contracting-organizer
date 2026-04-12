@@ -2318,6 +2318,8 @@ function doSignOut() {
   let currentUser = null;
   let allJobs = [];
   let allContacts = [];
+  window.allJobs = allJobs;
+  window.allContacts = allContacts;
   let allUsers = [];
   let jobsUnsubscribe = null;
   let activityUnsubscribe = null;
@@ -2728,6 +2730,7 @@ function doSignOut() {
           const data = await r.json();
           if (data.documents) {
             allContacts = [...allContacts, ...data.documents.map(parseContactDoc)];
+            window.allContacts = allContacts;
             // Try to render — function might not be defined yet if module still loading
             const tryRender = () => {
               if (typeof window.renderContacts === 'function') window.renderContacts(allContacts);
@@ -2738,6 +2741,7 @@ function doSignOut() {
           if (data.nextPageToken) await fetchContactPage(data.nextPageToken);
         };
         allContacts = [];
+        window.allContacts = allContacts;
         fetchContactPage(null).catch(e => console.error('direct contacts load error:', e));
       })();
       const _savedSection = parseInt(localStorage.getItem('last-section') || '0');
@@ -3051,57 +3055,60 @@ function doSignOut() {
   // Poll every 30s to keep data fresh (replaces onSnapshot)
   let _pollInterval = null;
   async function loadAllData() {
-    try {
-      // Jobs
-      const jobs = await restFetch('jobs');
-      allJobs = jobs.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
-      renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); checkPermitExpiry();
-      loadScheduleNotes().then(() => renderSchedule());
-    } catch(e) { console.error('jobs load failed:', e); }
-    try {
-      // Push Notifications
-      await loadNotifications();
-    } catch(e) { console.error('notifications load failed:', e); }
-    try {
-      // Tasks & Reminders
-      await loadTasks();
-    } catch(e) { console.error('tasks load failed:', e); }
-    try {
-      // Activity
-      const acts = await restFetch('activity', 20);
-      const items = acts.sort((a,b) => (b.timestamp||'') > (a.timestamp||'') ? 1 : -1).slice(0,10);
-      renderActivityLog(items);
-      const nc = document.getElementById('notif-count');
-      if (nc) nc.textContent = items.length;
-    } catch(e) { console.error('activity load failed:', e); }
-    try {
+    // Load all data in parallel — no more sequential blocking, much faster startup
+    await Promise.allSettled([
+      // Jobs (render immediately when ready)
+      restFetch('jobs').then(jobs => {
+        allJobs = jobs.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
+        window.allJobs = allJobs;
+        renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); checkPermitExpiry();
+        window._schedWeekOffset = 0; // always show current week when fresh data loads
+        loadScheduleNotes().then(() => renderSchedule());
+      }).catch(e => console.error('jobs load failed:', e)),
+
+      // Contacts (needed for customer autocomplete in New Job)
+      restFetch('contacts').then(contacts => {
+        allContacts = contacts;
+        window.allContacts = allContacts;
+        if (typeof renderContacts === 'function') renderContacts(allContacts);
+      }).catch(e => console.error('contacts load failed:', e)),
+
       // Permits
-      const permits = await restFetch('permits');
-      allStandalonePermits = permits.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
-      renderPermitsCards(allStandalonePermits.filter(p => !p.archived));
-      window.filterPermitsDirect();
-      checkPermitExpiry(); // re-run now that standalone permits are loaded
-    } catch(e) { console.error('permits load failed:', e); }
-    try {
+      restFetch('permits').then(permits => {
+        allStandalonePermits = permits.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
+        renderPermitsCards(allStandalonePermits.filter(p => !p.archived));
+        window.filterPermitsDirect();
+        checkPermitExpiry();
+      }).catch(e => console.error('permits load failed:', e)),
+
+      // Activity
+      restFetch('activity', 20).then(acts => {
+        const items = acts.sort((a,b) => (b.timestamp||'') > (a.timestamp||'') ? 1 : -1).slice(0,10);
+        renderActivityLog(items);
+        const nc = document.getElementById('notif-count');
+        if (nc) nc.textContent = items.length;
+      }).catch(e => console.error('activity load failed:', e)),
+
       // Users
-      const users = await restFetch('users');
-      const currentEmail = (currentUser && currentUser.email ? currentUser.email : '').trim().toLowerCase();
-      const isCurrentUserRemoved = !!currentEmail && users.some(u => ((u.email || '').trim().toLowerCase() === currentEmail) && u.removed);
-      if (isCurrentUserRemoved && !window._isAdmin) {
-        try { await signOut(auth); } catch (err) { console.warn('signOut after user removal failed:', err); }
-        currentUser = null;
-        showStandardLogin(currentEmail, 'Your account was removed by an admin.', false);
-        return;
-      }
-      allUsers = dedupeUsersByEmail(users).sort((a,b) => (b.updatedAt || b.invitedAt || '') > (a.updatedAt || a.invitedAt || '') ? 1 : -1);
-      renderUsers(allUsers);
-    } catch(e) { console.error('users load failed:', e); }
-    try {
-      // Contacts
-      const contacts = await restFetch('contacts');
-      allContacts = contacts;
-      if (typeof renderContacts === 'function') renderContacts(allContacts);
-    } catch(e) { console.error('contacts load failed:', e); }
+      restFetch('users').then(async users => {
+        const currentEmail = (currentUser && currentUser.email ? currentUser.email : '').trim().toLowerCase();
+        const isCurrentUserRemoved = !!currentEmail && users.some(u => ((u.email || '').trim().toLowerCase() === currentEmail) && u.removed);
+        if (isCurrentUserRemoved && !window._isAdmin) {
+          try { await signOut(auth); } catch (err) { console.warn('signOut after user removal failed:', err); }
+          currentUser = null;
+          showStandardLogin(currentEmail, 'Your account was removed by an admin.', false);
+          return;
+        }
+        allUsers = dedupeUsersByEmail(users).sort((a,b) => (b.updatedAt || b.invitedAt || '') > (a.updatedAt || a.invitedAt || '') ? 1 : -1);
+        renderUsers(allUsers);
+      }).catch(e => console.error('users load failed:', e)),
+
+      // Push Notifications
+      loadNotifications().catch(e => console.error('notifications load failed:', e)),
+
+      // Tasks & Reminders
+      loadTasks().catch(e => console.error('tasks load failed:', e)),
+    ]);
   }
 
   function startListeners() {
@@ -3441,6 +3448,7 @@ function doSignOut() {
       }
       // Remove from local array and re-render immediately
       allJobs = allJobs.filter(x => x.id !== jobId);
+      window.allJobs = allJobs;
       renderJobsTable(allJobs);
       updateStats(allJobs);
       const undoBtn = document.getElementById('undo-btn');
@@ -7898,11 +7906,14 @@ Cell: 516-306-3326`
     if (!dropdown) return;
     const q = (val || '').trim().toLowerCase();
     if (!q || q.length < 1) { dropdown.style.display = 'none'; return; }
-    // Show loading if contacts haven't loaded yet
+    // Show loading if contacts haven't loaded yet — auto-retry after 1s
     const contactsLoaded = (window.allContacts||[]).length > 0 || (window.allJobs||[]).length > 0;
     if (!contactsLoaded) {
       dropdown.innerHTML = '<div style="padding:12px 14px;color:#888;font-size:13px;">Loading contacts...</div>';
       dropdown.style.display = 'block';
+      // Retry after 1 second in case data is still loading
+      clearTimeout(_csTimer);
+      _csTimer = setTimeout(function() { _customerSearchNow(val); }, 1000);
       return;
     }
 
