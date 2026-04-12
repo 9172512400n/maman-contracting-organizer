@@ -1947,7 +1947,7 @@ function doSignOut() {
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Measurements (one per line)</div>
               <div style="display:flex;gap:10px;align-items:flex-start;">
                 <textarea id="sf-measurements"
-                  placeholder="10x10&#10;8x26&#10;90x50&#10;Hundred by 20&#10;Say 'delete' to undo last"
+                  placeholder="Say or type: 10x10 · 8 by 26 · 90x50&#10;Mic: 5 min auto-stop · each entry resets · tap 🔴 to stop · say 'delete' to undo"
                   oninput="calcSFPrice()"
                   style="flex:1;min-height:140px;padding:12px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:10px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;resize:vertical;line-height:1.7;outline:none;"></textarea>
                 <button id="sf-mic-btn" onclick="sfStartVoice()"
@@ -9076,10 +9076,12 @@ Cell: 516-306-3326`);
     if (_sfListening) { _sfRec && _sfRec.stop(); return; }
     _sfRec = new SR();
     _sfRec.lang = 'en-US'; _sfRec.interimResults = false; _sfRec.continuous = true;
-    _sfRec.onstart = () => { _sfListening=true; if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';} };
-    _sfRec.onend   = () => { _sfListening=false; if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';} };
-    _sfRec.onerror = () => { _sfListening=false; if(btn) btn.textContent='🎙️'; };
-    _sfRec.onresult = e => {
+    let _sfAutoStop = null;
+    const resetAutoStop = () => { clearTimeout(_sfAutoStop); _sfAutoStop = setTimeout(() => { if(_sfListening && _sfRec) { _sfRec.stop(); window.showToast && window.showToast('🎙️ Mic auto-stopped after 5 min', '#888'); } }, 300000); };
+    _sfRec.onstart = () => { _sfListening=true; if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';} resetAutoStop(); };
+    _sfRec.onend   = () => { _sfListening=false; clearTimeout(_sfAutoStop); if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';} };
+    _sfRec.onerror = () => { _sfListening=false; clearTimeout(_sfAutoStop); if(btn) btn.textContent='🎙️'; };
+    _sfRec.onresult = e => { resetAutoStop();
       for (let i=e.resultIndex; i<e.results.length; i++) {
         if (e.results[i].isFinal) {
           const t = e.results[i][0].transcript.trim();
