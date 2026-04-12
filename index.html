@@ -7967,27 +7967,15 @@ Cell: 516-306-3326`
   }
 
   window.smartCloseJobModal = function() {
-    // Check if any key fields have data
-    const fields = ['f-customerName','f-address','f-phone','f-taskType','f-totalSF','f-notes'];
-    const hasData = fields.some(id => {
-      const el = document.getElementById(id);
-      return el && el.value && el.value.trim();
-    });
-    // If editing existing job (has jobId) or has data, offer to save
-    const jobId = document.getElementById('job-modal-id')?.value || window._editingJobId;
-    if (hasData) {
-      // Show quick save prompt
-      const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
-      overlay.innerHTML = `<div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:24px;max-width:320px;width:100%;text-align:center;">
-        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:8px;">Save changes?</div>
-        <div style="font-size:13px;color:#888;margin-bottom:20px;">You have unsaved information.</div>
-        <div style="display:flex;gap:10px;">
-          <button onclick="this.closest('div[style*=fixed]').remove();closeJobModal()" style="flex:1;padding:12px;background:#2a2a2a;border:none;border-radius:8px;color:#aaa;font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;">Discard</button>
-          <button onclick="this.closest('div[style*=fixed]').remove();saveJob()" style="flex:2;padding:12px;background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">&#x1F4BE; Save</button>
-        </div>
-      </div>`;
-      document.body.appendChild(overlay);
+    // Only prompt if editing an EXISTING job (not new)
+    const isEditing = !!editingJobId;
+    if (!isEditing) { closeJobModal(); return; }
+    // Check if address field has data (minimum to save)
+    const addr = (document.getElementById('f-address')?.value||'').trim();
+    if (!addr) { closeJobModal(); return; }
+    // Show simple native confirm
+    if (confirm('Save changes to this job?')) {
+      saveJob();
     } else {
       closeJobModal();
     }
