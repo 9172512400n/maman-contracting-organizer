@@ -841,13 +841,6 @@ function navTo(idx) {
     window._schedWeekOffset = 0; // always reset to current week when opening schedule
     window._schedTabJustOpened = true;
     window._schedUserNavigated = false;
-    window._schedCrewFilter = 'all'; // always reset to All Crews on open
-    document.querySelectorAll('.crew-pill').forEach(function(b) {
-      b.classList.toggle('active', b.dataset.crew === 'all');
-    });
-    // Show loading if jobs not ready yet
-    const schedLoading = document.getElementById('sched-loading');
-    if (schedLoading) schedLoading.style.display = allJobs && allJobs.length > 0 ? 'none' : 'block';
     window.renderSchedule();
   }
   // Also call module navTo if available (for any extra logic)
@@ -1696,7 +1689,7 @@ function doSignOut() {
               <div style="position:relative;flex-shrink:0;">
                 <button onclick="toggleShareMenu()" id="share-menu-btn"
                   style="background:#e53e3e;border:none;border-radius:8px;padding:0 14px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-size:13px;font-weight:800;color:#fff;font-family:'Inter',sans-serif;"
-                  title="Share Schedule"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                  title="Share Schedule">📤
                 </button>
                 <div id="share-menu-dropdown" style="display:none;position:absolute;right:0;top:42px;background:#1a1a1a;border:1.5px solid #3a3a3a;border-radius:10px;padding:6px;z-index:999;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">
                   <button onclick="schedShareDay();closeShareMenu();" style="display:block;width:100%;background:transparent;border:none;color:#fff;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;padding:10px 14px;text-align:left;cursor:pointer;border-radius:7px;" onmouseover="this.style.background='#2a2a2a'" onmouseout="this.style.background='transparent'">📅 Share This Day</button>
@@ -1720,7 +1713,6 @@ function doSignOut() {
           <div id="sched-days-container"></div>
 
           <!-- TBD section -->
-          <div id="sched-loading" style="display:none;text-align:center;padding:40px 20px;color:#555;font-size:14px;font-weight:700;">Loading schedule…</div>
           <div id="sched-tbd-section" style="margin-top:8px;display:none;">
             <div style="font-size:12px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #2a2a2a;">📌 Date TBD</div>
             <div id="sched-tbd-container"></div>
@@ -1954,14 +1946,10 @@ function doSignOut() {
             <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:14px;">
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Measurements (one per line)</div>
               <div style="display:flex;gap:10px;align-items:flex-start;">
-                <div style="flex:1;position:relative;">
-                  <textarea id="sf-measurements"
-                    placeholder="Say or type: 10x10 · 8 by 26 · 90x50&#10;Say 'delete' to undo"
-                    oninput="calcSFPrice()"
-                    style="width:100%;min-height:140px;padding:12px 14px 30px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:10px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;resize:vertical;line-height:1.7;outline:none;box-sizing:border-box;"></textarea>
-                  <!-- Bottom-right mic hint badge -->
-                  <div style="position:absolute;bottom:10px;left:14px;right:14px;font-size:15px;color:#555;font-weight:400;font-family:'Inter',sans-serif;pointer-events:none;line-height:1.6;">Mic stays on 5 min · each entry resets 5 min · tap 🔴 to stop · say 'delete' to undo</div>
-                </div>
+                <textarea id="sf-measurements"
+                  placeholder="10x10&#10;8x26&#10;90x50&#10;Hundred by 20&#10;Say 'delete' to undo last"
+                  oninput="calcSFPrice()"
+                  style="flex:1;min-height:140px;padding:12px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:10px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;resize:vertical;line-height:1.7;outline:none;"></textarea>
                 <button id="sf-mic-btn" onclick="sfStartVoice()"
                   style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#e53e3e,#b91c1c);border:none;color:white;font-size:22px;cursor:pointer;flex-shrink:0;box-shadow:0 3px 12px rgba(229,62,62,0.4);">
                   🎙️
@@ -3079,13 +3067,10 @@ function doSignOut() {
         window._schedWeekOffset = 0;
         window._schedTabJustOpened = true;
         window._schedUserNavigated = false;
-        // Re-render schedule if visible OR if it was the last section (restores correctly on load)
-        // Always render schedule when jobs load — it checks visibility internally
-        window._schedCrewFilter = window._schedCrewFilter || 'all';
-        document.querySelectorAll('.crew-pill').forEach(b => {
-          b.classList.toggle('active', b.dataset.crew === window._schedCrewFilter);
-        });
-        loadScheduleNotes().then(() => { window._schedWeekOffset = window._schedUserNavigated ? window._schedWeekOffset : (new Date().getDay()===0?1:0); renderSchedule(); });
+        // Only re-render schedule if currently visible (avoid blocking main thread)
+        if (window._currentSection === 3) {
+          loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
+        }
       }).catch(e => console.error('jobs load failed:', e)),
 
       // Contacts (needed for customer autocomplete in New Job)
@@ -7009,9 +6994,6 @@ Cell: 516-306-3326`
   };
 
   window.renderSchedule = function() {
-    // Hide loading indicator
-    const schedLoading = document.getElementById('sched-loading');
-    if (schedLoading) schedLoading.style.display = 'none';
     // Always show current (or upcoming) work week unless user has explicitly navigated
     if (!window._schedUserNavigated) {
       const _todayDow = new Date().getDay(); // 0=Sun, 1=Mon...6=Sat
@@ -7917,11 +7899,6 @@ Cell: 516-306-3326`);
       window._schedWeekOffset = 0; // always show current week on open
       window._schedTabJustOpened = true;
       window._schedUserNavigated = false;
-      window._schedCrewFilter = 'all'; // always reset to All Crews on open
-      // Reset crew pill active state
-      document.querySelectorAll('.crew-pill').forEach(b => {
-        b.classList.toggle('active', b.dataset.crew === 'all');
-      });
       loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
     }
   }
@@ -9099,38 +9076,10 @@ Cell: 516-306-3326`);
     if (_sfListening) { _sfRec && _sfRec.stop(); return; }
     _sfRec = new SR();
     _sfRec.lang = 'en-US'; _sfRec.interimResults = false; _sfRec.continuous = true;
-    _sfRec.onstart = () => {
-      _sfListening=true;
-      if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';}
-      // Show hint in the measurements textarea
-      const ta = document.getElementById('sf-measurements');
-      if (ta && !ta.value.trim()) ta.placeholder = '🎙️ Listening… say dimensions like "10 by 20"\nMic auto-stops in 5 min — tap 🔴 to stop';
-      window.showToast && window.showToast('🎙️ Mic on — auto-stops in 5 min. Tap 🔴 to stop early.', '#4ade80');
-    };
-    _sfRec.onend = () => {
-      _sfListening=false;
-      clearTimeout(_sfAutoStopTimer);
-      if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';}
-      // Restore placeholder
-      const ta = document.getElementById('sf-measurements');
-      if (ta) ta.placeholder = '10x10\n8x26\n90x50\nHundred by 20\nSay \'delete\' to undo last';
-    };
+    _sfRec.onstart = () => { _sfListening=true; if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';} };
+    _sfRec.onend   = () => { _sfListening=false; if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';} };
     _sfRec.onerror = () => { _sfListening=false; if(btn) btn.textContent='🎙️'; };
-    // Auto-stop after 5 minutes of no voice input
-    let _sfAutoStopTimer = null;
-    const resetAutoStop = () => {
-      clearTimeout(_sfAutoStopTimer);
-      _sfAutoStopTimer = setTimeout(() => {
-        if (_sfListening && _sfRec) {
-          _sfRec.stop();
-          window.showToast && window.showToast('🎙️ Microphone auto-stopped after 5 minutes', '#888');
-        }
-      }, 5 * 60 * 1000); // 5 minutes
-    };
-    resetAutoStop(); // start the timer when mic turns on
-
     _sfRec.onresult = e => {
-      resetAutoStop(); // reset timer on every voice input
       for (let i=e.resultIndex; i<e.results.length; i++) {
         if (e.results[i].isFinal) {
           const t = e.results[i][0].transcript.trim();
@@ -9156,8 +9105,7 @@ Cell: 516-306-3326`);
           if (parts.length>=2) { w=parseFloat(parts[0].replace(/[^\d.]/g,'')); h=parseFloat(parts[1].replace(/[^\d.]/g,'')); }
           else { const nums=norm.match(/[\d]+\.?[\d]*/g); if(nums&&nums.length>=2){w=parseFloat(nums[0]);h=parseFloat(nums[1]);} }
 
-          // Only process if both dimensions are valid numbers (ignore background chatter)
-          if (!isNaN(w)&&!isNaN(h)&&w>0&&h>0&&w<10000&&h<10000) {
+          if (!isNaN(w)&&!isNaN(h)&&w>0&&h>0) {
             // Find next empty row, or add new one
             let filled = false;
             document.querySelectorAll('#sf-area-rows > div').forEach(row => {
