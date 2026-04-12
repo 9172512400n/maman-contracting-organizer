@@ -6797,6 +6797,7 @@ Cell: 516-306-3326`
 
   // ── SCHEDULE — 2-LEVEL: Week picker + all days expanded ──────────────────
   window._schedWeekOffset = 0; // ALWAYS start at current week on page load
+  window._schedUserNavigated = false; // user hasn't navigated weeks yet
   window._schedViewAll = true; // default: show all days expanded
 
   function toLocalISO(date) {
@@ -6994,10 +6995,9 @@ Cell: 516-306-3326`
   };
 
   window.renderSchedule = function() {
-    // Always force current week until the user manually navigates
-    if (!window._schedUserNavigated || window._schedTabJustOpened) {
+    // Always show current week unless user has explicitly navigated weeks
+    if (!window._schedUserNavigated) {
       window._schedWeekOffset = 0;
-      window._schedTabJustOpened = false;
     }
     const filter = window._schedCrewFilter || 'all';
     const jobs = allJobs.filter(j => jobMatchesCrew(j, filter));
