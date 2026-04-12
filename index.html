@@ -3072,8 +3072,13 @@ function doSignOut() {
         window._schedWeekOffset = 0;
         window._schedTabJustOpened = true;
         window._schedUserNavigated = false;
-        // Only re-render schedule if currently visible (avoid blocking main thread)
-        if (window._currentSection === 3) {
+        // Re-render schedule if visible OR if it was the last section (restores correctly on load)
+        const activeSection = window._currentSection || parseInt(localStorage.getItem('last-section') || '0');
+        if (activeSection === 3) {
+          window._schedCrewFilter = 'all';
+          document.querySelectorAll('.crew-pill').forEach(b => {
+            b.classList.toggle('active', b.dataset.crew === 'all');
+          });
           loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
         }
       }).catch(e => console.error('jobs load failed:', e)),
