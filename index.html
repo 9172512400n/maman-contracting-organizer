@@ -8801,16 +8801,14 @@ Cell: 516-306-3326`);
       const sf = sfEl ? sfEl.textContent : '';
       if (!w && !l) return null;
       return `${name || 'Area'}: ${w}×${l} = ${sf}`;
-    }).filter(Boolean).join('
-');
+    }).filter(Boolean).join('\n');
 
     const calcNote = [
       areaSummary,
       `Total: ${totalSF}`,
       pricePerSF ? `Price/SF: $${pricePerSF}` : '',
       totalCost !== '—' ? `Total Cost: ${totalCost}` : ''
-    ].filter(Boolean).join('
-');
+    ].filter(Boolean).join('\n');
 
     // Build existing jobs list
     const jobOptions = (allJobs || []).slice(0, 50).map(j =>
