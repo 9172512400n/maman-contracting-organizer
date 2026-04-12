@@ -3061,7 +3061,7 @@ function doSignOut() {
   let _pollInterval = null;
   async function loadAllData() {
     // Load all data in parallel — no more sequential blocking, much faster startup
-    await Promise.allSettled([
+    Promise.allSettled([
       // Jobs (render immediately when ready)
       restFetch('jobs').then(jobs => {
         allJobs = jobs.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
