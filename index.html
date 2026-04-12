@@ -1764,6 +1764,36 @@ function doSignOut() {
 
           <!-- ASPHALT CALCULATOR -->
           <div id="calc-asphalt">
+            <!-- Quick SF / Full sub-tabs -->
+            <div style="display:flex;gap:8px;margin-bottom:14px;">
+              <button onclick="aspSetMode('full')" id="asp-mode-full" style="flex:1;padding:9px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;border:none;background:#e53e3e;color:#fff;font-family:'Inter',sans-serif;">Full Dimensions</button>
+              <button onclick="aspSetMode('quicksf')" id="asp-mode-quicksf" style="flex:1;padding:9px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;border:none;background:#2a2a2a;color:#aaa;font-family:'Inter',sans-serif;">Quick SF</button>
+            </div>
+            <!-- Quick SF box -->
+            <div id="asp-quicksf-box" style="display:none;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+              <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Total Square Feet</div>
+              <input type="number" id="asp-quicksf" placeholder="e.g. 5000" inputmode="decimal"
+                style="width:100%;box-sizing:border-box;padding:14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:20px;font-weight:700;font-family:'Inter',sans-serif;text-align:center;"
+                oninput="aspCalcFromSF()"/>
+              <div style="margin-top:14px;background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:14px 16px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                  <span style="color:#aaa;font-size:14px;font-weight:600;">Hot Mix (tons)</span>
+                  <span id="asp-qsf-tons" style="color:#e53e3e;font-size:20px;font-weight:900;">—</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;">
+                  <span style="color:#aaa;font-size:13px;font-weight:600;">Cost/ton ($)</span>
+                  <input type="number" id="asp-qsf-cost" placeholder="optional" inputmode="decimal"
+                    style="width:120px;padding:8px 12px;background:#0f0f0f;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;text-align:right;"
+                    oninput="aspCalcFromSF()"/>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:10px;">
+                  <span style="color:#4ade80;font-size:14px;font-weight:700;">💵 Total Cost</span>
+                  <span id="asp-qsf-total" style="color:#4ade80;font-size:20px;font-weight:900;">—</span>
+                </div>
+              </div>
+            </div>
+            <!-- Full dimensions (default visible) -->
+            <div id="asp-full-box">
             <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Inputs</div>
               <div style="display:grid;gap:12px;">
@@ -1815,6 +1845,7 @@ function doSignOut() {
               </div>
             </div>
 
+            </div><!-- end asp-full-box -->
             <div style="display:flex;gap:10px;">
               <button onclick="clearAsphalt()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
               <button onclick="shareAsphaltResult()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Text</button>
@@ -1824,6 +1855,40 @@ function doSignOut() {
 
           <!-- CONCRETE CALCULATOR -->
           <div id="calc-concrete" style="display:none;">
+            <!-- Quick SF / Full sub-tabs -->
+            <div style="display:flex;gap:8px;margin-bottom:14px;">
+              <button onclick="conSetMode('full')" id="con-mode-full" style="flex:1;padding:9px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;border:none;background:#e53e3e;color:#fff;font-family:'Inter',sans-serif;">Full Dimensions</button>
+              <button onclick="conSetMode('quicksf')" id="con-mode-quicksf" style="flex:1;padding:9px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;border:none;background:#2a2a2a;color:#aaa;font-family:'Inter',sans-serif;">Quick SF</button>
+            </div>
+            <!-- Quick SF box -->
+            <div id="con-quicksf-box" style="display:none;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+              <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Total Square Feet</div>
+              <input type="number" id="con-quicksf" placeholder="e.g. 5000" inputmode="decimal"
+                style="width:100%;box-sizing:border-box;padding:14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:20px;font-weight:700;font-family:'Inter',sans-serif;text-align:center;"
+                oninput="conCalcFromSF()"/>
+              <div style="margin-top:14px;background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:14px 16px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                  <span style="color:#aaa;font-size:14px;font-weight:600;">Cubic Yards</span>
+                  <span id="con-qsf-cy" style="color:#fff;font-size:20px;font-weight:900;">—</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                  <span style="color:#aaa;font-size:14px;font-weight:600;">Bags (80lb)</span>
+                  <span id="con-qsf-bags" style="color:#e53e3e;font-size:20px;font-weight:900;">—</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;">
+                  <span style="color:#aaa;font-size:13px;font-weight:600;">Cost/yard ($)</span>
+                  <input type="number" id="con-qsf-cost" placeholder="optional" inputmode="decimal"
+                    style="width:120px;padding:8px 12px;background:#0f0f0f;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;text-align:right;"
+                    oninput="conCalcFromSF()"/>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:10px;">
+                  <span style="color:#4ade80;font-size:14px;font-weight:700;">💵 Total Cost</span>
+                  <span id="con-qsf-total" style="color:#4ade80;font-size:20px;font-weight:900;">—</span>
+                </div>
+              </div>
+            </div>
+            <!-- Full dimensions (default visible) -->
+            <div id="con-full-box">
             <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Inputs</div>
               <div style="display:grid;gap:12px;">
@@ -1874,6 +1939,7 @@ function doSignOut() {
               </div>
             </div>
 
+            </div><!-- end con-full-box -->
             <div style="display:flex;gap:10px;">
               <button onclick="clearConcrete()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
               <button onclick="shareConcreteResult()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Text</button>
