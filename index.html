@@ -9095,8 +9095,22 @@ Cell: 516-306-3326`);
     if (_sfListening) { _sfRec && _sfRec.stop(); return; }
     _sfRec = new SR();
     _sfRec.lang = 'en-US'; _sfRec.interimResults = false; _sfRec.continuous = true;
-    _sfRec.onstart = () => { _sfListening=true; if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';} };
-    _sfRec.onend   = () => { _sfListening=false; clearTimeout(_sfAutoStopTimer); if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';} };
+    _sfRec.onstart = () => {
+      _sfListening=true;
+      if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';}
+      // Show hint in the measurements textarea
+      const ta = document.getElementById('sf-measurements');
+      if (ta && !ta.value.trim()) ta.placeholder = '🎙️ Listening… say dimensions like "10 by 20"\nMic auto-stops in 5 min — tap 🔴 to stop';
+      window.showToast && window.showToast('🎙️ Mic on — auto-stops in 5 min. Tap 🔴 to stop early.', '#4ade80');
+    };
+    _sfRec.onend = () => {
+      _sfListening=false;
+      clearTimeout(_sfAutoStopTimer);
+      if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';}
+      // Restore placeholder
+      const ta = document.getElementById('sf-measurements');
+      if (ta) ta.placeholder = '10x10\n8x26\n90x50\nHundred by 20\nSay \'delete\' to undo last';
+    };
     _sfRec.onerror = () => { _sfListening=false; if(btn) btn.textContent='🎙️'; };
     // Auto-stop after 5 minutes of no voice input
     let _sfAutoStopTimer = null;
@@ -9138,7 +9152,8 @@ Cell: 516-306-3326`);
           if (parts.length>=2) { w=parseFloat(parts[0].replace(/[^\d.]/g,'')); h=parseFloat(parts[1].replace(/[^\d.]/g,'')); }
           else { const nums=norm.match(/[\d]+\.?[\d]*/g); if(nums&&nums.length>=2){w=parseFloat(nums[0]);h=parseFloat(nums[1]);} }
 
-          if (!isNaN(w)&&!isNaN(h)&&w>0&&h>0) {
+          // Only process if both dimensions are valid numbers (ignore background chatter)
+          if (!isNaN(w)&&!isNaN(h)&&w>0&&h>0&&w<10000&&h<10000) {
             // Find next empty row, or add new one
             let filled = false;
             document.querySelectorAll('#sf-area-rows > div').forEach(row => {
