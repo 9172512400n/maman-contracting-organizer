@@ -838,6 +838,7 @@ function navTo(idx) {
   // Side effects
   if (idx === 3 && typeof window.renderSchedule === 'function') {
     window._schedWeekOffset = 0; // always reset to current week when opening schedule
+    window._schedTabJustOpened = true;
     window.renderSchedule();
   }
   // Also call module navTo if available (for any extra logic)
@@ -3063,7 +3064,8 @@ function doSignOut() {
         window.allJobs = allJobs;
         renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); checkPermitExpiry();
         window._schedWeekOffset = 0; // always show current week when fresh data loads
-        loadScheduleNotes().then(() => renderSchedule());
+        window._schedTabJustOpened = true;
+        loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
       }).catch(e => console.error('jobs load failed:', e)),
 
       // Contacts (needed for customer autocomplete in New Job)
@@ -6930,6 +6932,11 @@ Cell: 516-306-3326`
   };
 
   window.renderSchedule = function() {
+    // If tab was just opened, always force current week
+    if (window._schedTabJustOpened) {
+      window._schedWeekOffset = 0;
+      window._schedTabJustOpened = false;
+    }
     const filter = window._schedCrewFilter || 'all';
     const jobs = allJobs.filter(j => jobMatchesCrew(j, filter));
     const tbdJobs = jobs.filter(j => !j.scheduleDay);
@@ -7699,7 +7706,8 @@ Cell: 516-306-3326`);
     // Side effects
     if (idx === 3 && typeof renderSchedule === 'function') {
       window._schedWeekOffset = 0; // always show current week on open
-      loadScheduleNotes().then(() => renderSchedule());
+      window._schedTabJustOpened = true;
+      loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
     }
   }
 
