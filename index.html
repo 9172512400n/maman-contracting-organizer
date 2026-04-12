@@ -842,6 +842,17 @@ function navTo(idx) {
   }
   // Also call module navTo if available (for any extra logic)
   if (typeof window._navTo === 'function' && window._navTo !== navTo) window._navTo(idx);
+  // Lazy-init SF area rows when Calculator tab opens
+  if (idx === 5) {
+    const sfRows = document.getElementById('sf-area-rows');
+    if (sfRows && sfRows.children.length === 0 && typeof sfAddAreaRow === 'function') {
+      sfAddAreaRow(); sfAddAreaRow(); sfAddAreaRow();
+    }
+    const mpRows = document.getElementById('mp-rows');
+    if (mpRows && mpRows.children.length === 0 && typeof mpAddRow === 'function') {
+      mpAddRow(); mpAddRow(); mpAddRow();
+    }
+  }
 }
 
 // ── PIN Smart Login ──────────────────────────────────────────────────────
@@ -8547,12 +8558,7 @@ Cell: 516-306-3326`
     return function() { original(); sfUpdateAreaTotals && sfUpdateAreaTotals(); };
   })(window.calcSFPrice || function(){});
 
-  // Init 3 rows on load
-  document.addEventListener('DOMContentLoaded', function() {
-    if (document.getElementById('sf-area-rows')) {
-      sfAddAreaRow(); sfAddAreaRow(); sfAddAreaRow();
-    }
-  });
+  // SF area rows init lazily when calculator tab is opened (not on page load)
 
   // SF Calculator voice mic
   let _sfListening = false, _sfRec = null;
