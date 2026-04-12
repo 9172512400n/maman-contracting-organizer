@@ -1,0 +1,1262 @@
+
+  // ── NAVIGATION ────────────────────────────────────────────────────────────
+  const sectionTitles = ['Dashboard','Job Management','Permits','Schedule','Contacts','Users'];
+  const SECTION_COUNT = 6;
+  let currentSection = 0;
+
+  function navTo(idx) {
+    currentSection = idx;
+    window._currentSection = idx;
+    localStorage.setItem('last-section', idx);
+    // Show/hide sections (bulletproof on iOS Safari)
+    const sw = document.getElementById('sections-wrapper');
+    if (sw) sw.classList.add('js-ready');
+    document.querySelectorAll('.sections-wrapper .section').forEach((s, i) => {
+      s.classList.toggle('active-section', i === idx);
+    });
+    // Bottom nav active state
+    document.querySelectorAll('#bottom-nav .bnav-item').forEach((b,i) => b.classList.toggle('active', i === idx));
+    // Drawer active state
+    document.querySelectorAll('#drawer .drawer-item[data-section]').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.section) === idx);
+    });
+    // Close drawer if open
+    closeDrawer();
+    // Side effects
+    if (idx === 3 && typeof renderSchedule === 'function') {
+      window._schedWeekOffset = 0; // always show current week on open
+      window._schedTabJustOpened = true;
+      window._schedUserNavigated = false;
+      loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
+    }
+  }
+
+  // Legacy alias used by other parts of code
+  window.showSection = function(idx, _el) { navTo(idx); };
+  window.navTo = navTo;
+  window._navTo = navTo;
+  // Flush any queued nav calls from before module loaded
+  if (window._pendingNav && window._pendingNav.length) {
+    navTo(window._pendingNav[window._pendingNav.length - 1]);
+    window._pendingNav = [];
+  }
+
+  // ── NAV TAB TOUCH FIX ─────────────────────────────────────────────────────
+  // Attach touchend directly to each nav button to bypass any iOS stacking-context
+  // pointer-event interception issues. Prevents ghost-click double-fire with a
+  // short debounce flag.
+  (function() {
+    let _navTouchFired = false;
+    document.querySelectorAll('#bottom-nav .bnav-item').forEach(function(btn) {
+      btn.addEventListener('touchend', function(e) {
+        const idx = parseInt(btn.dataset.section);
+        if (!isNaN(idx)) {
+          _navTouchFired = true;
+          navTo(idx);
+          setTimeout(function() { _navTouchFired = false; }, 350);
+          e.preventDefault(); // prevent ghost click
+        }
+      }, { passive: false });
+    });
+  })();
+
+  // ── DRAWER ────────────────────────────────────────────────────────────────
+  window.openDrawer = function() {
+    document.getElementById('drawer').classList.add('open');
+    document.getElementById('drawer-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  };
+  window.closeDrawer = function() {
+    document.getElementById('drawer').classList.remove('open');
+    document.getElementById('drawer-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+  };
+
+  // ── SWIPE NAVIGATION — direction detect only, full page snap ─────────────
+  (function() {
+    const outer = document.getElementById('sections-outer');
+    let startX = 0, startY = 0, startTime = 0;
+    let locked = false; // true once we've determined horizontal intent
+
+    outer.addEventListener('touchstart', e => {
+      if (document.getElementById('drawer').classList.contains('open')) return;
+      if (e.target.closest('#job-modal,#delete-confirm-modal,#invite-modal,#permit-modal')) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startTime = Date.now();
+      locked = false;
+    }, { passive: true });
+
+    outer.addEventListener('touchmove', e => {
+      // Once we know it's a horizontal swipe, prevent vertical scroll bleed
+      if (locked) e.preventDefault();
+    }, { passive: false });
+
+    outer.addEventListener('touchend', e => {
+      if (document.getElementById('drawer').classList.contains('open')) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      const dt = Date.now() - startTime;
+      const absDx = Math.abs(dx), absDy = Math.abs(dy);
+
+      // Must be strongly horizontal — vertical must be less than 20% of horizontal
+      if (absDy > absDx * 0.20) return;
+      // Minimum: 180px — deliberate swipe required
+      if (absDx < 180) return;
+      // Must start from left or right edge (outer 25% of screen width)
+      const screenW = window.innerWidth;
+      if (startX > screenW * 0.75 && dx < 0) return; // starting from right, swiping left — skip
+      // Only allow swipe from within 80% of screen (avoid accidental edge swipes triggering browser nav)
+      if (startX < screenW * 0.10 || startX > screenW * 0.90) return;
+
+      const cs = window._currentSection !== undefined ? window._currentSection : currentSection;
+      if (dx < 0 && cs < SECTION_COUNT - 1) navTo(cs + 1);
+      else if (dx > 0 && cs > 0) navTo(cs - 1);
+    }, { passive: true });
+  })();
+
+  // Init: show only first section
+  navTo(0);
+
+  // ── JUMP TO COMPLETED ─────────────────────────────────────────────────────
+  window.jumpToCompleted = function() {
+    navTo(1);
+    // Set filter to Completed
+    window._jobFilter = 'Completed';
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+    const completedPill = document.querySelector('.filter-pill[data-filter="Completed"]');
+    if (completedPill) completedPill.classList.add('active');
+    if (typeof filterJobs === 'function') filterJobs();
+  };
+
+  // ── SMART SHARE ───────────────────────────────────────────────────────────
+  window._shareText = '';
+
+  window.smartShare = function(event, btnId) {
+    window._shareText = (typeof buildScheduleText === 'function') ? buildScheduleText() : '';
+    if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      navigator.share({ title: 'Maman Contracting — Schedule', text: window._shareText }).catch(()=>{});
+      return;
+    }
+    const popup = document.getElementById('share-popup');
+    const btn = document.getElementById(btnId) || event.target;
+    const rect = btn.getBoundingClientRect();
+    popup.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+    popup.style.left = Math.max(8, rect.right - 200 + window.scrollX) + 'px';
+    popup.classList.contains('show') ? popup.classList.remove('show') : popup.classList.add('show');
+  };
+
+  window.shareJob = function(jobId) {
+    const j = allJobs.find(x => x.id === jobId);
+    if (!j) return;
+    const text = [
+      '📋 Job Details — Maman Contracting',
+      '',
+      `📍 Address: ${j.address || '—'}`,
+      `👤 Customer: ${j.customerName || '—'}`,
+      `📞 Phone: ${j.phone || '—'}`,
+      `🏷️ Task: ${j.taskType || j.jobType || '—'}`,
+      `📐 Size: ${j.projectSize || '—'}`,
+      `📅 Scheduled: ${j.scheduleDay || 'TBD'}`,
+      `🚗 Alt Parking: ${j.altParkingDays || '—'}${j.altParkingTime ? ' · ' + j.altParkingTime : ''}`,
+      `📋 Permit #: ${j.permitNumber || j.permitCode || '—'}`,
+      `✅ Status: ${j.status || '—'}`,
+      j.notes ? `📝 Notes: ${j.notes}` : '',
+    ].filter(Boolean).join('\n');
+
+    if (navigator.share) {
+      navigator.share({ title: `Job: ${j.address || j.customerName}`, text }).catch(() => {});
+    } else {
+      const subject = encodeURIComponent(`Maman Contracting — ${j.address || j.customerName}`);
+      window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(text)}`;
+    }
+  };
+
+  window.exportReport = function(type) {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+    
+    // Build report HTML
+    const statusBadge = (s) => {
+      const colors = { 'Pending':'#f59e0b', 'In Progress':'#3b82f6', 'Completed':'#22c55e', 'On Hold':'#8b5cf6', 'Cancelled':'#ef4444' };
+      return `<span style="background:${colors[s]||'#666'};color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;">${s||'—'}</span>`;
+    };
+
+    const jobRows = allJobs.map((j,i) => `
+      <tr style="border-bottom:1px solid #eee;${i%2===0?'background:#fafafa':''}">
+<td style="padding:8px 10px;font-weight:600;color:#111;">${j.customerName||'—'}</td>
+<td style="padding:8px 10px;color:#444;">${j.address||'—'}</td>
+<td style="padding:8px 10px;color:#444;">${j.taskType||j.jobType||'—'}</td>
+<td style="padding:8px 10px;">${statusBadge(j.status)}</td>
+<td style="padding:8px 10px;color:#444;">${j.scheduleDay||'TBD'}</td>
+<td style="padding:8px 10px;color:#444;">${j.altParkingDays||'—'}</td>
+<td style="padding:8px 10px;color:#444;">${j.permitNumber||j.permitCode||'—'}</td>
+</tr>
+    `).join('');
+
+    const totals = {
+      total: allJobs.length,
+      pending: allJobs.filter(j=>j.status==='Pending').length,
+      inProgress: allJobs.filter(j=>j.status==='In Progress').length,
+      completed: allJobs.filter(j=>j.status==='Completed').length,
+    };
+
+    const reportHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+<title>Maman Contracting — Job Report</title>
+<style>
+      body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #111; }
+      .header { display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #e53e3e; padding-bottom:12px; margin-bottom:20px; }
+      .logo { font-size:22px; font-weight:900; color:#e53e3e; }
+      .date { font-size:12px; color:#666; }
+      .stats { display:flex; gap:16px; margin-bottom:20px; }
+      .stat { background:#f5f5f5; border-radius:8px; padding:12px 20px; text-align:center; flex:1; }
+      .stat-num { font-size:28px; font-weight:900; color:#e53e3e; }
+      .stat-label { font-size:11px; color:#666; text-transform:uppercase; letter-spacing:0.5px; }
+      table { width:100%; border-collapse:collapse; font-size:12px; }
+      th { background:#e53e3e; color:#fff; padding:10px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
+      @media print { body { padding:10px; } .no-print { display:none; } }
+    </style></head><body>
+<div class="header">
+<div class="logo">🏗️ Maman Contracting</div>
+<div class="date">Job Report — ${dateStr}</div>
+</div>
+<div class="stats">
+<div class="stat"><div class="stat-num">${totals.total}</div><div class="stat-label">Total Jobs</div></div>
+<div class="stat"><div class="stat-num">${totals.pending}</div><div class="stat-label">Pending</div></div>
+<div class="stat"><div class="stat-num">${totals.inProgress}</div><div class="stat-label">In Progress</div></div>
+<div class="stat"><div class="stat-num">${totals.completed}</div><div class="stat-label">Completed</div></div>
+</div>
+<table>
+<thead><tr>
+<th>Customer</th><th>Address</th><th>Task Type</th><th>Status</th>
+<th>Scheduled</th><th>Alt Parking</th><th>Permit #</th>
+</tr></thead>
+<tbody>${jobRows}</tbody>
+</table>
+<div style="margin-top:20px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:10px;">
+      Generated by Maman Contracting Organizer · ${now.toLocaleString()}
+    </div>
+<datalist id="dot-time-options"><option value="06:00"><option value="06:15"><option value="06:30"><option value="06:45"><option value="07:00"><option value="07:15"><option value="07:30"><option value="07:45"><option value="08:00"><option value="08:15"><option value="08:30"><option value="08:45"><option value="09:00"><option value="09:15"><option value="09:30"><option value="09:45"><option value="10:00"><option value="10:15"><option value="10:30"><option value="10:45"><option value="11:00"><option value="11:15"><option value="11:30"><option value="11:45"><option value="12:00"><option value="12:15"><option value="12:30"><option value="12:45"><option value="13:00"><option value="13:15"><option value="13:30"><option value="13:45"><option value="14:00"><option value="14:15"><option value="14:30"><option value="14:45"><option value="15:00"><option value="15:15"><option value="15:30"><option value="15:45"><option value="16:00"><option value="16:15"><option value="16:30"><option value="16:45"><option value="17:00"><option value="17:15"><option value="17:30"><option value="17:45"><option value="18:00"><option value="18:15"><option value="18:30"><option value="18:45"><option value="18:00"></datalist>
+</body></html>`;
+
+    if (type === 'print' || type === 'pdf') {
+      const win = window.open('', '_blank');
+      if (win) {
+        win.document.write(reportHTML);
+        win.document.close();
+        win.focus();
+        setTimeout(() => { win.print(); }, 500);
+      }
+    } else if (type === 'email') {
+      const subject = encodeURIComponent('Maman Contracting — Job Report ' + now.toLocaleDateString());
+      const lines = ['Maman Contracting — Job Report', '='.repeat(40), `Date: ${dateStr}`, '',
+        `Total Jobs: ${totals.total} | Pending: ${totals.pending} | In Progress: ${totals.inProgress} | Completed: ${totals.completed}`, '',
+        ...allJobs.map(j => `• ${j.customerName||'—'} | ${j.address||'—'} | ${j.status||'—'} | Permit: ${j.permitNumber||j.permitCode||'None'}`)
+      ];
+      const body = encodeURIComponent(lines.join('\n'));
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    }
+  };
+
+  window.shareAction = function(type) {
+    const popup = document.getElementById('share-popup');
+    popup.classList.remove('show');
+    const text = window._shareText || (typeof buildScheduleText === 'function' ? buildScheduleText() : '');
+    if (type === 'native') {
+      if (navigator.share) navigator.share({ title: 'Schedule', text }).catch(()=>{});
+      else navigator.clipboard.writeText(text).then(() => window.showToast('📋 Copied!'));
+    } else if (type === 'copy') {
+      navigator.clipboard.writeText(text).then(() => window.showToast('📋 Copied!')).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta); window.showToast('📋 Copied!');
+      });
+    } else if (type === 'email') {
+      window.location.href = `mailto:?subject=${encodeURIComponent('Maman Contracting — Schedule')}&body=${encodeURIComponent(text)}`;
+    } else if (type === 'print') { window.print(); }
+  };
+
+  document.addEventListener('click', function(e) {
+    const popup = document.getElementById('share-popup');
+    if (popup && popup.classList.contains('show') && !popup.contains(e.target) && !e.target.closest('[onclick*="smartShare"]')) {
+      popup.classList.remove('show');
+    }
+  });
+
+  // ── FORM HELPERS ──────────────────────────────────────────────────────────
+  window.handleJobTypeChange = function() {
+    const jobType = document.getElementById('f-jobType').value;
+    document.getElementById('f-concreteSubWrap').style.display = jobType === 'concrete' ? 'flex' : 'none';
+  };
+  window.handleTaskTypeChange = function() {
+    const t = document.getElementById('f-taskType').value;
+    document.getElementById('f-customTaskWrap').style.display = t === 'Custom' ? 'flex' : 'none';
+  };
+
+  // Upload file to Firebase Storage and return permanent URL
+  async function uploadToStorage(file, path) {
+    const API_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
+    const bucket = 'maman-contracting-app.firebasestorage.app';
+    const encodedPath = encodeURIComponent(path);
+    const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o?uploadType=media&name=${encodedPath}&key=${API_KEY}`;
+    const r = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file
+    });
+    if (!r.ok) throw new Error('Upload failed: ' + r.status);
+    const data = await r.json();
+    // Build permanent download URL
+    return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}?alt=media&token=${data.downloadTokens}`;
+  }
+
+  // Track uploaded permit doc URLs (multiple)
+  window._uploadedPermitDocUrl = '';
+  window._uploadedPermitDocUrls = [];
+
+  // Handle multiple permit file uploads
+  window.handlePermitFiles = async function(input) {
+    const files = Array.from(input.files);
+    if (!files.length) return;
+    const preview = document.getElementById('permit-preview');
+    const docsList = document.getElementById('permit-docs-list');
+    if (preview) { preview.textContent = `⏳ Uploading ${files.length} file(s)…`; preview.style.display = 'block'; preview.style.color = '#f59e0b'; }
+    // KEEP existing docs — append new uploads to existing ones
+    if (!Array.isArray(window._uploadedPermitDocUrls)) window._uploadedPermitDocUrls = [];
+    // Don't reset existing docs list — only clear the upload status rows
+    if (docsList && docsList.children.length === 0) docsList.innerHTML = '';
+
+    for (const file of files) {
+      const rowEl = document.createElement('div');
+      rowEl.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #1a1a1a;font-size:12px;';
+      rowEl.textContent = `⏳ ${file.name}`;
+      if (docsList) docsList.appendChild(rowEl);
+      try {
+        const path = 'permits/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const url = await uploadToStorage(file, path);
+        window._uploadedPermitDocUrls.push({ name: file.name, url });
+        if (!window._uploadedPermitDocUrl) window._uploadedPermitDocUrl = url;
+        rowEl.innerHTML = `<span style="color:#4ade80;">✅</span> <a href="${url}" target="_blank" style="color:#60a5fa;font-weight:700;flex:1;">${file.name}</a> <span onclick="navigator.share&&navigator.share({url:'${url}',title:'${file.name}'})" style="color:#4ade80;cursor:pointer;">📤</span>`;
+      } catch(e) {
+        rowEl.innerHTML = `<span style="color:#f87171;">❌ ${file.name} — ${e.message}</span>`;
+      }
+    }
+    if (preview) { preview.textContent = `✅ ${window._uploadedPermitDocUrls.length} document(s) attached`; preview.style.color = '#4ade80'; }
+    if (!window._uploadedPermitDocUrl && window._uploadedPermitDocUrls.length) {
+      const first = window._uploadedPermitDocUrls[0];
+      window._uploadedPermitDocUrl = typeof first === 'string' ? first : first.url;
+    }
+  };
+
+  async function handleFile(input, previewId) {
+    // Legacy single file handler — now delegates to handlePermitFiles
+    await window.handlePermitFiles(input);
+  }
+
+  function handleFiles(input, previewId) {
+    const preview = document.getElementById(previewId);
+    preview.innerHTML = '';
+    Array.from(input.files).forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:8px;border:2px solid #2a2a2a;';
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const tag = document.createElement('div');
+        tag.style.cssText = 'background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;padding:6px 10px;font-size:11px;color:#4ade80;';
+        tag.textContent = '📄 ' + file.name;
+        preview.appendChild(tag);
+      }
+      preview.style.display = 'flex';
+    });
+  }
+
+  // ── CUSTOM FIELDS ─────────────────────────────────────────────────────────
+  window.addCustomField = function(label, value) {
+    const list = document.getElementById('custom-fields-list');
+    const id = 'cf-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+    const row = document.createElement('div');
+    row.id = id;
+    row.style.cssText = 'display:flex;gap:8px;align-items:center;';
+    const safeLabel = (label || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    const safeValue = (value || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    row.innerHTML = `
+      <input type="text" placeholder="Label…" value="${safeLabel}"
+        style="flex:1;min-width:0;padding:9px 11px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" data-cf="label"/>
+<input type="text" placeholder="Value…" value="${safeValue}"
+        style="flex:2;min-width:0;padding:9px 11px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;" data-cf="value"/>
+<button type="button" onclick="document.getElementById('${id}').remove()"
+        style="width:32px;height:32px;flex-shrink:0;background:#2a2a2a;border:none;border-radius:8px;color:#888;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif;transition:all 0.15s;"
+        onmouseover="this.style.background='#450a0a';this.style.color='#f87171'"
+        onmouseout="this.style.background='#2a2a2a';this.style.color='#888'">×</button>`;
+    list.appendChild(row);
+    row.querySelector('[data-cf="label"]').focus();
+  };
+
+  window.collectCustomFields = function() {
+    const rows = document.querySelectorAll('#custom-fields-list > div');
+    const fields = [];
+    rows.forEach(row => {
+      const lbl = (row.querySelector('[data-cf="label"]') || {}).value || '';
+      const val = (row.querySelector('[data-cf="value"]') || {}).value || '';
+      if (lbl.trim() || val.trim()) fields.push({ label: lbl.trim(), value: val.trim() });
+    });
+    return fields;
+  };
+
+  // ── CUSTOMER AUTOCOMPLETE ─────────────────────────────────────────────────
+  let _csTimer = null;
+  window.customerSearchOpen = function(val) {
+    clearTimeout(_csTimer);
+    _csTimer = setTimeout(function() { _customerSearchNow(val); }, 250);
+  };
+  function _customerSearchNow(val) {
+    const dropdown = document.getElementById('customer-suggestions');
+    if (!dropdown) return;
+    const q = (val || '').trim().toLowerCase();
+    if (!q || q.length < 1) { dropdown.style.display = 'none'; return; }
+    // Show loading if contacts haven't loaded yet — auto-retry after 1s
+    const contactsLoaded = (window.allContacts||[]).length > 0 || (window.allJobs||[]).length > 0;
+    if (!contactsLoaded) {
+      dropdown.innerHTML = '<div style="padding:12px 14px;color:#888;font-size:13px;">Loading contacts...</div>';
+      dropdown.style.display = 'block';
+      // Retry after 1 second in case data is still loading
+      clearTimeout(_csTimer);
+      _csTimer = setTimeout(function() { _customerSearchNow(val); }, 1000);
+      return;
+    }
+
+    // Search contacts + past jobs for matching names
+    const seen = new Set();
+    const results = [];
+
+    // Search contacts first
+    (window.allContacts || []).forEach(c => {
+      const name = c.companyName || c.name || '';
+      if (!name) return;
+      if (name.toLowerCase().includes(q) && !seen.has(name.toLowerCase())) {
+        seen.add(name.toLowerCase());
+        results.push({ name, phone: c.phone || '', email: c.email || '', address: c.address || '', source: 'contact' });
+      }
+    });
+
+    // Also search past jobs
+    (window.allJobs || []).forEach(j => {
+      const name = j.customerName || '';
+      if (!name) return;
+      if (name.toLowerCase().includes(q) && !seen.has(name.toLowerCase())) {
+        seen.add(name.toLowerCase());
+        results.push({ name, phone: j.phone || '', email: j.email || '', address: j.address || '', source: 'job' });
+      }
+    });
+
+    if (!results.length) { dropdown.style.display = 'none'; return; }
+
+    dropdown.innerHTML = results.slice(0, 8).map(r => `
+      <div onclick="customerAutofill(${JSON.stringify(r).replace(/"/g,'&quot;')})"
+        style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #2a2a2a;display:flex;align-items:center;gap:10px;"
+        onmouseover="this.style.background='#2a2a2a'" onmouseout="this.style.background='transparent'">
+<span style="font-size:18px;">${r.source === 'contact' ? '👤' : '📋'}</span>
+<div>
+<div style="font-size:13px;font-weight:700;color:#fff;">${r.name}</div>
+<div style="font-size:11px;color:#888;">${[r.phone, r.address].filter(Boolean).join(' · ') || 'No details'}</div>
+</div>
+</div>
+    `).join('');
+    dropdown.style.display = 'block';
+  };
+
+  window.customerAutofill = function(contact) {
+    const dropdown = document.getElementById('customer-suggestions');
+    if (dropdown) dropdown.style.display = 'none';
+    // Fill in the form fields
+    const nameEl = document.getElementById('f-customerName');
+    const phoneEl = document.getElementById('f-phone');
+    const emailEl = document.getElementById('f-email');
+    const addrEl  = document.getElementById('f-address');
+    if (nameEl)  nameEl.value  = contact.name  || '';
+    if (phoneEl && contact.phone)  phoneEl.value  = contact.phone;
+    if (emailEl && contact.email)  emailEl.value  = contact.email;
+    if (addrEl  && contact.address) addrEl.value   = contact.address;
+    // Flash green on filled fields
+    [nameEl, phoneEl, emailEl, addrEl].forEach(el => {
+      if (el && el.value) {
+        el.style.borderColor = '#22c55e';
+        setTimeout(() => { el.style.borderColor = '#2a2a2a'; }, 1500);
+      }
+    });
+  };
+
+  // ── JOB MODAL ─────────────────────────────────────────────────────────────
+  function openJobModal(prefillDate) {
+    // Show modal instantly — do all form work after two frames for maximum responsiveness
+    const modal = document.getElementById('job-modal');
+    modal.style.display = 'block';
+    modal.scrollTop = 0;
+    // First frame: nothing (let browser paint the modal immediately)
+    requestAnimationFrame(function() {
+      // Second frame: clear form fields async
+      requestAnimationFrame(function() {
+        if (window.clearJobForm) window.clearJobForm();
+        if (prefillDate) {
+          const sd = document.getElementById('f-scheduleDay');
+          if (sd) sd.value = prefillDate;
+        }
+        // Focus first field only after form is ready
+        const firstField = document.getElementById('f-customerName');
+        if (firstField) firstField.focus();
+      });
+    });
+  }
+  function closeJobModal() {
+    const modal = document.getElementById('job-modal');
+    modal.style.display = 'none';
+  }
+
+  document.getElementById('job-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeJobModal();
+  });
+
+  document.getElementById('contact-modal').addEventListener('click', function(e) {
+    if (e.target === this && typeof closeContactModal === 'function') closeContactModal();
+  });
+
+  document.getElementById('permit-modal').addEventListener('click', function(e) {
+    if (e.target === this && typeof closePermitModal === 'function') closePermitModal();
+  });
+
+  // ── THEME ─────────────────────────────────────────────────────────────────
+  function syncThemeBtn() {
+    const isLight = document.body.classList.contains('light');
+    const icon = document.querySelector('#theme-drawer-item .di');
+    const label = document.getElementById('theme-drawer-label');
+    if (icon) icon.textContent = isLight ? '☀️' : '🌙';
+    if (label) label.textContent = isLight ? 'Light Mode' : 'Dark Mode';
+    const topBtn = document.getElementById('theme-toggle-btn');
+    if (topBtn) topBtn.textContent = isLight ? '☀️' : '🌙';
+  }
+  window.toggleParkingBlocked = function() {
+    const cb = document.getElementById('f-altParkingBlocked');
+    const daysInput = document.getElementById('f-altParkingDays');
+    const timeRow = document.getElementById('f-parkingTimeRow');
+    if (!cb || !daysInput) return;
+    if (cb.checked) {
+      daysInput.value = '';
+      daysInput.placeholder = 'Fully Blocked';
+      daysInput.disabled = true;
+      if (timeRow) timeRow.style.display = 'none';
+    } else {
+      daysInput.placeholder = 'e.g. Mon & Thu';
+      daysInput.disabled = false;
+      if (timeRow) timeRow.style.display = '';
+    }
+  };
+
+  function toggleTheme() {
+    document.body.classList.toggle('light');
+    localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+    syncThemeBtn();
+  }
+  if (localStorage.getItem('theme') === 'light') {
+    document.body.classList.add('light');
+  }
+  syncThemeBtn();
+
+  // ── RIPPLE TAP EFFECT ─────────────────────────────────────────────────────
+  // Fires on any tappable row or card with an onclick that opens a job
+  document.addEventListener('pointerdown', function(e) {
+    const row = e.target.closest('tr[onclick], .crew-job-card[onclick]');
+    if (!row) return;
+    // Ripple for table rows (inject into first td)
+    if (row.tagName === 'TR') {
+      const td = row.querySelector('td');
+      if (!td) return;
+      const ripple = document.createElement('span');
+      ripple.className = 'tap-ripple';
+      ripple.style.cssText = `width:60px;height:60px;left:${e.clientX - td.getBoundingClientRect().left - 30}px;top:-10px;`;
+      td.style.position = 'relative'; td.style.overflow = 'hidden';
+      td.appendChild(ripple);
+      ripple.addEventListener('animationend', () => ripple.remove());
+    }
+  }, { passive: true });
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  // Show only the first section on load
+  navTo(0);
+
+  // ── CALCULATOR ────────────────────────────────────────────────────────────
+  window.switchCalc = function(type) {
+    document.getElementById('calc-asphalt').style.display = type === 'asphalt' ? 'block' : 'none';
+    document.getElementById('calc-concrete').style.display = type === 'concrete' ? 'block' : 'none';
+    document.getElementById('calc-measurements').style.display = type === 'measurements' ? 'block' : 'none';
+    const aspTab = document.getElementById('calc-tab-asphalt');
+    const conTab = document.getElementById('calc-tab-concrete');
+    const measTab = document.getElementById('calc-tab-measurements');
+    [aspTab, conTab, measTab].forEach(t => { if(t) { t.style.background = '#fff'; t.style.color = '#1a1a2e'; } });
+    const active = type === 'asphalt' ? aspTab : type === 'concrete' ? conTab : measTab;
+    if (active) { active.style.background = '#e53e3e'; active.style.color = '#fff'; }
+    // Init measurement rows if switching to measurements tab
+    if (type === 'measurements' && document.getElementById('mp-rows').children.length === 0) {
+      mpAddRow(); mpAddRow(); mpAddRow();
+    }
+  };
+
+  // ── MEASUREMENTS CALCULATOR JS ─────────────────────────────────────────────
+  let _mpRowCount = 0;
+  let _mpWasteOn = false;
+
+  window.mpAddRow = function(name, w, h) {
+    _mpRowCount++;
+    const idx = _mpRowCount;
+    const row = document.createElement('div');
+    row.id = 'mp-row-' + idx;
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px 12px;';
+    row.innerHTML = `
+      <span style="font-size:12px;font-weight:800;color:#e53e3e;min-width:18px;">${idx}</span>
+<input type="text" placeholder="Area name" value="${name||''}" oninput="mpUpdateTotals()"
+        style="flex:2;background:#111;border:1.5px solid #2a2a2a;border-radius:6px;padding:7px 8px;color:#fff;font-size:13px;outline:none;font-family:'Inter',sans-serif;" />
+<input type="number" id="mp-w-${idx}" placeholder="W" inputmode="decimal" value="${w||''}" oninput="mpRowSF(${idx})"
+        style="width:52px;background:#111;border:1.5px solid #2a2a2a;border-radius:6px;padding:7px;color:#fff;font-size:13px;outline:none;text-align:center;font-family:'Inter',sans-serif;" />
+<span style="color:#555;font-size:13px;">×</span>
+<input type="number" id="mp-h-${idx}" placeholder="L" inputmode="decimal" value="${h||''}" oninput="mpRowSF(${idx})"
+        style="width:52px;background:#111;border:1.5px solid #2a2a2a;border-radius:6px;padding:7px;color:#fff;font-size:13px;outline:none;text-align:center;font-family:'Inter',sans-serif;" />
+<span style="font-size:11px;color:#555;">ft</span>
+<button onclick="mpVoiceRow(${idx})" id="mp-mic-${idx}" style="background:none;border:none;font-size:18px;cursor:pointer;padding:2px 4px;flex-shrink:0;">🎙️</button>
+<span id="mp-sf-${idx}" style="font-size:12px;color:#4ade80;font-weight:700;min-width:52px;text-align:right;">—</span>
+<button onclick="mpDelRow(${idx})" style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;flex-shrink:0;">✕</button>`;
+    document.getElementById('mp-rows').appendChild(row);
+    if (w && h) mpRowSF(idx);
+    mpUpdateTotals();
+  };
+
+  window.mpRowSF = function(idx) {
+    const w = parseFloat(document.getElementById('mp-w-'+idx)?.value)||0;
+    const h = parseFloat(document.getElementById('mp-h-'+idx)?.value)||0;
+    const sfEl = document.getElementById('mp-sf-'+idx);
+    if (sfEl) sfEl.textContent = (w&&h) ? ((w*h).toLocaleString()+' SF') : '—';
+    mpUpdateTotals();
+  };
+
+  window.mpDelRow = function(idx) {
+    const r = document.getElementById('mp-row-'+idx);
+    if (r) r.remove();
+    mpUpdateTotals();
+  };
+
+  window.mpUpdateTotals = function() {
+    let total = 0, count = 0;
+    document.querySelectorAll('#mp-rows > div').forEach(row => {
+      const id = row.id.replace('mp-row-','');
+      const w = parseFloat(document.getElementById('mp-w-'+id)?.value)||0;
+      const h = parseFloat(document.getElementById('mp-h-'+id)?.value)||0;
+      if (w>0&&h>0) { total += w*h; count++; }
+    });
+    const ctEl = document.getElementById('mp-count'); if(ctEl) ctEl.textContent = count;
+    const sfEl = document.getElementById('mp-total-sf'); if(sfEl) sfEl.textContent = total.toLocaleString()+' SF';
+    const wasteEl = document.getElementById('mp-waste-sf'); if(wasteEl) wasteEl.textContent = (total*1.1).toLocaleString()+' SF';
+    const price = parseFloat(document.getElementById('mp-price-sf')?.value)||0;
+    const costEl = document.getElementById('mp-total-cost');
+    if (costEl) costEl.textContent = (price && total) ? '$'+(total*price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+  };
+
+  window.mpToggleWaste = function() {
+    _mpWasteOn = !_mpWasteOn;
+    const toggle = document.getElementById('mp-waste-toggle');
+    const row = document.getElementById('mp-waste-row');
+    if (toggle) toggle.textContent = _mpWasteOn ? 'ON ●' : 'OFF ○';
+    if (row) row.style.display = _mpWasteOn ? 'flex' : 'none';
+  };
+
+  window.mpClearAll = function() {
+    document.getElementById('mp-rows').innerHTML = '';
+    _mpRowCount = 0;
+    const box = document.getElementById('mp-voice-box'); if(box) { box.value=''; }
+    const res = document.getElementById('mp-voice-result'); if(res) res.textContent='';
+    mpAddRow(); mpAddRow(); mpAddRow();
+    mpUpdateTotals();
+  };
+
+  window.mpClearVoiceBox = function() {
+    const box = document.getElementById('mp-voice-box'); if(box) box.value='';
+    const res = document.getElementById('mp-voice-result'); if(res) res.textContent='';
+  };
+
+  window.mpShare = function() {
+    let text = '📐 MEASUREMENTS\n――――――――――――――――\n';
+    document.querySelectorAll('#mp-rows > div').forEach(row => {
+      const id = row.id.replace('mp-row-','');
+      const name = row.querySelector('input[type=text]')?.value || ('Area '+id);
+      const w = parseFloat(document.getElementById('mp-w-'+id)?.value)||0;
+      const h = parseFloat(document.getElementById('mp-h-'+id)?.value)||0;
+      if (w&&h) text += '• '+name+': '+w+' × '+h+' = '+(w*h).toLocaleString()+' SF\n';
+    });
+    const total = document.getElementById('mp-total-sf')?.textContent;
+    if (total) text += '\n✓ Total: '+total;
+    const cost = document.getElementById('mp-total-cost')?.textContent;
+    if (cost && cost !== '—') text += '\n💵 Est. Cost: '+cost;
+    if (navigator.share) navigator.share({ title: 'Measurements', text }).catch(()=>{});
+    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(()=>alert('Copied!'));
+  };
+
+  // Word-to-number helper
+  function mpSpokenToNum(str) {
+    const words = {'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000};
+    const n = parseFloat(str.replace(/,/g,''));
+    if (!isNaN(n)) return n;
+    let total = 0, cur = 0;
+    str.toLowerCase().split(/\s+/).forEach(w => {
+      const v = words[w];
+      if (v !== undefined) {
+        if (v === 100) cur = (cur||1)*100;
+        else if (v === 1000) { total += (cur||1)*1000; cur = 0; }
+        else cur += v;
+      }
+    });
+    return total + cur || NaN;
+  }
+
+  // Parse voice box and fill rows
+  window.mpParseVoiceBox = function() {
+    const box = document.getElementById('mp-voice-box');
+    const res = document.getElementById('mp-voice-result');
+    if (!box) return;
+    const lines = box.value.split(/[\n,;]+/).map(l=>l.trim()).filter(Boolean);
+    document.getElementById('mp-rows').innerHTML = '';
+    _mpRowCount = 0;
+    let count = 0;
+    lines.forEach(line => {
+      const parts = line.split(/\s+(?:by|x|times|×)\s+/i);
+      let w = NaN, h = NaN;
+      if (parts.length >= 2) {
+        w = mpSpokenToNum(parts[0].trim());
+        h = mpSpokenToNum(parts[1].trim());
+        if (isNaN(w)) { const d=parts[0].match(/[\d]+/); if(d) w=parseFloat(d[0]); }
+        if (isNaN(h)) { const d=parts[1].match(/[\d]+/); if(d) h=parseFloat(d[0]); }
+      } else {
+        const digits = line.match(/[\d]+\.?[\d]*/g);
+        if (digits && digits.length >= 2) { w = parseFloat(digits[0]); h = parseFloat(digits[1]); }
+      }
+      if (!isNaN(w) && !isNaN(h) && w>0 && h>0) { count++; mpAddRow('', w, h); }
+    });
+    while (_mpRowCount < 3) mpAddRow();
+    if (res) res.textContent = count > 0 ? '✅ '+count+' area'+(count>1?'s':'')+' added' : (box.value.trim() ? '❔ Format: 50x120 or 50 by 120' : '');
+  };
+
+  // Mic for voice box
+  let _mpListening = false, _mpRec = null;
+  window.mpStartVoice = function() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Voice not supported'); return; }
+    const btn = document.getElementById('mp-mic-btn');
+    if (_mpListening) { _mpRec && _mpRec.stop(); return; }
+    _mpRec = new SR();
+    _mpRec.lang = 'en-US'; _mpRec.interimResults = false; _mpRec.continuous = true;
+    _mpRec.onstart = () => { _mpListening=true; if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';} };
+    _mpRec.onend   = () => { _mpListening=false; if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';} };
+    _mpRec.onerror = () => { _mpListening=false; if(btn){btn.textContent='🎙️';} };
+    _mpRec.onresult = e => {
+      for (let i=e.resultIndex; i<e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          const t = e.results[i][0].transcript;
+          const box = document.getElementById('mp-voice-box');
+          if (t.trim().toLowerCase()==='delete'||t.trim().toLowerCase()==='undo') {
+            const rows=document.querySelectorAll('#mp-rows>div');
+            if(rows.length) rows[rows.length-1].remove();
+            if(box){ const ls=box.value.split('\n').filter(Boolean); ls.pop(); box.value=ls.join('\n'); }
+            mpUpdateTotals();
+          } else {
+            if(box) { box.value=(box.value?box.value+'\n':'')+t; mpParseVoiceBox(); }
+          }
+        }
+      }
+    };
+    _mpRec.start();
+  };
+
+  // Per-row voice
+  window.mpVoiceRow = function(idx) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Voice not supported'); return; }
+    const btn = document.getElementById('mp-mic-'+idx);
+    const r = new SR();
+    r.lang='en-US'; r.interimResults=false; r.maxAlternatives=1;
+    r.onstart = () => { if(btn) btn.textContent='🔴'; };
+    r.onend   = () => { if(btn) btn.textContent='🎙️'; };
+    r.onresult = e => {
+      const t = e.results[0][0].transcript;
+      const wordMap={'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000};
+      let norm = t.toLowerCase();
+      Object.keys(wordMap).sort((a,b)=>b.length-a.length).forEach(w=>{ norm=norm.replace(new RegExp('\\b'+w+'\\b','g'),wordMap[w]); });
+      const nums = norm.match(/\d+\.?\d*/g);
+      if(nums&&nums.length>=2) {
+        const wEl=document.getElementById('mp-w-'+idx), hEl=document.getElementById('mp-h-'+idx);
+        if(wEl){wEl.value=nums[0];wEl.dispatchEvent(new Event('input'));}
+        if(hEl){hEl.value=nums[1];hEl.dispatchEvent(new Event('input'));}
+        mpRowSF(idx);
+      }
+    };
+    r.start();
+  };
+
+  window.calcAsphalt = function() {
+    const w = parseFloat(document.getElementById('asp-width').value) || 0;
+    const l = parseFloat(document.getElementById('asp-length').value) || 0;
+    const t = parseFloat(document.getElementById('asp-thickness').value) || 0;
+    const costPerTon = parseFloat(document.getElementById('asp-cost').value) || 0;
+    if (!w || !l || !t) {
+      document.getElementById('asp-result-cy').textContent = '—';
+      document.getElementById('asp-result-tons').textContent = '—';
+      document.getElementById('asp-result-cost').textContent = '—';
+      return;
+    }
+    const cubicFeet = w * l * (t / 12);
+    const cubicYards = cubicFeet / 27;
+    // Asphalt density ~148 lbs/cubic foot (industry standard = 2.025 tons/CY)
+    const tons = cubicYards * 2.025;
+    const totalCost = costPerTon ? tons * costPerTon : 0;
+    document.getElementById('asp-result-cy').textContent = cubicYards.toFixed(2);
+    document.getElementById('asp-result-tons').textContent = tons.toFixed(2);
+    document.getElementById('asp-result-cost').textContent = costPerTon ? '$' + totalCost.toFixed(2) : '—';
+  };
+
+  window.shareAsphaltResult = function() {
+    const w = document.getElementById('asp-width').value;
+    const l = document.getElementById('asp-length').value;
+    const t = document.getElementById('asp-thickness').value;
+    const cy = document.getElementById('asp-result-cy').textContent;
+    const tons = document.getElementById('asp-result-tons').textContent;
+    const cost = document.getElementById('asp-result-cost').textContent;
+    const text = `🛣️ Asphalt Estimate — Maman Contracting\n\nWidth: ${w} ft | Length: ${l} ft | Thickness: ${t} in\n\nCubic Yards: ${cy}\nHot Mix (tons): ${tons}\nTotal Cost: ${cost}`;
+    if (navigator.share) {
+      navigator.share({ title: 'Asphalt Estimate', text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text).then(() => window.showToast('📋 Copied to clipboard!'));
+    }
+  };
+
+  window.shareConcreteResult = function() {
+    const w = document.getElementById('con-width').value;
+    const l = document.getElementById('con-length').value;
+    const t = document.getElementById('con-thickness').value;
+    const cy = document.getElementById('con-result-cy').textContent;
+    const bags = document.getElementById('con-result-bags').textContent;
+    const cost = document.getElementById('con-result-cost').textContent;
+    const text = `🏗️ Concrete Estimate — Maman Contracting\n\nWidth: ${w} ft | Length: ${l} ft | Thickness: ${t} in\n\nCubic Yards: ${cy}\n80lb Bags: ${bags}\nTotal Cost: ${cost}`;
+    if (navigator.share) {
+      navigator.share({ title: 'Concrete Estimate', text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text).then(() => window.showToast('📋 Copied to clipboard!'));
+    }
+  };
+
+  window.clearAsphalt = function() {
+    ['asp-width','asp-length','asp-thickness','asp-cost'].forEach(id => document.getElementById(id).value = '');
+    ['asp-result-cy','asp-result-tons','asp-result-cost'].forEach(id => document.getElementById(id).textContent = '—');
+  };
+
+  window.emailAsphaltResult = function() {
+    const w = document.getElementById('asp-width').value;
+    const l = document.getElementById('asp-length').value;
+    const t = document.getElementById('asp-thickness').value;
+    const cy = document.getElementById('asp-result-cy').textContent;
+    const tons = document.getElementById('asp-result-tons').textContent;
+    const cost = document.getElementById('asp-result-cost').textContent;
+    const body = encodeURIComponent(`Asphalt Estimate\n\nWidth: ${w} ft\nLength: ${l} ft\nThickness: ${t} in\n\nCubic Yards: ${cy}\nHot Mix (tons): ${tons}\nTotal Cost: ${cost}\n\nMaman Contracting`);
+    window.location.href = `mailto:?subject=Asphalt%20Estimate&body=${body}`;
+  };
+
+  window.calcConcrete = function() {
+    const w = parseFloat(document.getElementById('con-width').value) || 0;
+    const l = parseFloat(document.getElementById('con-length').value) || 0;
+    const t = parseFloat(document.getElementById('con-thickness').value) || 0;
+    const costPerYard = parseFloat(document.getElementById('con-cost').value) || 0;
+    if (!w || !l || !t) {
+      document.getElementById('con-result-cy').textContent = '—';
+      document.getElementById('con-result-bags').textContent = '—';
+      document.getElementById('con-result-cost').textContent = '—';
+      return;
+    }
+    const cubicFeet = w * l * (t / 12);
+    const cubicYards = cubicFeet / 27;
+    // 80lb bag covers ~0.6 cubic feet
+    const bags = Math.ceil(cubicFeet / 0.6);
+    const totalCost = costPerYard ? cubicYards * costPerYard : 0;
+    document.getElementById('con-result-cy').textContent = cubicYards.toFixed(2);
+    document.getElementById('con-result-bags').textContent = bags;
+    document.getElementById('con-result-cost').textContent = costPerYard ? '$' + totalCost.toFixed(2) : '—';
+  };
+
+  window.clearConcrete = function() {
+    ['con-width','con-length','con-thickness','con-cost'].forEach(id => document.getElementById(id).value = '');
+    ['con-result-cy','con-result-bags','con-result-cost'].forEach(id => document.getElementById(id).textContent = '—');
+  };
+
+  // ── SF + PRICE CALCULATOR ─────────────────────────────────────────────────
+  window.calcSFPrice = function() {
+    const lines = (document.getElementById('sf-measurements').value || '').split('\n');
+    let totalSF = 0;
+    const wordMap = {'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000};
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      // Convert word numbers to digits first
+      let norm = trimmed.toLowerCase();
+      Object.keys(wordMap).sort((a,b)=>b.length-a.length).forEach(w=>{norm=norm.replace(new RegExp('\\b'+w+'\\b','g'),wordMap[w]);});
+      // Split on separators: x, by, times, ×, *
+      const parts = norm.split(/\s*(?:by|x|times|×|\*)\s*/i);
+      if (parts.length >= 2) {
+        const a = parseFloat(parts[0].replace(/[^\d.]/g,''));
+        const b = parseFloat(parts[1].replace(/[^\d.]/g,''));
+        if (!isNaN(a) && !isNaN(b) && a > 0 && b > 0) { totalSF += a * b; }
+      } else {
+        const nums = norm.match(/[\d]+\.?[\d]*/g);
+        if (nums && nums.length >= 2) { const a=parseFloat(nums[0]),b=parseFloat(nums[1]); if(a>0&&b>0) totalSF+=a*b; }
+      }
+    });
+
+    const sfDisplay = document.getElementById('sf-total-display');
+    sfDisplay.textContent = totalSF > 0
+      ? totalSF.toLocaleString('en-US', {maximumFractionDigits: 2}) + ' SF'
+      : '0 SF';
+
+    const pricePerSF = parseFloat(document.getElementById('sf-price-per-sf').value);
+    const costDisplay = document.getElementById('sf-total-cost');
+    if (totalSF > 0 && !isNaN(pricePerSF) && pricePerSF > 0) {
+      const totalCost = totalSF * pricePerSF;
+      costDisplay.textContent = '$' + totalCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      costDisplay.style.color = '#4ade80';
+    } else {
+      costDisplay.textContent = '—';
+      costDisplay.style.color = '#4ade80';
+    }
+  };
+
+  function getSFCalcText() {
+    const measurements = (document.getElementById('sf-measurements').value || '').trim();
+    const totalSF = document.getElementById('sf-total-display').textContent;
+    const price = document.getElementById('sf-price-per-sf').value;
+    const totalCost = document.getElementById('sf-total-cost').textContent;
+    let text = `Maman Contracting — SF & Price Estimate\n\nMeasurements:\n${measurements}\n\nTotal SF: ${totalSF}`;
+    if (price) text += `\nPrice per SF: $${price}\nTotal Cost: ${totalCost}`;
+    return text;
+  }
+
+  window.shareSFCalcText = function() {
+    const text = getSFCalcText();
+    const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    if (navigator.share) {
+      navigator.share({ title: 'SF Estimate', text }).catch(() => window.open(waUrl, '_blank'));
+    } else {
+      window.open(waUrl, '_blank');
+    }
+  };
+
+  window.shareSFCalcEmail = function() {
+    const text = getSFCalcText();
+    const subject = encodeURIComponent('Maman Contracting — SF & Price Estimate');
+    const body = encodeURIComponent(text);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
+  // ── SAVE CALCULATOR TO JOB ──────────────────────────────────────────────
+  window.openSaveCalcToJob = function() {
+    // Collect current calculator data
+    const totalSF = (document.getElementById('sf-total-display') || {}).textContent || '0 SF';
+    const totalCost = (document.getElementById('sf-total-cost') || {}).textContent || '—';
+    const pricePerSF = (document.getElementById('sf-price-per-sf') || {}).value || '';
+
+    // Build area summary from rows
+    const areaRows = document.querySelectorAll('#sf-area-rows > div');
+    const areaSummary = Array.from(areaRows).map(row => {
+      const nameEl = row.querySelector('input[type="text"]');
+      const wEl = row.querySelector('input[placeholder="W"]') || row.querySelector('input[id^="sf-aw"]');
+      const lEl = row.querySelector('input[placeholder="L"]') || row.querySelector('input[id^="sf-al"]');
+      const sfEl = row.querySelector('[id^="sf-asf"]');
+      const name = nameEl ? nameEl.value : '';
+      const w = wEl ? wEl.value : '';
+      const l = lEl ? lEl.value : '';
+      const sf = sfEl ? sfEl.textContent : '';
+      if (!w && !l) return null;
+      return `${name || 'Area'}: ${w}×${l} = ${sf}`;
+    }).filter(Boolean).join('\n');
+
+    const calcNote = [
+      areaSummary,
+      `Total: ${totalSF}`,
+      pricePerSF ? `Price/SF: $${pricePerSF}` : '',
+      totalCost !== '—' ? `Total Cost: ${totalCost}` : ''
+    ].filter(Boolean).join('\n');
+
+    // Build existing jobs list
+    const jobOptions = (allJobs || []).slice(0, 50).map(j =>
+      `<option value="${j.id}">${j.address || '(No address)'}${j.customerName ? ' — ' + j.customerName : ''}</option>`
+    ).join('');
+
+    const modal = document.createElement('div');
+    modal.id = 'save-calc-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:20000;overflow-y:auto;padding:20px 16px 100px;-webkit-overflow-scrolling:touch;';
+    modal.innerHTML = `
+      <div style="max-width:480px;margin:0 auto;background:#141414;border-radius:16px;padding:20px;border:1.5px solid #2a2a2a;">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+<div style="font-size:16px;font-weight:800;color:#fff;">💾 Save to Job</div>
+<button onclick="document.getElementById('save-calc-modal').remove()" style="background:none;border:none;color:#888;font-size:22px;cursor:pointer;padding:0 4px;">✕</button>
+</div>
+<!-- Calc summary preview -->
+<div style="background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:#888;white-space:pre-wrap;font-family:Inter,sans-serif;">${calcNote || 'No measurements yet'}</div>
+<!-- Option 1: New Job -->
+<button onclick="saveCalcAsNewJob(${JSON.stringify(calcNote).replace(/"/g,'&quot;')})" style="width:100%;padding:14px;background:#1a3a2a;border:2px solid #22c55e;border-radius:10px;color:#4ade80;font-size:15px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;margin-bottom:10px;">
+          ➕ Create New Job with this data
+        </button>
+<!-- Option 2: Add to existing job -->
+<div style="font-size:11px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Or add to existing job:</div>
+<select id="save-calc-job-select" style="width:100%;padding:12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:Inter,sans-serif;margin-bottom:10px;">
+<option value="">-- Select a job --</option>
+          ${jobOptions}
+        </select>
+<button onclick="saveCalcToExistingJob(${JSON.stringify(calcNote).replace(/"/g,'&quot;')})" style="width:100%;padding:14px;background:#1a2a3a;border:2px solid #60a5fa;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">
+          📋 Add to Selected Job
+        </button>
+</div>`;
+    document.body.appendChild(modal);
+  };
+
+  window.saveCalcAsNewJob = function(calcNote) {
+    document.getElementById('save-calc-modal').remove();
+    // Open new job modal with calculator note pre-filled
+    if (window.clearJobForm) window.clearJobForm();
+    const modal = document.getElementById('job-modal');
+    if (modal) modal.style.display = 'block';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (window.clearJobForm) window.clearJobForm();
+      const notesEl = document.getElementById('f-notes');
+      if (notesEl) notesEl.value = calcNote;
+      const sizeEl = document.getElementById('f-projectSize');
+      const sfMatch = calcNote.match(/Total:\s*([\d,.]+ SF)/);
+      if (sizeEl && sfMatch) sizeEl.value = sfMatch[1];
+    }));
+    window.showToast && window.showToast('📐 Calculator data pre-filled in new job', '#4ade80');
+  };
+
+  window.saveCalcToExistingJob = async function(calcNote) {
+    const sel = document.getElementById('save-calc-job-select');
+    const jobId = sel ? sel.value : '';
+    if (!jobId) { window.showToast && window.showToast('Please select a job', '#e53e3e'); return; }
+    const j = allJobs.find(x => x.id === jobId);
+    if (!j) return;
+    // Append calc note to existing job notes
+    const newNotes = j.notes ? j.notes + '\n\n--- Calculator ---\n' + calcNote : '--- Calculator ---\n' + calcNote;
+    const sfMatch = calcNote.match(/Total:\s*([\d,.]+ SF)/);
+    const newSize = sfMatch ? sfMatch[1] : j.projectSize;
+    try {
+      const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+      await updateDoc(doc(window._db, 'jobs', jobId), { notes: newNotes, projectSize: newSize, updatedAt: new Date().toISOString() });
+    } catch(e) {
+      const url = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents/jobs/' + jobId + '?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c&updateMask.fieldPaths=notes&updateMask.fieldPaths=projectSize';
+      await fetch(url, {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ fields: { notes: { stringValue: newNotes }, projectSize: { stringValue: newSize || '' } } })
+      });
+    }
+    j.notes = newNotes;
+    if (newSize) j.projectSize = newSize;
+    document.getElementById('save-calc-modal').remove();
+    window.showToast && window.showToast('✅ Calculator data saved to job!', '#4ade80');
+  };
+
+  window.clearSFCalc = function() {
+    document.getElementById('sf-measurements').value = '';
+    document.getElementById('sf-price-per-sf').value = '';
+    document.getElementById('sf-total-display').textContent = '0 SF';
+    document.getElementById('sf-total-cost').textContent = '—';
+  };
+
+  // SF Area Rows
+  let _sfRowCount = 0;
+
+  window.sfAddAreaRow = function(name, w, h) {
+    _sfRowCount++;
+    const idx = _sfRowCount;
+    const row = document.createElement('div');
+    row.id = 'sf-area-row-' + idx;
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;background:var(--card,#1e1e1e);border:1px solid var(--border,#2a2a2a);border-radius:14px;padding:14px 16px;';
+    row.innerHTML = `
+      <div style="width:32px;height:32px;border-radius:50%;background:#e53e3e;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#fff;flex-shrink:0;">${idx}</div>
+<input type="text" placeholder="Area name" value="${name||''}" oninput="sfUpdateAreaTotals()"
+        style="flex:2;min-width:0;background:transparent;border:none;padding:8px 4px;color:var(--text2,#aaa);font-size:14px;outline:none;font-family:'Inter',sans-serif;" />
+<input type="number" id="sf-aw-${idx}" placeholder="W" inputmode="decimal" value="${w||''}" oninput="sfAreaRowSF(${idx})"
+        onkeyup="if(event.key==='Enter'||event.key==='.'){document.getElementById('sf-al-${idx}').focus().select?document.getElementById('sf-al-${idx}').select():null}"
+        style="width:64px;background:var(--bg2,#111);border:1.5px solid var(--border,#2a2a2a);border-radius:10px;padding:12px 8px;color:var(--text,#fff);font-size:16px;font-weight:700;outline:none;text-align:center;font-family:'Inter',sans-serif;" />
+<span style="color:#888;font-size:14px;font-weight:700;flex-shrink:0;">×</span>
+<input type="number" id="sf-al-${idx}" placeholder="L" inputmode="decimal" value="${h||''}" oninput="sfAreaRowSF(${idx})"
+        onkeyup="if(event.key==='Enter'){const nx=document.getElementById('sf-aw-${idx+1}');if(nx)nx.focus();else window.sfAddAreaRow();}"
+        style="width:64px;background:var(--bg2,#111);border:1.5px solid var(--border,#2a2a2a);border-radius:10px;padding:12px 8px;color:var(--text,#fff);font-size:16px;font-weight:700;outline:none;text-align:center;font-family:'Inter',sans-serif;" />
+<span style="color:#666;font-size:12px;flex-shrink:0;font-weight:600;">ft</span>
+<button onclick="sfVoiceAreaRow(${idx})" id="sf-armic-${idx}" style="background:none;border:none;font-size:20px;cursor:pointer;padding:2px;flex-shrink:0;opacity:0.65;">🎙️</button>
+<span style="flex:1;min-width:8px;"></span>
+<span id="sf-arsf-${idx}" style="font-size:13px;color:#22c55e;font-weight:800;flex-shrink:0;min-width:20px;">—</span>
+<button onclick="sfDelAreaRow(${idx})" style="width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,0.1);border:1.5px solid rgba(239,68,68,0.25);color:#ef4444;font-size:14px;font-weight:900;cursor:pointer;flex-shrink:0;">×</button>`;
+    document.getElementById('sf-area-rows').appendChild(row);
+    if (w && h) sfAreaRowSF(idx);
+    sfUpdateAreaTotals();
+  };
+
+  window.sfAreaRowSF = function(idx) {
+    const w = parseFloat(document.getElementById('sf-aw-'+idx)?.value)||0;
+    const h = parseFloat(document.getElementById('sf-al-'+idx)?.value)||0;
+    const el = document.getElementById('sf-arsf-'+idx);
+    if (el) el.textContent = (w&&h) ? ((w*h).toLocaleString()+' SF') : '—';
+    sfUpdateAreaTotals();
+  };
+
+  window.sfDelAreaRow = function(idx) {
+    const r = document.getElementById('sf-area-row-'+idx);
+    if (r) r.remove();
+    sfUpdateAreaTotals();
+  };
+
+  window.sfUpdateAreaTotals = function() {
+    let total = 0;
+    document.querySelectorAll('#sf-area-rows > div').forEach(row => {
+      const id = row.id.replace('sf-area-row-','');
+      const w = parseFloat(document.getElementById('sf-aw-'+id)?.value)||0;
+      const h = parseFloat(document.getElementById('sf-al-'+id)?.value)||0;
+      if (w>0&&h>0) total += w*h;
+    });
+    // Also add textarea measurements
+    const lines = (document.getElementById('sf-measurements')?.value||'').split('\n');
+    const wordMap={'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000};
+    lines.forEach(line => {
+      let norm = line.trim().toLowerCase();
+      if (!norm) return;
+      Object.keys(wordMap).sort((a,b)=>b.length-a.length).forEach(w=>{norm=norm.replace(new RegExp('\\b'+w+'\\b','g'),wordMap[w]);});
+      const parts = norm.split(/\s*(?:by|x|times|×|\*)\s*/i);
+      if (parts.length>=2) { const a=parseFloat(parts[0].replace(/[^\d.]/g,'')),b=parseFloat(parts[1].replace(/[^\d.]/g,'')); if(a>0&&b>0) total+=a*b; }
+      else { const nums=norm.match(/[\d]+\.?[\d]*/g); if(nums&&nums.length>=2){const a=parseFloat(nums[0]),b=parseFloat(nums[1]);if(a>0&&b>0)total+=a*b;} }
+    });
+    const sfDisplay = document.getElementById('sf-total-display');
+    if (sfDisplay) sfDisplay.textContent = total>0 ? total.toLocaleString('en-US',{maximumFractionDigits:2})+' SF' : '0 SF';
+    const countEl = document.getElementById('sf-area-count');
+    if (countEl) {
+      let filled = 0;
+      document.querySelectorAll('#sf-area-rows > div').forEach(row => {
+        const id = row.id.replace('sf-area-row-','');
+        const w = parseFloat(document.getElementById('sf-aw-'+id)?.value)||0;
+        const h = parseFloat(document.getElementById('sf-al-'+id)?.value)||0;
+        if (w>0&&h>0) filled++;
+      });
+      countEl.textContent = filled;
+    }
+    const pricePerSF = parseFloat(document.getElementById('sf-price-per-sf')?.value)||0;
+    const costDisplay = document.getElementById('sf-total-cost');
+    if (costDisplay) {
+      if (total>0&&pricePerSF>0) { costDisplay.textContent='$'+(total*pricePerSF).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); costDisplay.style.color='#4ade80'; }
+      else { costDisplay.textContent='—'; }
+    }
+  };
+
+  window.sfVoiceAreaRow = function(idx) {
+    const SR = window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){alert('Voice not supported');return;}
+    const btn=document.getElementById('sf-armic-'+idx);
+    const r=new SR(); r.lang='en-US'; r.interimResults=false; r.maxAlternatives=1;
+    r.onstart=()=>{if(btn){btn.textContent='🔴';btn.style.opacity='1';}};
+    r.onend=()=>{if(btn){btn.textContent='🎙️';btn.style.opacity='0.7';}};
+    r.onresult=e=>{
+      const t=e.results[0][0].transcript;
+      const wm={'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000};
+      let norm=t.toLowerCase();
+      Object.keys(wm).sort((a,b)=>b.length-a.length).forEach(w=>{norm=norm.replace(new RegExp('\\b'+w+'\\b','g'),wm[w]);});
+      const nums=norm.match(/[\d]+\.?[\d]*/g);
+      if(nums&&nums.length>=2){
+        const wEl=document.getElementById('sf-aw-'+idx),hEl=document.getElementById('sf-al-'+idx);
+        if(wEl){wEl.value=nums[0];wEl.dispatchEvent(new Event('input'));}
+        if(hEl){hEl.value=nums[1];hEl.dispatchEvent(new Event('input'));}
+        sfAreaRowSF(idx);
+      }
+    };
+    r.start();
+  };
+
+  // Also override calcSFPrice to use sfUpdateAreaTotals
+  window.calcSFPrice = (function(original) {
+    return function() { original(); sfUpdateAreaTotals && sfUpdateAreaTotals(); };
+  })(window.calcSFPrice || function(){});
+
+  // SF area rows init lazily when calculator tab is opened (not on page load)
+
+  // SF Calculator voice mic
+  let _sfListening = false, _sfRec = null;
+  window.sfStartVoice = function() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Voice not supported on this browser'); return; }
+    const btn = document.getElementById('sf-mic-btn');
+    if (_sfListening) { _sfRec && _sfRec.stop(); return; }
+    _sfRec = new SR();
+    _sfRec.lang = 'en-US'; _sfRec.interimResults = false; _sfRec.continuous = true;
+    _sfRec.onstart = () => { _sfListening=true; if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';} };
+    _sfRec.onend   = () => { _sfListening=false; if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';} };
+    _sfRec.onerror = () => { _sfListening=false; if(btn) btn.textContent='🎙️'; };
+    _sfRec.onresult = e => {
+      for (let i=e.resultIndex; i<e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          const t = e.results[i][0].transcript.trim();
+          const tLower = t.toLowerCase();
+
+          // Voice command: delete removes last filled row
+          if (tLower==='delete'||tLower==='undo'||tLower==='remove') {
+            const rows = document.querySelectorAll('#sf-area-rows > div');
+            for (let r=rows.length-1; r>=0; r--) {
+              const id = rows[r].id.replace('sf-area-row-','');
+              const wv = document.getElementById('sf-aw-'+id)?.value;
+              if (wv) { sfDelAreaRow(id); break; }
+            }
+            return;
+          }
+
+          // Convert word numbers to digits
+          const wm={'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000};
+          let norm = tLower;
+          Object.keys(wm).sort((a,b)=>b.length-a.length).forEach(w=>{norm=norm.replace(new RegExp('\\b'+w+'\\b','g'),wm[w]);});
+          const parts = norm.split(/\s*(?:by|x|times|×|\*)\s*/i);
+          let w = NaN, h = NaN;
+          if (parts.length>=2) { w=parseFloat(parts[0].replace(/[^\d.]/g,'')); h=parseFloat(parts[1].replace(/[^\d.]/g,'')); }
+          else { const nums=norm.match(/[\d]+\.?[\d]*/g); if(nums&&nums.length>=2){w=parseFloat(nums[0]);h=parseFloat(nums[1]);} }
+
+          if (!isNaN(w)&&!isNaN(h)&&w>0&&h>0) {
+            // Find next empty row, or add new one
+            let filled = false;
+            document.querySelectorAll('#sf-area-rows > div').forEach(row => {
+              if (filled) return;
+              const id = row.id.replace('sf-area-row-','');
+              const wEl=document.getElementById('sf-aw-'+id), hEl=document.getElementById('sf-al-'+id);
+              if (wEl&&hEl&&!wEl.value&&!hEl.value) {
+                wEl.value=w; wEl.dispatchEvent(new Event('input'));
+                hEl.value=h; hEl.dispatchEvent(new Event('input'));
+                sfAreaRowSF(id);
+                filled=true;
+              }
+            });
+            if (!filled) sfAddAreaRow('', w, h);
+          }
+        }
+      }
+    };
+    _sfRec.start();
+  };
+
+  window.emailConcreteResult = function() {
+    const w = document.getElementById('con-width').value;
+    const l = document.getElementById('con-length').value;
+    const t = document.getElementById('con-thickness').value;
+    const cy = document.getElementById('con-result-cy').textContent;
+    const bags = document.getElementById('con-result-bags').textContent;
+    const cost = document.getElementById('con-result-cost').textContent;
+    const body = encodeURIComponent(`Concrete Estimate\n\nWidth: ${w} ft\nLength: ${l} ft\nThickness: ${t} in\n\nCubic Yards: ${cy}\n80lb Bags: ${bags}\nTotal Cost: ${cost}\n\nMaman Contracting`);
+    window.location.href = `mailto:?subject=Concrete%20Estimate&body=${body}`;
+  };
