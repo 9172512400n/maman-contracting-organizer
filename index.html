@@ -7005,8 +7005,8 @@ Cell: 516-306-3326`
   };
 
   window.renderSchedule = function() {
-    // If jobs not loaded yet, wait and retry
-    if (!allJobs || allJobs.length === 0) {
+    // If jobs not loaded yet, wait and retry using window.allJobs
+    if (!window.allJobs || window.allJobs.length === 0) {
       setTimeout(function() {
         if (window._currentSection === 3 || parseInt(localStorage.getItem('last-section')||'0') === 3) {
           window.renderSchedule();
