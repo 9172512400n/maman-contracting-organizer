@@ -7057,9 +7057,9 @@ Cell: 516-306-3326`
                 ${detailRows}
                 <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
                   <button onclick="event.stopPropagation();openEditJob('${j.id}')" style="background:#e53e3e;border:none;border-radius:8px;padding:9px 16px;color:#fff;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit</button>
-                  <button onclick="event.stopPropagation();openSchedInspection('${j.id}')" style="background:#1a2a3a;border:1px solid #60a5fa;border-radius:8px;padding:9px 16px;color:#60a5fa;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📧 DOT Inspection</button>
-                  <button onclick="event.stopPropagation();schedMoveJobPrompt('${j.id}')" style="background:#1a2a3a;border:1px solid #1e40af;border-radius:8px;padding:9px 16px;color:#60a5fa;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📅 Move</button>
                   <button onclick="event.stopPropagation();exportSingleJob('${j.id}')" style="background:#1a3a2a;border:1px solid #22c55e;border-radius:8px;padding:9px 16px;color:#4ade80;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📤 Share</button>
+                  <button onclick="event.stopPropagation();schedMoveJobPrompt('${j.id}')" style="background:#1a2a3a;border:1px solid #1e40af;border-radius:8px;padding:9px 16px;color:#60a5fa;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📅 Move</button>
+                  <button onclick="event.stopPropagation();openSchedInspection('${j.id}')" style="background:#1a3a2a;border:1px solid #22c55e;border-radius:8px;padding:9px 16px;color:#4ade80;font-size:13px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📧 DOT Inspection</button>
                 </div>
               </div>
             </div>`;
@@ -7165,8 +7165,9 @@ Cell: 516-306-3326`
         ${detailRows}
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid #2a2a2a;display:flex;gap:10px;flex-wrap:wrap;">
           <button onclick="event.stopPropagation();openEditJob('${j.id}')" style="background:#e53e3e;border:none;border-radius:8px;padding:10px 18px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">✏️ Edit Job</button>
-          <button onclick="event.stopPropagation();openSchedInspection('${j.id}')" style="background:#1a2a3a;border:1px solid #60a5fa;border-radius:8px;padding:10px 18px;color:#60a5fa;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📧 DOT Inspection</button>
           <button onclick="event.stopPropagation();exportSingleJob('${j.id}')" style="background:#1a3a2a;border:1px solid #22c55e;border-radius:8px;padding:10px 18px;color:#4ade80;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📤 Share</button>
+          <button onclick="event.stopPropagation();schedMoveJobPrompt('${j.id}')" style="background:#1a2a3a;border:1px solid #1e40af;border-radius:8px;padding:10px 18px;color:#60a5fa;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📅 Move</button>
+          <button onclick="event.stopPropagation();openSchedInspection('${j.id}')" style="background:#1a3a2a;border:1px solid #22c55e;border-radius:8px;padding:10px 18px;color:#4ade80;font-size:14px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;">📧 DOT Inspection</button>
         </div>
       </div>
     </div>`;
