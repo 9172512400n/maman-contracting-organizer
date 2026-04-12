@@ -8432,8 +8432,8 @@ Cell: 516-306-3326`
     row.innerHTML = `
       <div style="width:30px;height:30px;border-radius:50%;background:#e53e3e;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0;">${idx}</div>
       <input type="text" placeholder="Area name" value="${name||''}" oninput="sfUpdateAreaTotals()"
-        style="flex:1;min-width:0;background:transparent;border:none;border-bottom:1.5px solid #2a2a2a;border-radius:0;padding:8px 6px;color:#ccc;font-size:14px;outline:none;font-family:'Inter',sans-serif;"
-        onfocus="this.style.borderBottomColor='#e53e3e'" onblur="this.style.borderBottomColor='#2a2a2a'" />
+        style="flex:2;min-width:80px;background:transparent;border:none;border-bottom:1.5px solid #333;border-radius:0;padding:8px 4px;color:#ccc;font-size:13px;outline:none;font-family:'Inter',sans-serif;"
+        onfocus="this.style.borderBottomColor='#e53e3e'" onblur="this.style.borderBottomColor='#333'" />
       <input type="number" id="sf-aw-${idx}" placeholder="W" inputmode="decimal" value="${w||''}" oninput="sfAreaRowSF(${idx})"
         style="width:52px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;padding:8px;color:#fff;font-size:14px;outline:none;text-align:center;font-family:'Inter',sans-serif;"
         onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
@@ -8486,7 +8486,16 @@ Cell: 516-306-3326`
     const sfDisplay = document.getElementById('sf-total-display');
     if (sfDisplay) sfDisplay.textContent = total>0 ? total.toLocaleString('en-US',{maximumFractionDigits:2})+' SF' : '0 SF';
     const countEl = document.getElementById('sf-area-count');
-    if (countEl) countEl.textContent = document.querySelectorAll('#sf-area-rows > div').length;
+    if (countEl) {
+      let filled = 0;
+      document.querySelectorAll('#sf-area-rows > div').forEach(row => {
+        const id = row.id.replace('sf-area-row-','');
+        const w = parseFloat(document.getElementById('sf-aw-'+id)?.value)||0;
+        const h = parseFloat(document.getElementById('sf-al-'+id)?.value)||0;
+        if (w>0&&h>0) filled++;
+      });
+      countEl.textContent = filled;
+    }
     const pricePerSF = parseFloat(document.getElementById('sf-price-per-sf')?.value)||0;
     const costDisplay = document.getElementById('sf-total-cost');
     if (costDisplay) {
