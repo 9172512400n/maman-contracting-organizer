@@ -6725,7 +6725,7 @@ Cell: 516-306-3326`
   }
 
   // ── SCHEDULE — 2-LEVEL: Week picker + all days expanded ──────────────────
-  window._schedWeekOffset = 0; // 0 = current week, -1 = prev, +1 = next
+  window._schedWeekOffset = 0; // ALWAYS start at current week on page load
   window._schedViewAll = true; // default: show all days expanded
 
   function toLocalISO(date) {
@@ -6929,7 +6929,9 @@ Cell: 516-306-3326`
     const today = new Date();
     today.setHours(0,0,0,0);
     const todayISO = toLocalISO(today);
-    const offset = window._schedWeekOffset || 0;
+    // Always use the explicit offset; never let it go undefined
+    if (window._schedWeekOffset === undefined || window._schedWeekOffset === null) window._schedWeekOffset = 0;
+    const offset = window._schedWeekOffset;
     const monday = getMondayOfWeek(today, offset);
     const weekDays = getWeekDays(monday);
     const sunday = weekDays[6];
