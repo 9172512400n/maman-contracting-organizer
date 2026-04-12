@@ -1748,6 +1748,10 @@ function doSignOut() {
               style="flex:1;padding:12px;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer;border:none;background:#fff;color:#1a1a2e;font-family:'Inter',sans-serif;letter-spacing:0.3px;">
               CONCRETE
             </button>
+            <button onclick="switchCalc('measurements')" id="calc-tab-measurements"
+              style="flex:1;padding:12px;border-radius:12px;font-weight:800;font-size:15px;cursor:pointer;border:none;background:#fff;color:#1a1a2e;font-family:'Inter',sans-serif;letter-spacing:0.3px;">
+              SF
+            </button>
           </div>
 
           <!-- ASPHALT CALCULATOR -->
@@ -1866,6 +1870,66 @@ function doSignOut() {
               <button onclick="clearConcrete()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
               <button onclick="shareConcreteResult()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Text</button>
               <button onclick="emailConcreteResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
+            </div>
+          </div>
+
+          <!-- MEASUREMENTS CALCULATOR -->
+          <div id="calc-measurements" style="display:none;">
+
+            <!-- Quick Voice Entry -->
+            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:16px;margin-bottom:16px;">
+              <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Quick Voice Entry</div>
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                <textarea id="mp-voice-box" placeholder="Speak or type measurements&#10;e.g. 50x120, 20x30, 15x40&#10;Say 'delete' to undo last entry"
+                  style="flex:1;min-height:76px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;padding:10px 12px;color:#fff;font-size:14px;resize:none;outline:none;font-family:'Inter',sans-serif;"
+                  oninput="mpParseVoiceBox()"></textarea>
+                <button id="mp-mic-btn" onclick="mpStartVoice()"
+                  style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#e53e3e,#b91c1c);border:none;color:white;font-size:22px;cursor:pointer;flex-shrink:0;box-shadow:0 3px 12px rgba(229,62,62,0.4);">
+                  🎙️
+                </button>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                <div id="mp-voice-result" style="font-size:13px;color:#4ade80;font-weight:600;"></div>
+                <button onclick="mpClearVoiceBox()" style="background:none;border:none;color:#555;font-size:12px;cursor:pointer;text-decoration:underline;">Clear</button>
+              </div>
+            </div>
+
+            <!-- Area rows -->
+            <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Areas / Rooms</div>
+            <div id="mp-rows" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <button onclick="mpAddRow()" style="width:100%;margin-top:10px;padding:12px;background:transparent;border:1.5px dashed #2a2a2a;border-radius:10px;color:#555;font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;">+ Add Area</button>
+
+            <!-- Summary -->
+            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:16px;margin-top:16px;">
+              <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Summary</div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:#aaa;font-size:14px;">Number of areas</span><span id="mp-count" style="color:#fff;font-size:14px;font-weight:700;">0</span></div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:#aaa;font-size:14px;">Total Square Footage</span><span id="mp-total-sf" style="color:#4ade80;font-size:16px;font-weight:900;">0 SF</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="mpToggleWaste()">
+                <span style="color:#f59e0b;font-size:14px;">+ 10% waste</span>
+                <span id="mp-waste-toggle" style="font-size:12px;color:#f59e0b;font-weight:700;">OFF ○</span>
+              </div>
+              <div id="mp-waste-row" style="display:none;display:flex;justify-content:space-between;margin-top:6px;"><span style="color:#aaa;font-size:13px;">With waste</span><span id="mp-waste-sf" style="color:#f59e0b;font-size:14px;font-weight:700;">0 SF</span></div>
+            </div>
+
+            <!-- Price estimate -->
+            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:16px;margin-top:12px;">
+              <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Quick Price Estimate</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <label style="color:#aaa;font-size:14px;">$ Price per SF</label>
+                <input type="number" id="mp-price-sf" placeholder="0.00" inputmode="decimal" oninput="mpUpdateTotals()"
+                  style="width:120px;padding:10px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                  onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="color:#aaa;font-size:14px;">Total Cost</span>
+                <span id="mp-total-cost" style="color:#e53e3e;font-size:18px;font-weight:900;">—</span>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="display:flex;gap:10px;margin-top:14px;">
+              <button onclick="mpClearAll()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
+              <button onclick="mpShare()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Share</button>
             </div>
           </div>
 
@@ -7955,15 +8019,217 @@ Cell: 516-306-3326`
   window.switchCalc = function(type) {
     document.getElementById('calc-asphalt').style.display = type === 'asphalt' ? 'block' : 'none';
     document.getElementById('calc-concrete').style.display = type === 'concrete' ? 'block' : 'none';
+    document.getElementById('calc-measurements').style.display = type === 'measurements' ? 'block' : 'none';
     const aspTab = document.getElementById('calc-tab-asphalt');
     const conTab = document.getElementById('calc-tab-concrete');
-    if (type === 'asphalt') {
-      aspTab.style.background = '#e53e3e'; aspTab.style.color = '#fff';
-      conTab.style.background = '#fff'; conTab.style.color = '#1a1a2e';
-    } else {
-      conTab.style.background = '#e53e3e'; conTab.style.color = '#fff';
-      aspTab.style.background = '#fff'; aspTab.style.color = '#1a1a2e';
+    const measTab = document.getElementById('calc-tab-measurements');
+    [aspTab, conTab, measTab].forEach(t => { if(t) { t.style.background = '#fff'; t.style.color = '#1a1a2e'; } });
+    const active = type === 'asphalt' ? aspTab : type === 'concrete' ? conTab : measTab;
+    if (active) { active.style.background = '#e53e3e'; active.style.color = '#fff'; }
+    // Init measurement rows if switching to measurements tab
+    if (type === 'measurements' && document.getElementById('mp-rows').children.length === 0) {
+      mpAddRow(); mpAddRow(); mpAddRow();
     }
+  };
+
+  // ── MEASUREMENTS CALCULATOR JS ─────────────────────────────────────────────
+  let _mpRowCount = 0;
+  let _mpWasteOn = false;
+
+  window.mpAddRow = function(name, w, h) {
+    _mpRowCount++;
+    const idx = _mpRowCount;
+    const row = document.createElement('div');
+    row.id = 'mp-row-' + idx;
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:10px 12px;';
+    row.innerHTML = `
+      <span style="font-size:12px;font-weight:800;color:#e53e3e;min-width:18px;">${idx}</span>
+      <input type="text" placeholder="Area name" value="${name||''}" oninput="mpUpdateTotals()"
+        style="flex:2;background:#111;border:1.5px solid #2a2a2a;border-radius:6px;padding:7px 8px;color:#fff;font-size:13px;outline:none;font-family:'Inter',sans-serif;"
+        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
+      <input type="number" id="mp-w-${idx}" placeholder="W" inputmode="decimal" value="${w||''}" oninput="mpRowSF(${idx})"
+        style="width:52px;background:#111;border:1.5px solid #2a2a2a;border-radius:6px;padding:7px;color:#fff;font-size:13px;outline:none;text-align:center;font-family:'Inter',sans-serif;"
+        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
+      <span style="color:#555;font-size:13px;">×</span>
+      <input type="number" id="mp-h-${idx}" placeholder="L" inputmode="decimal" value="${h||''}" oninput="mpRowSF(${idx})"
+        style="width:52px;background:#111;border:1.5px solid #2a2a2a;border-radius:6px;padding:7px;color:#fff;font-size:13px;outline:none;text-align:center;font-family:'Inter',sans-serif;"
+        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
+      <span style="font-size:11px;color:#555;">ft</span>
+      <button onclick="mpVoiceRow(${idx})" id="mp-mic-${idx}" style="background:none;border:none;font-size:18px;cursor:pointer;padding:2px 4px;flex-shrink:0;">🎙️</button>
+      <span id="mp-sf-${idx}" style="font-size:12px;color:#4ade80;font-weight:700;min-width:52px;text-align:right;">—</span>
+      <button onclick="mpDelRow(${idx})" style="background:none;border:none;color:#555;cursor:pointer;font-size:16px;flex-shrink:0;">✕</button>`;
+    document.getElementById('mp-rows').appendChild(row);
+    if (w && h) mpRowSF(idx);
+    mpUpdateTotals();
+  };
+
+  window.mpRowSF = function(idx) {
+    const w = parseFloat(document.getElementById('mp-w-'+idx)?.value)||0;
+    const h = parseFloat(document.getElementById('mp-h-'+idx)?.value)||0;
+    const sfEl = document.getElementById('mp-sf-'+idx);
+    if (sfEl) sfEl.textContent = (w&&h) ? ((w*h).toLocaleString()+' SF') : '—';
+    mpUpdateTotals();
+  };
+
+  window.mpDelRow = function(idx) {
+    const r = document.getElementById('mp-row-'+idx);
+    if (r) r.remove();
+    mpUpdateTotals();
+  };
+
+  window.mpUpdateTotals = function() {
+    let total = 0, count = 0;
+    document.querySelectorAll('#mp-rows > div').forEach(row => {
+      const id = row.id.replace('mp-row-','');
+      const w = parseFloat(document.getElementById('mp-w-'+id)?.value)||0;
+      const h = parseFloat(document.getElementById('mp-h-'+id)?.value)||0;
+      if (w>0&&h>0) { total += w*h; count++; }
+    });
+    const ctEl = document.getElementById('mp-count'); if(ctEl) ctEl.textContent = count;
+    const sfEl = document.getElementById('mp-total-sf'); if(sfEl) sfEl.textContent = total.toLocaleString()+' SF';
+    const wasteEl = document.getElementById('mp-waste-sf'); if(wasteEl) wasteEl.textContent = (total*1.1).toLocaleString()+' SF';
+    const price = parseFloat(document.getElementById('mp-price-sf')?.value)||0;
+    const costEl = document.getElementById('mp-total-cost');
+    if (costEl) costEl.textContent = (price && total) ? '$'+(total*price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+  };
+
+  window.mpToggleWaste = function() {
+    _mpWasteOn = !_mpWasteOn;
+    const toggle = document.getElementById('mp-waste-toggle');
+    const row = document.getElementById('mp-waste-row');
+    if (toggle) toggle.textContent = _mpWasteOn ? 'ON ●' : 'OFF ○';
+    if (row) row.style.display = _mpWasteOn ? 'flex' : 'none';
+  };
+
+  window.mpClearAll = function() {
+    document.getElementById('mp-rows').innerHTML = '';
+    _mpRowCount = 0;
+    const box = document.getElementById('mp-voice-box'); if(box) { box.value=''; }
+    const res = document.getElementById('mp-voice-result'); if(res) res.textContent='';
+    mpAddRow(); mpAddRow(); mpAddRow();
+    mpUpdateTotals();
+  };
+
+  window.mpClearVoiceBox = function() {
+    const box = document.getElementById('mp-voice-box'); if(box) box.value='';
+    const res = document.getElementById('mp-voice-result'); if(res) res.textContent='';
+  };
+
+  window.mpShare = function() {
+    let text = '📐 MEASUREMENTS\n――――――――――――――――\n';
+    document.querySelectorAll('#mp-rows > div').forEach(row => {
+      const id = row.id.replace('mp-row-','');
+      const name = row.querySelector('input[type=text]')?.value || ('Area '+id);
+      const w = parseFloat(document.getElementById('mp-w-'+id)?.value)||0;
+      const h = parseFloat(document.getElementById('mp-h-'+id)?.value)||0;
+      if (w&&h) text += '• '+name+': '+w+' × '+h+' = '+(w*h).toLocaleString()+' SF\n';
+    });
+    const total = document.getElementById('mp-total-sf')?.textContent;
+    if (total) text += '\n✓ Total: '+total;
+    const cost = document.getElementById('mp-total-cost')?.textContent;
+    if (cost && cost !== '—') text += '\n💵 Est. Cost: '+cost;
+    if (navigator.share) navigator.share({ title: 'Measurements', text }).catch(()=>{});
+    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(()=>alert('Copied!'));
+  };
+
+  // Word-to-number helper
+  function mpSpokenToNum(str) {
+    const words = {'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000};
+    const n = parseFloat(str.replace(/,/g,''));
+    if (!isNaN(n)) return n;
+    let total = 0, cur = 0;
+    str.toLowerCase().split(/\s+/).forEach(w => {
+      const v = words[w];
+      if (v !== undefined) {
+        if (v === 100) cur = (cur||1)*100;
+        else if (v === 1000) { total += (cur||1)*1000; cur = 0; }
+        else cur += v;
+      }
+    });
+    return total + cur || NaN;
+  }
+
+  // Parse voice box and fill rows
+  window.mpParseVoiceBox = function() {
+    const box = document.getElementById('mp-voice-box');
+    const res = document.getElementById('mp-voice-result');
+    if (!box) return;
+    const lines = box.value.split(/[\n,;]+/).map(l=>l.trim()).filter(Boolean);
+    document.getElementById('mp-rows').innerHTML = '';
+    _mpRowCount = 0;
+    let count = 0;
+    lines.forEach(line => {
+      const parts = line.split(/\s+(?:by|x|times|×)\s+/i);
+      let w = NaN, h = NaN;
+      if (parts.length >= 2) {
+        w = mpSpokenToNum(parts[0].trim());
+        h = mpSpokenToNum(parts[1].trim());
+        if (isNaN(w)) { const d=parts[0].match(/[\d]+/); if(d) w=parseFloat(d[0]); }
+        if (isNaN(h)) { const d=parts[1].match(/[\d]+/); if(d) h=parseFloat(d[0]); }
+      } else {
+        const digits = line.match(/[\d]+\.?[\d]*/g);
+        if (digits && digits.length >= 2) { w = parseFloat(digits[0]); h = parseFloat(digits[1]); }
+      }
+      if (!isNaN(w) && !isNaN(h) && w>0 && h>0) { count++; mpAddRow('', w, h); }
+    });
+    while (_mpRowCount < 3) mpAddRow();
+    if (res) res.textContent = count > 0 ? '✅ '+count+' area'+(count>1?'s':'')+' added' : (box.value.trim() ? '❔ Format: 50x120 or 50 by 120' : '');
+  };
+
+  // Mic for voice box
+  let _mpListening = false, _mpRec = null;
+  window.mpStartVoice = function() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Voice not supported'); return; }
+    const btn = document.getElementById('mp-mic-btn');
+    if (_mpListening) { _mpRec && _mpRec.stop(); return; }
+    _mpRec = new SR();
+    _mpRec.lang = 'en-US'; _mpRec.interimResults = false; _mpRec.continuous = true;
+    _mpRec.onstart = () => { _mpListening=true; if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';} };
+    _mpRec.onend   = () => { _mpListening=false; if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';} };
+    _mpRec.onerror = () => { _mpListening=false; if(btn){btn.textContent='🎙️';} };
+    _mpRec.onresult = e => {
+      for (let i=e.resultIndex; i<e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          const t = e.results[i][0].transcript;
+          const box = document.getElementById('mp-voice-box');
+          if (t.trim().toLowerCase()==='delete'||t.trim().toLowerCase()==='undo') {
+            const rows=document.querySelectorAll('#mp-rows>div');
+            if(rows.length) rows[rows.length-1].remove();
+            if(box){ const ls=box.value.split('\n').filter(Boolean); ls.pop(); box.value=ls.join('\n'); }
+            mpUpdateTotals();
+          } else {
+            if(box) { box.value=(box.value?box.value+'\n':'')+t; mpParseVoiceBox(); }
+          }
+        }
+      }
+    };
+    _mpRec.start();
+  };
+
+  // Per-row voice
+  window.mpVoiceRow = function(idx) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Voice not supported'); return; }
+    const btn = document.getElementById('mp-mic-'+idx);
+    const r = new SR();
+    r.lang='en-US'; r.interimResults=false; r.maxAlternatives=1;
+    r.onstart = () => { if(btn) btn.textContent='🔴'; };
+    r.onend   = () => { if(btn) btn.textContent='🎙️'; };
+    r.onresult = e => {
+      const t = e.results[0][0].transcript;
+      const wordMap={'zero':0,'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10,'eleven':11,'twelve':12,'thirteen':13,'fourteen':14,'fifteen':15,'sixteen':16,'seventeen':17,'eighteen':18,'nineteen':19,'twenty':20,'thirty':30,'forty':40,'fifty':50,'sixty':60,'seventy':70,'eighty':80,'ninety':90,'hundred':100,'thousand':1000};
+      let norm = t.toLowerCase();
+      Object.keys(wordMap).sort((a,b)=>b.length-a.length).forEach(w=>{ norm=norm.replace(new RegExp('\\b'+w+'\\b','g'),wordMap[w]); });
+      const nums = norm.match(/\d+\.?\d*/g);
+      if(nums&&nums.length>=2) {
+        const wEl=document.getElementById('mp-w-'+idx), hEl=document.getElementById('mp-h-'+idx);
+        if(wEl){wEl.value=nums[0];wEl.dispatchEvent(new Event('input'));}
+        if(hEl){hEl.value=nums[1];hEl.dispatchEvent(new Event('input'));}
+        mpRowSF(idx);
+      }
+    };
+    r.start();
   };
 
   window.calcAsphalt = function() {

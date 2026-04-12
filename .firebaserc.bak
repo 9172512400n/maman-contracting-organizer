@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "maman-contracting-organizer"
+  },
+  "targets": {
+    "maman-contracting-app": {
+      "hosting": {
+        "main": [
+          "maman-contracting-app"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

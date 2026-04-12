@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "maman-contracting-organizer",
+    "site": "maman-contracting-app",
     "public": ".",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
   },
