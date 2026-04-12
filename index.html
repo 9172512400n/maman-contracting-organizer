@@ -1469,15 +1469,8 @@ function doSignOut() {
       <!-- User menu -->
       <div style="position:relative;display:inline-flex;align-items:center;">
         <div id="user-menu-trigger" onclick="toggleUserMenu()" style="display:inline-flex;flex-direction:row;align-items:center;gap:6px;cursor:pointer;user-select:none;">
-          <!-- Red NM initials circle -->
-          <div id="user-avatar-sm" style="width:32px;height:32px;border-radius:50%;background:#e53e3e;border:2px solid #c53030;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:800;color:#fff;font-family:'Inter',sans-serif;letter-spacing:0.5px;">NM</div>
-          <!-- Person silhouette circle -->
-          <div style="width:32px;height:32px;border-radius:50%;background:#2a2a2a;border:2px solid #555;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-          </div>
+          <!-- Single avatar: red with initials when logged in, grey person icon when not -->
+          <div id="user-avatar-sm" style="width:36px;height:36px;border-radius:50%;background:#e53e3e;border:2px solid #c53030;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:800;color:#fff;font-family:'Inter',sans-serif;letter-spacing:0.5px;">NM</div>
         </div>
         <!-- Dropdown -->
         <div id="user-dropdown" style="display:none;position:absolute;right:0;top:40px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;min-width:220px;z-index:5000;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.7);">
