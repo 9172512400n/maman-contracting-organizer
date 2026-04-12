@@ -7259,12 +7259,22 @@ Cell: 516-306-3326`
     const savedPrefs = (() => { try { const s = localStorage.getItem('dot_bureau_prefs'); return s ? JSON.parse(s) : null; } catch(e) { return null; } })();
     const detectedBorough = (() => {
       const addr = (j.address||'').toLowerCase();
+      // Check address text
       if (addr.includes('brooklyn') || addr.includes(' bk') || addr.includes(', bk')) return 'brooklyn';
       if (addr.includes('queens')) return 'queens';
-      if (addr.includes('bronx')) return 'bronx';
+      if (addr.includes('bronx') || addr.includes(', bx') || addr.includes(' bx')) return 'bronx';
       if (addr.includes('staten island')) return 'staten';
+      // Check permit number prefix (X=Bronx, B=Brooklyn, Q=Queens, M=Manhattan, S=Staten)
+      const firstPermit = (matchedPermits[0] || {}).permitNumber || '';
+      const prefix = firstPermit.trim().toUpperCase().charAt(0);
+      if (prefix === 'X') return 'bronx';
+      if (prefix === 'B') return 'brooklyn';
+      if (prefix === 'Q') return 'queens';
+      if (prefix === 'S') return 'staten';
       return 'manhattan';
     })();
+    // Always use address/permit detection — only use savedPrefs if borough is ambiguous (manhattan)
+    const useDetected = detectedBorough !== 'manhattan';
     const bureaus = window._dotBureauList || [
       { id: 'manhattan_hiqa', name: 'Manhattan HIQA', email: 'HIQA@dot.nyc.gov' },
       { id: 'manhattan_bpp', name: 'Manhattan BPP', email: 'BPP@dot.nyc.gov' },
@@ -7275,7 +7285,7 @@ Cell: 516-306-3326`
       { id: 'construction', name: 'DOT Construction', email: 'ConstructionPermits@dot.nyc.gov' }
     ];
     const bureauHtml = bureaus.map(b => {
-      let isChecked = savedPrefs ? savedPrefs.includes(b.id) : (b.id === detectedBorough || (detectedBorough === 'manhattan' && (b.id === 'manhattan_hiqa' || b.id === 'manhattan_bpp')));
+      let isChecked = (useDetected || !savedPrefs) ? (b.id === detectedBorough || (detectedBorough === 'manhattan' && (b.id === 'manhattan_hiqa' || b.id === 'manhattan_bpp'))) : savedPrefs.includes(b.id);
       return `<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:${isChecked ? '#1a2a3a' : '#111'};border:1px solid ${isChecked ? '#60a5fa' : '#2a2a2a'};border-radius:8px;margin-bottom:6px;cursor:pointer;" id="si-bureau-lbl-${b.id}">
         <input type="checkbox" class="si-bureau-cb" data-bureau-id="${b.id}" data-email="${b.email}" ${isChecked ? 'checked' : ''} style="width:16px;height:16px;accent-color:#60a5fa;" onchange="document.getElementById('si-bureau-lbl-${b.id}').style.background=this.checked?'#1a2a3a':'#111';document.getElementById('si-bureau-lbl-${b.id}').style.border='1px solid '+(this.checked?'#60a5fa':'#2a2a2a');" />
         <span style="font-size:12px;font-weight:700;color:#ccc;flex:1;">${b.name}</span>
