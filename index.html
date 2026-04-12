@@ -1961,10 +1961,17 @@ function doSignOut() {
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Areas / Rooms</div>
               <div id="sf-area-rows" style="display:flex;flex-direction:column;gap:10px;"></div>
               <button onclick="sfAddAreaRow()" style="width:100%;margin-top:12px;padding:13px;background:transparent;border:2px dashed #2a2a2a;border-radius:10px;color:#555;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">+ Add Area</button>
-              <!-- Total SF shown here, below the rows -->
-              <div style="margin-top:16px;padding:14px 18px;background:#111;border-radius:12px;border:1px solid #2a2a2a;display:flex;justify-content:space-between;align-items:center;">
-                <span style="color:#aaa;font-size:14px;font-weight:700;">Total SF</span>
-                <span id="sf-total-display" style="color:#4ade80;font-size:26px;font-weight:900;">0 SF</span>
+              <!-- Summary below rows -->
+              <div style="margin-top:16px;background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:16px 18px;">
+                <div style="font-size:11px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;">Summary</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1a1a1a;">
+                  <span style="color:#aaa;font-size:14px;font-weight:600;">Number of areas</span>
+                  <span id="sf-area-count" style="color:#fff;font-size:14px;font-weight:800;">0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0 0;">
+                  <span style="color:#aaa;font-size:14px;font-weight:600;">Total Square Footage</span>
+                  <span id="sf-total-display" style="color:#22c55e;font-size:22px;font-weight:900;">0 SF</span>
+                </div>
               </div>
             </div>
 
@@ -8421,23 +8428,23 @@ Cell: 516-306-3326`
     const idx = _sfRowCount;
     const row = document.createElement('div');
     row.id = 'sf-area-row-' + idx;
-    row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#111;border:1.5px solid #2a2a2a;border-radius:12px;padding:12px 14px;';
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#1e1e1e;border:1px solid #2a2a2a;border-radius:12px;padding:12px 14px;';
     row.innerHTML = `
-      <div style="width:26px;height:26px;border-radius:50%;background:#e53e3e;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;flex-shrink:0;">${idx}</div>
-      <input type="text" placeholder="Name (optional)" value="${name||''}" oninput="sfUpdateAreaTotals()"
-        style="flex:1.5;min-width:60px;max-width:110px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;padding:8px 8px;color:#fff;font-size:12px;outline:none;font-family:'Inter',sans-serif;"
-        onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
+      <div style="width:30px;height:30px;border-radius:50%;background:#e53e3e;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff;flex-shrink:0;">${idx}</div>
+      <input type="text" placeholder="Area name" value="${name||''}" oninput="sfUpdateAreaTotals()"
+        style="flex:1;min-width:0;background:transparent;border:none;border-bottom:1.5px solid #2a2a2a;border-radius:0;padding:8px 6px;color:#ccc;font-size:14px;outline:none;font-family:'Inter',sans-serif;"
+        onfocus="this.style.borderBottomColor='#e53e3e'" onblur="this.style.borderBottomColor='#2a2a2a'" />
       <input type="number" id="sf-aw-${idx}" placeholder="W" inputmode="decimal" value="${w||''}" oninput="sfAreaRowSF(${idx})"
-        style="width:52px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;padding:8px;color:#fff;font-size:13px;outline:none;text-align:center;font-family:'Inter',sans-serif;"
+        style="width:52px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;padding:8px;color:#fff;font-size:14px;outline:none;text-align:center;font-family:'Inter',sans-serif;"
         onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
-      <span style="color:#555;font-size:14px;font-weight:800;">×</span>
+      <span style="color:#888;font-size:14px;font-weight:700;">×</span>
       <input type="number" id="sf-al-${idx}" placeholder="L" inputmode="decimal" value="${h||''}" oninput="sfAreaRowSF(${idx})"
-        style="width:52px;background:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:8px;padding:8px;color:#fff;font-size:13px;outline:none;text-align:center;font-family:'Inter',sans-serif;"
+        style="width:52px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;padding:8px;color:#fff;font-size:14px;outline:none;text-align:center;font-family:'Inter',sans-serif;"
         onfocus="this.style.borderColor='#e53e3e'" onblur="this.style.borderColor='#2a2a2a'" />
-      <span style="color:#555;font-size:12px;">ft</span>
-      <button onclick="sfVoiceAreaRow(${idx})" id="sf-armic-${idx}" style="background:none;border:none;font-size:18px;cursor:pointer;padding:2px;flex-shrink:0;opacity:0.7;">🎙️</button>
-      <span id="sf-arsf-${idx}" style="font-size:12px;color:#4ade80;font-weight:800;min-width:48px;text-align:right;">—</span>
-      <button onclick="sfDelAreaRow(${idx})" style="width:26px;height:26px;border-radius:50%;background:#450a0a;border:none;color:#f87171;font-size:14px;font-weight:900;cursor:pointer;flex-shrink:0;">×</button>`;
+      <span style="color:#555;font-size:12px;flex-shrink:0;">ft</span>
+      <button onclick="sfVoiceAreaRow(${idx})" id="sf-armic-${idx}" style="background:none;border:none;font-size:18px;cursor:pointer;padding:2px;flex-shrink:0;opacity:0.75;">🎙️</button>
+      <span id="sf-arsf-${idx}" style="font-size:12px;color:#22c55e;font-weight:800;min-width:44px;text-align:right;flex-shrink:0;">—</span>
+      <button onclick="sfDelAreaRow(${idx})" style="width:26px;height:26px;border-radius:50%;background:rgba(239,68,68,0.15);border:1.5px solid rgba(239,68,68,0.3);color:#ef4444;font-size:14px;font-weight:900;cursor:pointer;flex-shrink:0;">×</button>`;
     document.getElementById('sf-area-rows').appendChild(row);
     if (w && h) sfAreaRowSF(idx);
     sfUpdateAreaTotals();
@@ -8478,6 +8485,8 @@ Cell: 516-306-3326`
     });
     const sfDisplay = document.getElementById('sf-total-display');
     if (sfDisplay) sfDisplay.textContent = total>0 ? total.toLocaleString('en-US',{maximumFractionDigits:2})+' SF' : '0 SF';
+    const countEl = document.getElementById('sf-area-count');
+    if (countEl) countEl.textContent = document.querySelectorAll('#sf-area-rows > div').length;
     const pricePerSF = parseFloat(document.getElementById('sf-price-per-sf')?.value)||0;
     const costDisplay = document.getElementById('sf-total-cost');
     if (costDisplay) {
