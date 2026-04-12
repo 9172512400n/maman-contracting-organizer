@@ -7893,7 +7893,12 @@ Cell: 516-306-3326`
   };
 
   // ── CUSTOMER AUTOCOMPLETE ─────────────────────────────────────────────────
+  let _csTimer = null;
   window.customerSearchOpen = function(val) {
+    clearTimeout(_csTimer);
+    _csTimer = setTimeout(function() { _customerSearchNow(val); }, 250);
+  };
+  function _customerSearchNow(val) {
     const dropdown = document.getElementById('customer-suggestions');
     if (!dropdown) return;
     const q = (val || '').trim().toLowerCase();
@@ -7962,15 +7967,17 @@ Cell: 516-306-3326`
 
   // ── JOB MODAL ─────────────────────────────────────────────────────────────
   function openJobModal(prefillDate) {
-    if (window.clearJobForm) window.clearJobForm();
+    // Show modal immediately — then clear form in next frame for instant response
     const modal = document.getElementById('job-modal');
     modal.style.display = 'block';
     modal.scrollTop = 0;
-    // If a date was passed (e.g. from Schedule), prefill it
-    if (prefillDate) {
-      const sd = document.getElementById('field-scheduleDay');
-      if (sd) sd.value = prefillDate;
-    }
+    requestAnimationFrame(function() {
+      if (window.clearJobForm) window.clearJobForm();
+      if (prefillDate) {
+        const sd = document.getElementById('field-scheduleDay');
+        if (sd) sd.value = prefillDate;
+      }
+    });
   }
   function closeJobModal() {
     const modal = document.getElementById('job-modal');
