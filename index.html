@@ -9218,10 +9218,9 @@ Cell: 516-306-3326`);
 <!-- Service Worker Registration -->
 <script>
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('✅ SW registered:', reg.scope))
-      .catch(err => console.warn('SW registration failed:', err));
+  // Unregister any old service workers that may be caching stale code
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for (let reg of registrations) { reg.unregister(); }
   });
 
   // Init SF area rows after all scripts load
