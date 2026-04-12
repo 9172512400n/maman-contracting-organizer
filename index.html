@@ -8681,6 +8681,18 @@ if ('serviceWorker' in navigator) {
       .then(reg => console.log('✅ SW registered:', reg.scope))
       .catch(err => console.warn('SW registration failed:', err));
   });
+
+  // Init SF area rows after all scripts load
+  setTimeout(function() {
+    const sfRows = document.getElementById('sf-area-rows');
+    if (sfRows && sfRows.children.length === 0 && typeof sfAddAreaRow === 'function') {
+      sfAddAreaRow(); sfAddAreaRow(); sfAddAreaRow();
+    }
+    const mpRows = document.getElementById('mp-rows');
+    if (mpRows && mpRows.children.length === 0 && typeof mpAddRow === 'function') {
+      mpAddRow(); mpAddRow(); mpAddRow();
+    }
+  }, 500);
 }
 </script>
 </body>
