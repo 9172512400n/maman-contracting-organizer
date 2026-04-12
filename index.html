@@ -1557,7 +1557,7 @@ function doSignOut() {
               </div>
               <!-- Mini search for dashboard recent jobs -->
               <input class="search-input" type="text" id="dash-search"
-                placeholder="🔍 Quick search…" oninput="filterDashRecent()"
+                placeholder="🔍 Quick search…" oninput="clearTimeout(window._filterDashTimer);window._filterDashTimer=setTimeout(filterDashRecent,300)"
                 style="width:100%;margin-bottom:12px;"/>
               <table>
                 <thead><tr><th>Address</th><th>Task Type</th><th>Crew</th><th>Status</th><th>Schedule</th></tr></thead>
@@ -1648,7 +1648,7 @@ function doSignOut() {
           </div>
           <!-- Prominent search -->
           <input class="search-input-lg" type="text" id="job-search"
-            placeholder="🔍  Search by address, customer, permit #, task type…" oninput="filterJobs()"/>
+            placeholder="🔍  Search by address, customer, permit #, task type…" oninput="filterJobsDebounced()"/>
           <!-- Filter pills -->
           <div class="filter-pills">
             <button class="filter-pill active" data-filter="" onclick="setJobFilter('',this)">All</button>
@@ -1668,7 +1668,7 @@ function doSignOut() {
             <button class="btn btn-primary" onclick="(window.openPermitModal||function(){document.getElementById('permit-modal').style.display='block';document.body.style.overflow='hidden';})()">+ Add Permit</button>
           </div>
           <div style="margin-bottom:14px;">
-            <input class="search-input" type="text" id="permit-search" placeholder="🔍  Search by address or permit #…" oninput="filterPermitsDirect()" style="width:100%;box-sizing:border-box;"/>
+            <input class="search-input" type="text" id="permit-search" placeholder="🔍  Search by address or permit #…" oninput="clearTimeout(window._filterPermitsTimer);window._filterPermitsTimer=setTimeout(filterPermitsDirect,300)" style="width:100%;box-sizing:border-box;"/>
           </div>
           <div id="permits-cards-container">
             <div style="text-align:center;color:#555;padding:40px;">Loading permits…</div>
@@ -1730,7 +1730,7 @@ function doSignOut() {
             <button class="btn btn-primary" onclick="openContactModal()" style="font-size:13px;font-weight:800;">➕ Add Contact</button>
           </div>
           <input class="search-input-lg" type="text" id="contact-search"
-            placeholder="🔍  Search by company, name, or phone…" oninput="filterContacts()"/>
+            placeholder="🔍  Search by company, name, or phone…" oninput="clearTimeout(window._filterContactsTimer);window._filterContactsTimer=setTimeout(filterContacts,300)"/>
 
           <div id="contacts-list">
             <div class="contact-empty">No contacts yet. Contacts are auto-created when jobs are saved with a phone number, or add manually.</div>
@@ -3238,6 +3238,11 @@ function doSignOut() {
     filterJobs();
   };
 
+  window._filterJobsTimer = null;
+  window.filterJobsDebounced = function() {
+    clearTimeout(window._filterJobsTimer);
+    window._filterJobsTimer = setTimeout(window.filterJobs, 300);
+  };
   window.filterJobs = function() {
     const search = (document.getElementById('job-search').value || '').toLowerCase();
     window._jobSearch = search;
