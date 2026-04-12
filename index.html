@@ -838,9 +838,14 @@ function navTo(idx) {
   document.body.style.overflow = '';
   // Side effects
   if (idx === 3 && typeof window.renderSchedule === 'function') {
-    window._schedWeekOffset = 0; // always reset to current week when opening schedule
+    window._schedWeekOffset = 0;
     window._schedTabJustOpened = true;
     window._schedUserNavigated = false;
+    window._schedCrewFilter = 'all';
+    window._schedNeedsRender = false;
+    document.querySelectorAll('.crew-pill').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.crew === 'all');
+    });
     window.renderSchedule();
   }
   // Also call module navTo if available (for any extra logic)
@@ -3067,9 +3072,15 @@ function doSignOut() {
         window._schedWeekOffset = 0;
         window._schedTabJustOpened = true;
         window._schedUserNavigated = false;
-        // Only re-render schedule if currently visible (avoid blocking main thread)
-        if (window._currentSection === 3) {
+        // Re-render schedule if visible or was last section (handles page restore)
+        const _activeSection = window._currentSection !== undefined ? window._currentSection : parseInt(localStorage.getItem('last-section') || '0');
+        if (_activeSection === 3) {
+          window._schedCrewFilter = 'all';
+          document.querySelectorAll('.crew-pill').forEach(b => { b.classList.toggle('active', b.dataset.crew === 'all'); });
           loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
+        } else {
+          // Schedule pending — will render when user navigates to it
+          window._schedNeedsRender = true;
         }
       }).catch(e => console.error('jobs load failed:', e)),
 
@@ -7896,9 +7907,12 @@ Cell: 516-306-3326`);
     closeDrawer();
     // Side effects
     if (idx === 3 && typeof renderSchedule === 'function') {
-      window._schedWeekOffset = 0; // always show current week on open
+      window._schedWeekOffset = 0;
       window._schedTabJustOpened = true;
       window._schedUserNavigated = false;
+      window._schedCrewFilter = 'all';
+      window._schedNeedsRender = false;
+      document.querySelectorAll('.crew-pill').forEach(b => { b.classList.toggle('active', b.dataset.crew === 'all'); });
       loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
     }
   }
