@@ -842,10 +842,12 @@ function navTo(idx) {
     window._schedTabJustOpened = true;
     window._schedUserNavigated = false;
     window._schedCrewFilter = 'all'; // always reset to All Crews on open
-    // Reset crew pill active state
     document.querySelectorAll('.crew-pill').forEach(function(b) {
       b.classList.toggle('active', b.dataset.crew === 'all');
     });
+    // Show loading if jobs not ready yet
+    const schedLoading = document.getElementById('sched-loading');
+    if (schedLoading) schedLoading.style.display = allJobs && allJobs.length > 0 ? 'none' : 'block';
     window.renderSchedule();
   }
   // Also call module navTo if available (for any extra logic)
@@ -1694,7 +1696,7 @@ function doSignOut() {
               <div style="position:relative;flex-shrink:0;">
                 <button onclick="toggleShareMenu()" id="share-menu-btn"
                   style="background:#e53e3e;border:none;border-radius:8px;padding:0 14px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-size:13px;font-weight:800;color:#fff;font-family:'Inter',sans-serif;"
-                  title="Share Schedule">📤
+                  title="Share Schedule"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
                 </button>
                 <div id="share-menu-dropdown" style="display:none;position:absolute;right:0;top:42px;background:#1a1a1a;border:1.5px solid #3a3a3a;border-radius:10px;padding:6px;z-index:999;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">
                   <button onclick="schedShareDay();closeShareMenu();" style="display:block;width:100%;background:transparent;border:none;color:#fff;font-size:13px;font-weight:700;font-family:'Inter',sans-serif;padding:10px 14px;text-align:left;cursor:pointer;border-radius:7px;" onmouseover="this.style.background='#2a2a2a'" onmouseout="this.style.background='transparent'">📅 Share This Day</button>
@@ -1718,6 +1720,7 @@ function doSignOut() {
           <div id="sched-days-container"></div>
 
           <!-- TBD section -->
+          <div id="sched-loading" style="display:none;text-align:center;padding:40px 20px;color:#555;font-size:14px;font-weight:700;">Loading schedule…</div>
           <div id="sched-tbd-section" style="margin-top:8px;display:none;">
             <div style="font-size:12px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #2a2a2a;">📌 Date TBD</div>
             <div id="sched-tbd-container"></div>
@@ -7002,6 +7005,9 @@ Cell: 516-306-3326`
   };
 
   window.renderSchedule = function() {
+    // Hide loading indicator
+    const schedLoading = document.getElementById('sched-loading');
+    if (schedLoading) schedLoading.style.display = 'none';
     // Always show current (or upcoming) work week unless user has explicitly navigated
     if (!window._schedUserNavigated) {
       const _todayDow = new Date().getDay(); // 0=Sun, 1=Mon...6=Sat
