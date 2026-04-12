@@ -7259,8 +7259,12 @@ Cell: 516-306-3326`
     const matchedPermits = (allStandalonePermits || []).filter(p => {
       const pAddr = (p.jobAddress || '').trim().toLowerCase();
       if (!pAddr || !jobAddr) return false;
-      return pAddr === jobAddr || pAddr.includes(jobAddr) || jobAddr.includes(pAddr) ||
+      const addrMatch = pAddr === jobAddr || pAddr.includes(jobAddr) || jobAddr.includes(pAddr) ||
              normalize(pAddr).includes(normalize(jobAddr)) || normalize(jobAddr).includes(normalize(pAddr));
+      // Only include permit type code 119 (milling inspection permits)
+      const typeCode = (p.permitTypeCode || '').trim();
+      const is119 = typeCode === '119';
+      return addrMatch && is119;
     }).filter(p => !p.archived);
 
     // Build bureau checkboxes
