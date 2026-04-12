@@ -8224,7 +8224,7 @@ Cell: 516-306-3326`
   };
 
   // Mic for voice box
-  let _mpListening = false, _mpRec = null;
+  let _mpListening = false, _mpRec = null, _mpTimer = null;
   window.mpStartVoice = function() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { alert('Voice not supported'); return; }
@@ -8232,9 +8232,22 @@ Cell: 516-306-3326`
     if (_mpListening) { _mpRec && _mpRec.stop(); return; }
     _mpRec = new SR();
     _mpRec.lang = 'en-US'; _mpRec.interimResults = false; _mpRec.continuous = true;
-    _mpRec.onstart = () => { _mpListening=true; if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';} };
-    _mpRec.onend   = () => { _mpListening=false; if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';} };
-    _mpRec.onerror = () => { _mpListening=false; if(btn){btn.textContent='🎙️';} };
+    _mpRec.onstart = () => {
+      _mpListening=true;
+      if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';}
+      // Auto-stop after 2 minutes
+      _mpTimer = setTimeout(() => { if(_mpRec) _mpRec.stop(); }, 120000);
+    };
+    _mpRec.onend = () => {
+      _mpListening=false;
+      if(_mpTimer){clearTimeout(_mpTimer);_mpTimer=null;}
+      if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';}
+    };
+    _mpRec.onerror = () => {
+      _mpListening=false;
+      if(_mpTimer){clearTimeout(_mpTimer);_mpTimer=null;}
+      if(btn){btn.textContent='🎙️';}
+    };
     _mpRec.onresult = e => {
       for (let i=e.resultIndex; i<e.results.length; i++) {
         if (e.results[i].isFinal) {
@@ -8561,7 +8574,7 @@ Cell: 516-306-3326`
   // SF area rows init lazily when calculator tab is opened (not on page load)
 
   // SF Calculator voice mic
-  let _sfListening = false, _sfRec = null;
+  let _sfListening = false, _sfRec = null, _sfTimer = null;
   window.sfStartVoice = function() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { alert('Voice not supported on this browser'); return; }
@@ -8569,9 +8582,21 @@ Cell: 516-306-3326`
     if (_sfListening) { _sfRec && _sfRec.stop(); return; }
     _sfRec = new SR();
     _sfRec.lang = 'en-US'; _sfRec.interimResults = false; _sfRec.continuous = true;
-    _sfRec.onstart = () => { _sfListening=true; if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';} };
-    _sfRec.onend   = () => { _sfListening=false; if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';} };
-    _sfRec.onerror = () => { _sfListening=false; if(btn) btn.textContent='🎙️'; };
+    _sfRec.onstart = () => {
+      _sfListening=true;
+      if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';}
+      _sfTimer = setTimeout(() => { if(_sfRec) _sfRec.stop(); }, 120000);
+    };
+    _sfRec.onend = () => {
+      _sfListening=false;
+      if(_sfTimer){clearTimeout(_sfTimer);_sfTimer=null;}
+      if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';}
+    };
+    _sfRec.onerror = () => {
+      _sfListening=false;
+      if(_sfTimer){clearTimeout(_sfTimer);_sfTimer=null;}
+      if(btn) btn.textContent='🎙️';
+    };
     _sfRec.onresult = e => {
       for (let i=e.resultIndex; i<e.results.length; i++) {
         if (e.results[i].isFinal) {
