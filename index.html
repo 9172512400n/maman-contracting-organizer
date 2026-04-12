@@ -2006,6 +2006,11 @@ function doSignOut() {
                 ✉️ Email
               </button>
             </div>
+            <!-- Save to Job -->
+            <button onclick="openSaveCalcToJob()"
+              style="width:100%;padding:14px;background:#1a2a3a;border:2px solid #f59e0b;border-radius:10px;color:#f59e0b;font-size:15px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:10px;">
+              💾 Save to Job
+            </button>
           </div>
         </div>
 
@@ -8719,6 +8724,116 @@ Cell: 516-306-3326`);
     const subject = encodeURIComponent('Maman Contracting — SF & Price Estimate');
     const body = encodeURIComponent(text);
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
+
+  // ── SAVE CALCULATOR TO JOB ──────────────────────────────────────────────
+  window.openSaveCalcToJob = function() {
+    // Collect current calculator data
+    const totalSF = (document.getElementById('sf-total-display') || {}).textContent || '0 SF';
+    const totalCost = (document.getElementById('sf-total-cost') || {}).textContent || '—';
+    const pricePerSF = (document.getElementById('sf-price-per-sf') || {}).value || '';
+
+    // Build area summary from rows
+    const areaRows = document.querySelectorAll('#sf-area-rows > div');
+    const areaSummary = Array.from(areaRows).map(row => {
+      const nameEl = row.querySelector('input[type="text"]');
+      const wEl = row.querySelector('input[placeholder="W"]') || row.querySelector('input[id^="sf-aw"]');
+      const lEl = row.querySelector('input[placeholder="L"]') || row.querySelector('input[id^="sf-al"]');
+      const sfEl = row.querySelector('[id^="sf-asf"]');
+      const name = nameEl ? nameEl.value : '';
+      const w = wEl ? wEl.value : '';
+      const l = lEl ? lEl.value : '';
+      const sf = sfEl ? sfEl.textContent : '';
+      if (!w && !l) return null;
+      return `${name || 'Area'}: ${w}×${l} = ${sf}`;
+    }).filter(Boolean).join('
+');
+
+    const calcNote = [
+      areaSummary,
+      `Total: ${totalSF}`,
+      pricePerSF ? `Price/SF: $${pricePerSF}` : '',
+      totalCost !== '—' ? `Total Cost: ${totalCost}` : ''
+    ].filter(Boolean).join('
+');
+
+    // Build existing jobs list
+    const jobOptions = (allJobs || []).slice(0, 50).map(j =>
+      `<option value="${j.id}">${j.address || '(No address)'}${j.customerName ? ' — ' + j.customerName : ''}</option>`
+    ).join('');
+
+    const modal = document.createElement('div');
+    modal.id = 'save-calc-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:20000;overflow-y:auto;padding:20px 16px 100px;-webkit-overflow-scrolling:touch;';
+    modal.innerHTML = `
+      <div style="max-width:480px;margin:0 auto;background:#141414;border-radius:16px;padding:20px;border:1.5px solid #2a2a2a;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div style="font-size:16px;font-weight:800;color:#fff;">💾 Save to Job</div>
+          <button onclick="document.getElementById('save-calc-modal').remove()" style="background:none;border:none;color:#888;font-size:22px;cursor:pointer;padding:0 4px;">✕</button>
+        </div>
+
+        <!-- Calc summary preview -->
+        <div style="background:#111;border:1px solid #2a2a2a;border-radius:10px;padding:12px;margin-bottom:16px;font-size:12px;color:#888;white-space:pre-wrap;font-family:Inter,sans-serif;">${calcNote || 'No measurements yet'}</div>
+
+        <!-- Option 1: New Job -->
+        <button onclick="saveCalcAsNewJob(${JSON.stringify(calcNote).replace(/"/g,'&quot;')})" style="width:100%;padding:14px;background:#1a3a2a;border:2px solid #22c55e;border-radius:10px;color:#4ade80;font-size:15px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;margin-bottom:10px;">
+          ➕ Create New Job with this data
+        </button>
+
+        <!-- Option 2: Add to existing job -->
+        <div style="font-size:11px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;">Or add to existing job:</div>
+        <select id="save-calc-job-select" style="width:100%;padding:12px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:13px;font-family:Inter,sans-serif;margin-bottom:10px;">
+          <option value="">-- Select a job --</option>
+          ${jobOptions}
+        </select>
+        <button onclick="saveCalcToExistingJob(${JSON.stringify(calcNote).replace(/"/g,'&quot;')})" style="width:100%;padding:14px;background:#1a2a3a;border:2px solid #60a5fa;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">
+          📋 Add to Selected Job
+        </button>
+      </div>`;
+    document.body.appendChild(modal);
+  };
+
+  window.saveCalcAsNewJob = function(calcNote) {
+    document.getElementById('save-calc-modal').remove();
+    // Open new job modal with calculator note pre-filled
+    if (window.clearJobForm) window.clearJobForm();
+    const modal = document.getElementById('job-modal');
+    if (modal) modal.style.display = 'block';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (window.clearJobForm) window.clearJobForm();
+      const notesEl = document.getElementById('f-notes');
+      if (notesEl) notesEl.value = calcNote;
+      const sizeEl = document.getElementById('f-projectSize');
+      const sfMatch = calcNote.match(/Total:\s*([\d,.]+ SF)/);
+      if (sizeEl && sfMatch) sizeEl.value = sfMatch[1];
+    }));
+    window.showToast && window.showToast('📐 Calculator data pre-filled in new job', '#4ade80');
+  };
+
+  window.saveCalcToExistingJob = async function(calcNote) {
+    const sel = document.getElementById('save-calc-job-select');
+    const jobId = sel ? sel.value : '';
+    if (!jobId) { window.showToast && window.showToast('Please select a job', '#e53e3e'); return; }
+    const j = allJobs.find(x => x.id === jobId);
+    if (!j) return;
+    // Append calc note to existing job notes
+    const newNotes = j.notes ? j.notes + '\n\n--- Calculator ---\n' + calcNote : '--- Calculator ---\n' + calcNote;
+    const sfMatch = calcNote.match(/Total:\s*([\d,.]+ SF)/);
+    const newSize = sfMatch ? sfMatch[1] : j.projectSize;
+    try {
+      const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+      await updateDoc(doc(window._db, 'jobs', jobId), { notes: newNotes, projectSize: newSize, updatedAt: new Date().toISOString() });
+    } catch(e) {
+      await fetch(\`https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents/jobs/\${jobId}?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c&updateMask.fieldPaths=notes&updateMask.fieldPaths=projectSize\`, {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ fields: { notes: { stringValue: newNotes }, projectSize: { stringValue: newSize || '' } } })
+      });
+    }
+    j.notes = newNotes;
+    if (newSize) j.projectSize = newSize;
+    document.getElementById('save-calc-modal').remove();
+    window.showToast && window.showToast('✅ Calculator data saved to job!', '#4ade80');
   };
 
   window.clearSFCalc = function() {
