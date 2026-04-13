@@ -1,4 +1,4 @@
-<!-- v1775996180 -->
+<!-- v1775996181 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7770,17 +7770,51 @@ Cell: 516-306-3326`);
   window.schedMoveJobPrompt = function(jobId) {
     const j = allJobs.find(x => x.id === jobId);
     if (!j) return;
-    const newDay = prompt('Move to date (YYYY-MM-DD):', j.scheduleDay || '');
+    // Remove any existing move overlay
+    const existing = document.getElementById('sched-move-overlay');
+    if (existing) existing.remove();
+    // Build calendar picker overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'sched-move-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    const today = new Date().toISOString().split('T')[0];
+    const currentDate = j.scheduleDay || today;
+    overlay.innerHTML = `
+      <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:20px;padding:28px;width:100%;max-width:360px;">
+        <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:6px;">📅 Move Job</div>
+        <div style="font-size:13px;color:#888;margin-bottom:20px;">${j.address || 'Job'}</div>
+        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px;">Select New Date</label>
+        <input type="date" id="sched-move-date" value="${currentDate}"
+          style="width:100%;padding:14px;background:#111;border:1.5px solid #e53e3e;border-radius:10px;color:#fff;font-size:16px;font-family:'Inter',sans-serif;outline:none;-webkit-appearance:none;" />
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <button onclick="document.getElementById('sched-move-overlay').remove()"
+            style="flex:1;padding:13px;background:#2a2a2a;border:none;border-radius:10px;color:#aaa;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
+          <button onclick="confirmSchedMove('${jobId}')"
+            style="flex:1;padding:13px;background:#e53e3e;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✅ Move</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    // Auto-open the date picker on mobile
+    setTimeout(() => { const di = document.getElementById('sched-move-date'); if (di) di.showPicker && di.showPicker(); }, 100);
+  };
+
+  window.confirmSchedMove = function(jobId) {
+    const di = document.getElementById('sched-move-date');
+    if (!di) return;
+    const newDay = di.value;
     if (!newDay) return;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDay)) { alert('Invalid date format. Use YYYY-MM-DD.'); return; }
+    const overlay = document.getElementById('sched-move-overlay');
+    if (overlay) overlay.remove();
+    const j = allJobs.find(x => x.id === jobId);
+    if (!j) return;
     j.scheduleDay = newDay;
     try {
       if (typeof updateDoc !== 'undefined' && typeof doc !== 'undefined' && typeof db !== 'undefined') {
         updateDoc(doc(db, 'jobs', jobId), { scheduleDay: newDay });
       }
-    } catch(e) { console.warn('schedMoveJobPrompt update error:', e); }
+    } catch(e) { console.warn('confirmSchedMove update error:', e); }
     loadScheduleNotes().then(() => renderSchedule());
-    window.showToast && window.showToast('📅 Job moved to ' + newDay, '#374151');
+    window.showToast && window.showToast('📅 Job moved to ' + newDay);
   };
 
   window.exportSingleJob = function(jobId) {
