@@ -1,4 +1,4 @@
-<!-- v1775996193 -->
+<!-- v1775996194 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5766,7 +5766,8 @@ function doSignOut() {
               try {
                 const docs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [{url: p.docUrl, name: 'Permit Doc'}] : []);
                 if (!docs.length) {
-                  return '<div style="font-size:13px;color:#555;padding:6px 0;">No document uploaded yet.<br><span style="font-size:11px;color:#444;">👆 Tap Upload to add a permit doc</span></div><button onclick="event.stopPropagation();viewPermitsByAddress("${p.jobAddress||addr||''}"" style="margin-top:8px;width:100%;padding:8px;background:#172554;border:1.5px solid #1e40af;border-radius:8px;color:#60a5fa;font-size:12px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">📋 View Saved Permits for This Address</button>';
+                  return '<div style="font-size:13px;color:#555;padding:6px 0;">No document uploaded yet.</div>' +
+                    '<button onclick="event.stopPropagation();viewPermitsByAddress(\'' + (p.jobAddress||addr||'').replace(/'/g,"\\''") + '\')" style="margin-top:8px;width:100%;padding:8px;background:#172554;border:1.5px solid #1e40af;border-radius:8px;color:#60a5fa;font-size:12px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">📋 View Saved Permits for This Address</button>';
                 }
                 return docs.map(function(d, i) {
                   const url = typeof d === 'string' ? d : (d && d.url ? d.url : '');
