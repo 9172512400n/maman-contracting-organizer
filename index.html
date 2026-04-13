@@ -1,4 +1,4 @@
-<!-- v1775996202 -->
+<!-- v1775996203 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5558,7 +5558,7 @@ function doSignOut() {
               try {
                 const docs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [{url: p.docUrl, name: 'Permit Doc'}] : []);
                 if (!docs.length) {
-                  return '<div style="font-size:13px;color:#555;padding:6px 0;">No document uploaded yet.<br><span style="font-size:11px;color:#444;">👆 Tap the green "Upload" button below to add</span></div>';
+                  return '<div style="font-size:13px;color:#555;padding:6px 0;">No document uploaded yet.</div>';
                 }
                 return docs.map(function(d, i) {
                   const url = typeof d === 'string' ? d : (d && d.url ? d.url : '');
@@ -5572,6 +5572,7 @@ function doSignOut() {
                 }).filter(Boolean).join('');
               } catch(e) { return ''; }
             })()}
+            <button onclick="event.stopPropagation();navTo(4);setTimeout(function(){var s=document.getElementById('permit-search');if(s){s.value='${(p.jobAddress||'').replace(/'/g,'').replace(/`/g,'')}';if(typeof filterPermits==='function')filterPermits();}},300)" style="margin-top:8px;width:100%;padding:8px;background:#172554;border:1.5px solid #1e40af;border-radius:8px;color:#60a5fa;font-size:12px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">📋 View Saved Permits</button>
           </div>
           <div class="permit-item-actions" style="margin-top:6px;">
             <button class="permit-edit-btn" onclick="event.stopPropagation();openEditPermit('${p.id}')">✏️ Edit</button>
