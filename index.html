@@ -1,4 +1,4 @@
-<!-- v1775996181 -->
+<!-- v1775996182 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6601,6 +6601,53 @@ Cell: 516-306-3326`
       };
       reader.readAsDataURL(file);
       input.value = '';
+      return;
+    }
+
+    // PDF support: render all pages to images using PDF.js then add to OCR queue
+    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+      statusEl.textContent = '⏳ Loading PDF pages…';
+      statusEl.style.color = '#f59e0b';
+      input.value = '';
+      try {
+        // Lazy-load PDF.js from CDN if not already loaded
+        if (!window.pdfjsLib) {
+          await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+            s.onload = () => {
+              window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+              resolve();
+            };
+            s.onerror = reject;
+            document.head.appendChild(s);
+          });
+        }
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const numPages = pdf.numPages;
+        statusEl.textContent = `⏳ Rendering ${numPages} page${numPages>1?'s':''}…`;
+        for (let i = 1; i <= numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 2.0 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+          const b64 = dataUrl.split(',')[1];
+          ocrPages.push({ b64, url: dataUrl, name: file.name + ' p' + i });
+        }
+        renderOCRThumbs();
+        const pp = document.getElementById('ocr-pages-preview');
+        if (pp) pp.style.display = 'block';
+        statusEl.textContent = `📄 PDF: ${numPages} page${numPages>1?'s':''} ready — tap "Scan All Pages"`;
+        statusEl.style.color = '#60a5fa';
+      } catch(pdfErr) {
+        console.warn('PDF render error:', pdfErr);
+        statusEl.textContent = '❌ Could not read PDF. Try a clearer scan or use Camera.';
+        statusEl.style.color = '#f87171';
+      }
       return;
     }
 
