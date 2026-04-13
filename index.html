@@ -1,4 +1,4 @@
-<!-- v1775996184 -->
+<!-- v1775996185 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6337,6 +6337,41 @@ Cell: 516-306-3326`
 
     const statusEl = document.getElementById('ocr-status');
     if (statusEl) { statusEl.textContent = '⏳ Scanning permit…'; statusEl.style.color = '#f59e0b'; }
+
+    // If PDF, convert first page to image via PDF.js, then OCR that
+    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+      try {
+        if (!window.pdfjsLib) {
+          await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+            s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; resolve(); };
+            s.onerror = reject;
+            document.head.appendChild(s);
+          });
+        }
+        if (statusEl) { statusEl.textContent = '⏳ Rendering PDF…'; }
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 2.0 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width; canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        // Create a synthetic image File from the canvas and re-call this function
+        canvas.toBlob(async (blob) => {
+          const imgFile = new File([blob], file.name.replace(/\.pdf$/i, '.jpg'), { type: 'image/jpeg' });
+          const dt = new DataTransfer();
+          dt.items.add(imgFile);
+          input.files = dt.files;
+          window.handleScanInputForAddress(input, cardAddress);
+        }, 'image/jpeg', 0.92);
+        return;
+      } catch(pdfErr) {
+        if (statusEl) { statusEl.textContent = '❌ Could not read PDF. Try Camera or Photo Library instead.'; statusEl.style.color = '#f87171'; }
+        return;
+      }
+    }
 
     try {
       // Convert file to base64
