@@ -1,4 +1,4 @@
-<!-- v1775996192 -->
+<!-- v1775996193 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -191,7 +191,7 @@
     .drawer-user-name { font-size: 14px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .drawer-user-email { font-size: 11px; color: #555; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .drawer-nav { padding: 10px 0; flex: 1; }
+    .drawer-nav { padding: 10px 0; flex: 1; overflow-y: auto; min-height: 0; }
     .drawer-item {
       display: flex; align-items: center; gap: 14px; padding: 14px 22px;
       cursor: pointer; font-size: 14px; font-weight: 500;
@@ -203,7 +203,7 @@
     .drawer-item .di { font-size: 20px; width: 24px; text-align: center; }
 
     .drawer-divider { height: 1px; background: #242424; margin: 8px 0; }
-    .drawer-footer { padding: 10px 0 20px; }
+    .drawer-footer { padding: 10px 0 20px; flex-shrink: 0; }
 
     /* ── BOTTOM NAV ─────────────────────────────────────────────────────── */
     #bottom-nav {
