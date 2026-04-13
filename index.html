@@ -1,4 +1,4 @@
-<!-- v1775996178 -->
+<!-- v1775996179 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -530,6 +530,9 @@
     /* SECTION HEADER */
     .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .section-header h2 { font-size: 15px; font-weight: 700; color: #fff; }
+
+    /* QUICK SF placeholder */
+    #asp-sf::placeholder { color: #555; font-weight: 400; }
 
     /* TOAST */
     #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #22c55e; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; z-index: 99999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
@@ -1818,7 +1821,9 @@ function doSignOut() {
                 <div style="position:relative;">
                   <input type="number" id="asp-sf" placeholder="e.g. 5000" inputmode="decimal"
                     style="width:100%;padding:14px 52px 14px 16px;background:#111;border:1.5px solid #2a2a2a;border-radius:10px;color:#fff;font-size:22px;font-weight:700;font-family:'Inter',sans-serif;"
-                    oninput="calcAsphaltSF()"/>
+                    oninput="calcAsphaltSF()"
+                    onfocus="this.style.borderColor='#e53e3e'"
+                    onblur="this.style.borderColor='#2a2a2a'"/>
                   <span style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:700;color:#555;">ft²</span>
                 </div>
               </div>
