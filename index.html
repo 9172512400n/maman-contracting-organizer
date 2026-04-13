@@ -1,4 +1,4 @@
-<!-- v1775996190 -->
+<!-- v1775996191 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2673,13 +2673,19 @@ function doSignOut() {
       const knob = slider.querySelector('span');
       if (knob) { knob.style.background = enabled ? '#fff' : '#888'; knob.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)'; }
     }
-    const savedTime = localStorage.getItem("auto_backup_time") || "22:00"; const [bh,bm] = savedTime.split(":").map(Number); const ampm = bh>=12?"PM":"AM"; const h12 = bh%12||12; const tstr = h12+":"+(bm<10?"0":"")+bm+" "+ampm; if (statusEl) { statusEl.textContent = enabled ? "✅ Auto-backup ON — daily at "+tstr : "Auto-backup is off"; statusEl.style.color = enabled ? "#4ade80" : "#555"; }
+    const savedTime2 = localStorage.getItem('auto_backup_time') || '22:00';
+    const bh2 = parseInt(savedTime2.split(':')[0], 10);
+    const bm2 = parseInt(savedTime2.split(':')[1], 10);
+    const ampm2 = bh2 >= 12 ? 'PM' : 'AM';
+    const h12b = bh2 % 12 || 12;
+    const tstr2 = h12b + ':' + (bm2 < 10 ? '0' : '') + bm2 + ' ' + ampm2;
+    if (statusEl) { statusEl.textContent = enabled ? '✅ Auto-backup ON — daily at ' + tstr2 : 'Auto-backup is off'; statusEl.style.color = enabled ? '#4ade80' : '#555'; }
   }
 
   window.saveAutoBackupTime = function(val) {
-    localStorage.setItem("auto_backup_time", val);
-    updateAutoBackupUI(localStorage.getItem("auto_backup_enabled") === "1");
-    if (localStorage.getItem("auto_backup_enabled") === "1") scheduleAutoBackup();
+    localStorage.setItem('auto_backup_time', val);
+    updateAutoBackupUI(localStorage.getItem('auto_backup_enabled') === '1');
+    if (localStorage.getItem('auto_backup_enabled') === '1') scheduleAutoBackup();
   };
 
   window.toggleAutoBackup = function(enabled) {
@@ -2692,9 +2698,10 @@ function doSignOut() {
     if (window._autoBackupTimer) clearTimeout(window._autoBackupTimer);
     const now = new Date();
     const target = new Date();
-    const savedTime = localStorage.getItem("auto_backup_time") || "22:00";
-    const [bh, bm] = savedTime.split(":").map(Number);
-    target.setHours(bh, bm, 0, 0);
+    const bTime = localStorage.getItem('auto_backup_time') || '22:00';
+    const bHour = parseInt(bTime.split(':')[0], 10);
+    const bMin = parseInt(bTime.split(':')[1], 10);
+    target.setHours(bHour, bMin, 0, 0);
     if (target <= now) target.setDate(target.getDate() + 1);
     const ms = target - now;
     window._autoBackupTimer = setTimeout(function() {
