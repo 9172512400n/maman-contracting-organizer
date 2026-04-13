@@ -1,4 +1,4 @@
-<!-- v1775996179 -->
+<!-- v1775996180 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -532,7 +532,7 @@
     .section-header h2 { font-size: 15px; font-weight: 700; color: #fff; }
 
     /* QUICK SF placeholder */
-    #asp-sf::placeholder { color: #555; font-weight: 400; }
+    #asp-sf::placeholder, #con-sf::placeholder { color: #555; font-weight: 400; }
 
     /* TOAST */
     #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #22c55e; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; z-index: 99999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
@@ -1914,7 +1914,20 @@ function doSignOut() {
 
           <!-- CONCRETE CALCULATOR -->
           <div id="calc-concrete" style="display:none;">
-            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+            <!-- Concrete mode sub-tabs: WIDTH x LENGTH vs QUICK SF -->
+            <div style="display:flex;gap:8px;margin-bottom:16px;">
+              <button id="con-subtab-wl" onclick="switchConMode('wl')"
+                style="flex:1;padding:10px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:none;background:#e53e3e;color:#fff;font-family:'Inter',sans-serif;letter-spacing:0.3px;">
+                WIDTH × LENGTH
+              </button>
+              <button id="con-subtab-sf" onclick="switchConMode('sf')"
+                style="flex:1;padding:10px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:none;background:#2a2a2a;color:#aaa;font-family:'Inter',sans-serif;letter-spacing:0.3px;">
+                QUICK SF
+              </button>
+            </div>
+
+            <!-- WIDTH x LENGTH inputs -->
+            <div id="con-panel-wl" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Inputs</div>
               <div style="display:grid;gap:12px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
@@ -1944,7 +1957,75 @@ function doSignOut() {
               </div>
             </div>
 
-            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+            <!-- QUICK SF inputs -->
+            <div id="con-panel-sf" style="display:none;">
+              <!-- Main SF input -->
+              <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                  <span style="font-size:16px;">&#9889;</span>
+                  <span style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Enter Total Square Footage</span>
+                </div>
+                <div style="position:relative;">
+                  <input type="number" id="con-sf" placeholder="e.g. 5000" inputmode="decimal"
+                    style="width:100%;padding:14px 52px 14px 16px;background:#111;border:1.5px solid #2a2a2a;border-radius:10px;color:#fff;font-size:22px;font-weight:700;font-family:'Inter',sans-serif;"
+                    oninput="calcConcreteSF()"
+                    onfocus="this.style.borderColor='#e53e3e'"
+                    onblur="this.style.borderColor='#2a2a2a'"/>
+                  <span style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:700;color:#555;">ft²</span>
+                </div>
+              </div>
+              <!-- Additional inputs -->
+              <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+                <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Additional Inputs</div>
+                <div style="display:grid;gap:12px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                    <label style="font-size:14px;color:#ccc;font-weight:600;">Thickness</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <input type="number" id="con-sf-thickness" placeholder="0" inputmode="decimal"
+                        style="width:110px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                        oninput="calcConcreteSF()"/>
+                      <span style="font-size:13px;font-weight:600;color:#666;">inches</span>
+                    </div>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                    <div>
+                      <label style="font-size:14px;color:#ccc;font-weight:600;">Cost per yard</label>
+                      <div style="font-size:11px;color:#555;margin-top:2px;">optional</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span style="font-size:14px;font-weight:700;color:#666;">$</span>
+                      <input type="number" id="con-sf-cost" placeholder="0" inputmode="decimal"
+                        style="width:110px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                        oninput="calcConcreteSF()"/>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- QUICK SF Results -->
+            <div id="con-sf-results" style="display:none;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+              <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Results</div>
+              <div style="display:grid;gap:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#111;border-radius:10px;padding:12px 16px;">
+                  <div>
+                    <div style="color:#aaa;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Cubic Yards</div>
+                    <span id="con-sf-result-cy" style="color:#fff;font-size:28px;font-weight:900;line-height:1;">—</span>
+                  </div>
+                  <div style="text-align:right;">
+                    <div style="color:#aaa;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Bags (80lb)</div>
+                    <span id="con-sf-result-bags" style="color:#e53e3e;font-size:28px;font-weight:900;line-height:1;">—</span>
+                  </div>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#111;border-radius:10px;padding:12px 16px;border:1px solid #2a2a2a;">
+                  <span style="color:#4ade80;font-size:15px;font-weight:700;">💵 Total Cost</span>
+                  <span id="con-sf-result-cost" style="color:#4ade80;font-size:26px;font-weight:900;">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- WL Results -->
+            <div id="con-panel-wl-results" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Results</div>
               <div style="display:grid;gap:12px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;background:#111;border-radius:10px;padding:12px 16px;">
@@ -1964,10 +2045,17 @@ function doSignOut() {
               </div>
             </div>
 
-            <div style="display:flex;gap:10px;">
+            <!-- WL action buttons -->
+            <div id="con-actions-wl" style="display:flex;gap:10px;">
               <button onclick="clearConcrete()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
               <button onclick="shareConcreteResult()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Text</button>
               <button onclick="emailConcreteResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
+            </div>
+            <!-- SF action buttons -->
+            <div id="con-actions-sf" style="display:none;gap:10px;">
+              <button onclick="clearConcreteSF()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
+              <button onclick="shareConcreteSFResult()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Text</button>
+              <button onclick="emailConcreteSFResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
             </div>
           </div>
 
@@ -8943,6 +9031,70 @@ Cell: 516-306-3326`);
   window.clearConcrete = function() {
     ['con-width','con-length','con-thickness','con-cost'].forEach(id => document.getElementById(id).value = '');
     ['con-result-cy','con-result-bags','con-result-cost'].forEach(id => document.getElementById(id).textContent = '—');
+  };
+
+  // Switch concrete sub-mode: WIDTH x LENGTH vs QUICK SF
+  window.switchConMode = function(mode) {
+    const isWL = mode === 'wl';
+    document.getElementById('con-panel-wl').style.display = isWL ? 'block' : 'none';
+    document.getElementById('con-panel-wl-results').style.display = isWL ? 'block' : 'none';
+    document.getElementById('con-panel-sf').style.display = isWL ? 'none' : 'block';
+    document.getElementById('con-sf-results').style.display = 'none';
+    document.getElementById('con-actions-wl').style.display = isWL ? 'flex' : 'none';
+    document.getElementById('con-actions-sf').style.display = isWL ? 'none' : 'flex';
+    const wlBtn = document.getElementById('con-subtab-wl');
+    const sfBtn = document.getElementById('con-subtab-sf');
+    wlBtn.style.background = isWL ? '#e53e3e' : '#2a2a2a';
+    wlBtn.style.color = isWL ? '#fff' : '#aaa';
+    sfBtn.style.background = isWL ? '#2a2a2a' : '#e53e3e';
+    sfBtn.style.color = isWL ? '#aaa' : '#fff';
+  };
+
+  // ── QUICK SF CONCRETE CALCULATOR ────────────────────────────────────────
+  window.calcConcreteSF = function() {
+    const sf = parseFloat(document.getElementById('con-sf').value) || 0;
+    const t = parseFloat(document.getElementById('con-sf-thickness').value) || 0;
+    const costPerYard = parseFloat(document.getElementById('con-sf-cost').value) || 0;
+    const resBox = document.getElementById('con-sf-results');
+    if (!sf || !t) { resBox.style.display = 'none'; return; }
+    resBox.style.display = 'block';
+    const cubicFeet = sf * (t / 12);
+    const cubicYards = cubicFeet / 27;
+    const bags = Math.ceil(cubicYards * 40); // ~40 bags per cubic yard
+    const totalCost = costPerYard ? cubicYards * costPerYard : 0;
+    document.getElementById('con-sf-result-cy').textContent = cubicYards.toFixed(2);
+    document.getElementById('con-sf-result-bags').textContent = bags;
+    document.getElementById('con-sf-result-cost').textContent = costPerYard ? '$' + totalCost.toFixed(2) : '—';
+  };
+
+  window.clearConcreteSF = function() {
+    ['con-sf','con-sf-thickness','con-sf-cost'].forEach(id => document.getElementById(id).value = '');
+    ['con-sf-result-cy','con-sf-result-bags','con-sf-result-cost'].forEach(id => document.getElementById(id).textContent = '—');
+    document.getElementById('con-sf-results').style.display = 'none';
+  };
+
+  window.shareConcreteSFResult = function() {
+    const sf = document.getElementById('con-sf').value;
+    const t = document.getElementById('con-sf-thickness').value;
+    const cy = document.getElementById('con-sf-result-cy').textContent;
+    const bags = document.getElementById('con-sf-result-bags').textContent;
+    const cost = document.getElementById('con-sf-result-cost').textContent;
+    const text = `🏗️ Concrete Estimate (Quick SF) — Maman Contracting\n\nSquare Feet: ${sf} SF | Thickness: ${t} in\n\nCubic Yards: ${cy}\n80lb Bags: ${bags}\nTotal Cost: ${cost}`;
+    if (navigator.share) {
+      navigator.share({ title: 'Concrete Estimate', text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text).then(() => window.showToast('📋 Copied to clipboard!'));
+    }
+  };
+
+  window.emailConcreteSFResult = function() {
+    const sf = document.getElementById('con-sf').value;
+    const t = document.getElementById('con-sf-thickness').value;
+    const cy = document.getElementById('con-sf-result-cy').textContent;
+    const bags = document.getElementById('con-sf-result-bags').textContent;
+    const cost = document.getElementById('con-sf-result-cost').textContent;
+    const body = encodeURIComponent(`Concrete Estimate (Quick SF)\n\nSquare Feet: ${sf} SF\nThickness: ${t} in\n\nCubic Yards: ${cy}\n80lb Bags: ${bags}\nTotal Cost: ${cost}\n\nMaman Contracting`);
+    window.location.href = `mailto:?subject=Concrete%20Estimate&body=${body}`;
   };
 
   // ── SF + PRICE CALCULATOR ─────────────────────────────────────────────────
