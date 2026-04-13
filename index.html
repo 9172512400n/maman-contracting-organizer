@@ -1,4 +1,4 @@
-<!-- v1775996191 -->
+<!-- v1775996188 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1219,51 +1219,6 @@ function doSignOut() {
 <div id="toast"></div>
 
 <!-- DELETE CONFIRM MODAL -->
-<!-- BACKUP & RESTORE PANEL -->
-<div id="backup-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99998;overflow-y:auto;padding:20px;">
-  <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:20px;max-width:480px;margin:auto;padding:28px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-      <div style="font-size:18px;font-weight:800;color:#fff;">💾 Backup &amp; Restore</div>
-      <button onclick="document.getElementById('backup-panel').style.display='none'" style="background:#2a2a2a;border:none;border-radius:8px;color:#aaa;width:32px;height:32px;font-size:18px;cursor:pointer;">×</button>
-    </div>
-
-    <!-- EXPORT -->
-    <div style="background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:16px;margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:800;color:#4ade80;margin-bottom:6px;">📤 Export Data</div>
-      <div style="font-size:12px;color:#888;margin-bottom:12px;">Download all jobs, permits, and contacts as a JSON backup file.</div>
-      <button onclick="exportAllData()" style="width:100%;padding:12px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">⬇️ Export Backup Now</button>
-    </div>
-
-    <!-- RESTORE -->
-    <div style="background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:16px;margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:800;color:#60a5fa;margin-bottom:6px;">📥 Restore from Backup</div>
-      <div style="font-size:12px;color:#888;margin-bottom:12px;">Upload a previously exported JSON file to restore your data. <span style="color:#f87171;font-weight:700;">⚠️ This will overwrite existing data.</span></div>
-      <input type="file" id="restore-file-input" accept=".json" style="display:none;" onchange="restoreFromBackup(this)"/>
-      <button onclick="document.getElementById('restore-file-input').click()" style="width:100%;padding:12px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:14px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">📂 Choose Backup File to Restore</button>
-      <div id="restore-status" style="font-size:12px;color:#aaa;margin-top:8px;min-height:16px;"></div>
-    </div>
-
-    <!-- AUTO BACKUP -->
-    <div style="background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:16px;">
-      <div style="font-size:13px;font-weight:800;color:#f59e0b;margin-bottom:6px;">⏰ Auto Backup (Daily 10 PM)</div>
-      <div style="font-size:12px;color:#888;margin-bottom:12px;">Automatically download a backup file every day at your chosen time.</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <label style="font-size:13px;color:#ccc;font-weight:700;">Backup time</label>
-        <input type="time" id="auto-backup-time" value="22:00" onchange="saveAutoBackupTime(this.value)" style="background:#111;border:1.5px solid #2a2a2a;border-radius:8px;padding:8px 12px;color:#fff;font-size:14px;font-weight:700;font-family:Inter,sans-serif;outline:none;" />
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <span style="font-size:13px;color:#ccc;font-weight:700;">Enable daily auto-backup</span>
-        <label style="position:relative;display:inline-block;width:46px;height:26px;cursor:pointer;">
-          <input type="checkbox" id="auto-backup-toggle" onchange="toggleAutoBackup(this.checked)" style="opacity:0;width:0;height:0;">
-          <span id="auto-backup-slider" style="position:absolute;inset:0;background:#2a2a2a;border-radius:13px;transition:0.2s;"><span style="position:absolute;height:20px;width:20px;left:3px;bottom:3px;background:#888;border-radius:50%;transition:0.2s;"></span></span>
-        </label>
-      </div>
-      <div id="auto-backup-status" style="font-size:12px;color:#555;">Auto-backup is off</div>
-      <div style="font-size:11px;color:#555;margin-top:6px;">Last backup: <span id="last-backup-time">Never</span></div>
-    </div>
-  </div>
-</div>
-
 <div id="delete-confirm-modal">
   <div class="delete-confirm-box">
     <div class="delete-confirm-icon">🗑️</div>
@@ -1540,9 +1495,6 @@ function doSignOut() {
             </button>
             <button id="dropdown-users" onclick="openUsersPanel();toggleUserMenu();" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#eee;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
               <span style="font-size:16px;">👥</span> Manage Users
-            </button>
-            <button onclick="openBackupPanel();toggleUserMenu();" style="width:100%;padding:10px 14px;background:none;border:none;text-align:left;color:#4ade80;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:10px;">
-              <span style="font-size:16px;">💾</span> Backup &amp; Restore
             </button>
           </div>
           <!-- Account actions -->
@@ -2562,171 +2514,6 @@ function doSignOut() {
   let undoTimer = null;
 
   // ── HELPERS ──────────────────────────────────────────────────────────────
-  // ── BACKUP & RESTORE ───────────────────────────────────────────────────────────────
-  window.openBackupPanel = function() {
-    const panel = document.getElementById('backup-panel');
-    if (panel) panel.style.display = 'block';
-    // Restore toggle state
-    const tog = document.getElementById('auto-backup-toggle');
-    const enabled = localStorage.getItem('auto_backup_enabled') === '1';
-    if (tog) tog.checked = enabled;
-    updateAutoBackupUI(enabled);
-    const lastTime = localStorage.getItem('last_backup_time');
-    const lastEl = document.getElementById('last-backup-time');
-    if (lastEl) lastEl.textContent = lastTime || 'Never';
-    const timeInput = document.getElementById('auto-backup-time');
-    if (timeInput) timeInput.value = localStorage.getItem('auto_backup_time') || '22:00';
-  };
-
-  window.exportAllData = async function() {
-    try {
-      window.showToast && window.showToast('⏳ Exporting data...', '#f59e0b');
-      const FS_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
-      const FS_BASE = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
-      async function fetchCollection(name) {
-        const r = await fetch(FS_BASE + '/' + name + '?key=' + FS_KEY + '&pageSize=300');
-        const d = await r.json();
-        if (!d.documents) return [];
-        return d.documents.map(doc => {
-          const id = doc.name.split('/').pop();
-          const obj = { _id: id };
-          Object.entries(doc.fields || {}).forEach(([k, v]) => {
-            obj[k] = v.stringValue !== undefined ? v.stringValue :
-                     v.integerValue !== undefined ? v.integerValue :
-                     v.booleanValue !== undefined ? v.booleanValue :
-                     v.arrayValue ? (v.arrayValue.values||[]).map(x => x.stringValue||x.integerValue||x) :
-                     v.mapValue ? v.mapValue : v;
-          });
-          return obj;
-        });
-      }
-      const [jobs, permits, contacts] = await Promise.all([
-        fetchCollection('jobs'),
-        fetchCollection('permits'),
-        fetchCollection('contacts')
-      ]);
-      const backup = { exportedAt: new Date().toISOString(), version: '1.0', jobs, permits, contacts };
-      const json = JSON.stringify(backup, null, 2);
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const date = new Date().toISOString().slice(0,10);
-      a.href = url; a.download = 'maman-backup-' + date + '.json';
-      document.body.appendChild(a); a.click();
-      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
-      const now = new Date().toLocaleString();
-      localStorage.setItem('last_backup_time', now);
-      const lastEl = document.getElementById('last-backup-time');
-      if (lastEl) lastEl.textContent = now;
-      window.showToast && window.showToast('✅ Backup downloaded!', '#4ade80');
-    } catch(e) {
-      window.showToast && window.showToast('❌ Export failed: ' + e.message, '#e53e3e');
-    }
-  };
-
-  window.restoreFromBackup = async function(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const statusEl = document.getElementById('restore-status');
-    if (statusEl) { statusEl.textContent = '⏳ Reading backup file...'; statusEl.style.color = '#f59e0b'; }
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-      try {
-        const backup = JSON.parse(e.target.result);
-        if (!backup.jobs && !backup.permits) throw new Error('Invalid backup file format');
-        if (!confirm('This will overwrite your existing data. Are you sure?')) { if (statusEl) statusEl.textContent = 'Cancelled.'; return; }
-        if (statusEl) { statusEl.textContent = '⏳ Restoring data...'; statusEl.style.color = '#f59e0b'; }
-        const FS_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
-        const FS_BASE = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
-        async function restoreDoc(collection, doc) {
-          const id = doc._id;
-          const fields = {};
-          Object.entries(doc).forEach(([k, v]) => {
-            if (k === '_id') return;
-            if (Array.isArray(v)) fields[k] = { arrayValue: { values: v.map(x => ({ stringValue: String(x||'') })) } };
-            else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
-            else fields[k] = { stringValue: String(v||'') };
-          });
-          await fetch(FS_BASE + '/' + collection + '/' + id + '?key=' + FS_KEY, {
-            method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields })
-          });
-        }
-        let count = 0;
-        for (const j of (backup.jobs || [])) { await restoreDoc('jobs', j); count++; }
-        for (const p of (backup.permits || [])) { await restoreDoc('permits', p); count++; }
-        for (const c of (backup.contacts || [])) { await restoreDoc('contacts', c); count++; }
-        if (statusEl) { statusEl.textContent = '✅ Restored ' + count + ' records successfully! Reload to see changes.'; statusEl.style.color = '#4ade80'; }
-        window.showToast && window.showToast('✅ Restore complete! ' + count + ' records restored.', '#4ade80', 5000);
-      } catch(err) {
-        if (statusEl) { statusEl.textContent = '❌ Error: ' + err.message; statusEl.style.color = '#f87171'; }
-      }
-    };
-    reader.readAsText(file);
-    input.value = '';
-  };
-
-  function updateAutoBackupUI(enabled) {
-    const slider = document.getElementById('auto-backup-slider');
-    const statusEl = document.getElementById('auto-backup-status');
-    if (slider) {
-      slider.style.background = enabled ? '#16a34a' : '#2a2a2a';
-      const knob = slider.querySelector('span');
-      if (knob) { knob.style.background = enabled ? '#fff' : '#888'; knob.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)'; }
-    }
-    const savedTime2 = localStorage.getItem('auto_backup_time') || '22:00';
-    const bh2 = parseInt(savedTime2.split(':')[0], 10);
-    const bm2 = parseInt(savedTime2.split(':')[1], 10);
-    const ampm2 = bh2 >= 12 ? 'PM' : 'AM';
-    const h12b = bh2 % 12 || 12;
-    const tstr2 = h12b + ':' + (bm2 < 10 ? '0' : '') + bm2 + ' ' + ampm2;
-    if (statusEl) { statusEl.textContent = enabled ? '✅ Auto-backup ON — daily at ' + tstr2 : 'Auto-backup is off'; statusEl.style.color = enabled ? '#4ade80' : '#555'; }
-  }
-
-  window.saveAutoBackupTime = function(val) {
-    localStorage.setItem('auto_backup_time', val);
-    updateAutoBackupUI(localStorage.getItem('auto_backup_enabled') === '1');
-    if (localStorage.getItem('auto_backup_enabled') === '1') scheduleAutoBackup();
-  };
-
-  window.toggleAutoBackup = function(enabled) {
-    localStorage.setItem('auto_backup_enabled', enabled ? '1' : '0');
-    updateAutoBackupUI(enabled);
-    if (enabled) scheduleAutoBackup();
-  };
-
-  function scheduleAutoBackup() {
-    if (window._autoBackupTimer) clearTimeout(window._autoBackupTimer);
-    const now = new Date();
-    const target = new Date();
-    const bTime = localStorage.getItem('auto_backup_time') || '22:00';
-    const bHour = parseInt(bTime.split(':')[0], 10);
-    const bMin = parseInt(bTime.split(':')[1], 10);
-    target.setHours(bHour, bMin, 0, 0);
-    if (target <= now) target.setDate(target.getDate() + 1);
-    const ms = target - now;
-    window._autoBackupTimer = setTimeout(function() {
-      if (localStorage.getItem('auto_backup_enabled') === '1') {
-        window.exportAllData && window.exportAllData();
-        // Reschedule for next day
-        setTimeout(scheduleAutoBackup, 60000);
-      }
-    }, ms);
-  }
-
-  // Start auto-backup schedule on load if enabled
-  setTimeout(function() {
-    if (localStorage.getItem('auto_backup_enabled') === '1') scheduleAutoBackup();
-  }, 3000);
-
-  // View permits for an address
-  window.viewPermitsByAddress = function(address) {
-    navTo(4); // Navigate to permits tab
-    setTimeout(function() {
-      const searchEl = document.getElementById('permit-search');
-      if (searchEl) { searchEl.value = address; if (typeof filterPermits === 'function') filterPermits(); }
-    }, 300);
-  };
-
   window.showToast = function(msg, color, duration) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -5771,7 +5558,7 @@ function doSignOut() {
               try {
                 const docs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [{url: p.docUrl, name: 'Permit Doc'}] : []);
                 if (!docs.length) {
-                  return '<div style="font-size:13px;color:#555;padding:6px 0;">No document uploaded yet.<br><span style="font-size:11px;color:#444;">👆 Tap Upload to add a permit doc</span></div><button onclick="event.stopPropagation();viewPermitsByAddress("${p.jobAddress||addr||''}"" style="margin-top:8px;width:100%;padding:8px;background:#172554;border:1.5px solid #1e40af;border-radius:8px;color:#60a5fa;font-size:12px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;">📋 View Saved Permits for This Address</button>';
+                  return '<div style="font-size:13px;color:#555;padding:6px 0;">No document uploaded yet.<br><span style="font-size:11px;color:#444;">👆 Tap the green "Upload" button below to add</span></div>';
                 }
                 return docs.map(function(d, i) {
                   const url = typeof d === 'string' ? d : (d && d.url ? d.url : '');
