@@ -1,4 +1,4 @@
-<!-- v1775996186 -->
+<!-- v1775996187 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6671,78 +6671,100 @@ Cell: 516-306-3326`
     return null;
   }
 
-  // Helper: call GPT OCR with up to N images
-  async function ocrScanImages(images, statusEl, label) {
+  // Scan images and return ALL unique permits as an array
+  async function ocrScanAllPermits(images) {
     const apiKey = localStorage.getItem('openai_api_key') || OPENAI_API_KEY;
-    const imageContents = images.map(p => ({
-      type: 'image_url',
-      image_url: { url: `data:image/jpeg;base64,${p.b64}`, detail: 'high' }
-    }));
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-      body: JSON.stringify({
-        model: 'gpt-4o', max_tokens: 800,
-        messages: [{ role: 'user', content: [
-          ...imageContents,
-          { type: 'text', text: 'These are pages of an NYC DOT permit document. Extract ONLY these fields as JSON: { "permitNumber": "", "validFrom": "", "expirationDate": "", "permitHolder": "", "permitTypeCode": "", "jobAddress": "" }. permitTypeCode = number only. jobAddress = house number + street name only. validFrom and expirationDate in YYYY-MM-DD format. If a field is not found, leave it empty. Return ONLY valid JSON, no markdown, no explanation.' }
-        ]}]
-      })
-    });
-    if (!response.ok) { const e = await response.json().catch(()=>({})); throw new Error(e.error?.message || 'API error ' + response.status); }
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || '';
+    const MAX = 4;
+    let allPermits = [];
+    for (let i = 0; i < images.length; i += MAX) {
+      const batch = images.slice(i, i + MAX);
+      const imageContents = batch.map(p => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + p.b64, detail: 'high' } }));
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify({
+          model: 'gpt-4o', max_tokens: 1200,
+          messages: [{ role: 'user', content: [
+            ...imageContents,
+            { type: 'text', text: 'These are pages from an NYC DOT permit package. There may be MULTIPLE different permits (different permit numbers or type codes). Find ALL unique permits and return a JSON ARRAY: [{ "permitNumber": "", "validFrom": "", "expirationDate": "", "permitHolder": "", "permitTypeCode": "", "jobAddress": "" }]. One object per unique permit number. permitTypeCode = number only (e.g. 119). jobAddress = house number + street name only. Dates in YYYY-MM-DD. Skip blank/non-permit pages. Return ONLY a valid JSON array, no markdown.' }
+          ]}]
+        })
+      });
+      if (!response.ok) { const e = await response.json().catch(()=>({})); throw new Error(e.error && e.error.message ? e.error.message : 'API error ' + response.status); }
+      const data = await response.json();
+      const content = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
+      const parsed = extractOCRJson(content);
+      if (Array.isArray(parsed)) allPermits = allPermits.concat(parsed.filter(p => p.permitNumber || p.permitTypeCode));
+      else if (parsed && (parsed.permitNumber || parsed.permitTypeCode)) allPermits.push(parsed);
+    }
+    const seen = new Set();
+    return allPermits.filter(p => { const k = (p.permitNumber||'')+'|'+(p.permitTypeCode||''); if (seen.has(k)) return false; seen.add(k); return true; });
   }
 
-  // Merge extracted fields — only overwrite if field is currently empty
-  function mergeOCRFields(extracted) {
-    const fieldMap = {
-      permitNumber: 'pm-permitNumber',
-      permitTypeCode: 'pm-permitTypeCode',
-      validFrom: 'pm-validFrom',
-      expirationDate: 'pm-expirationDate',
-      permitHolder: 'pm-permitHolder',
-      jobAddress: 'pm-jobAddress'
+  function fillPermitForm(p) {
+    if (p.permitNumber) document.getElementById('pm-permitNumber').value = p.permitNumber;
+    if (p.permitTypeCode) document.getElementById('pm-permitTypeCode').value = p.permitTypeCode;
+    if (p.validFrom) document.getElementById('pm-validFrom').value = p.validFrom;
+    if (p.expirationDate) document.getElementById('pm-expirationDate').value = p.expirationDate;
+    if (p.permitHolder) document.getElementById('pm-permitHolder').value = p.permitHolder;
+    if (p.jobAddress) document.getElementById('pm-jobAddress').value = p.jobAddress;
+  }
+
+  async function autoSaveOCRPermit(p) {
+    const FS_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
+    const FS_URL = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
+    const userEmail = (typeof currentUser !== 'undefined' && currentUser && currentUser.email) || '';
+    const fields = {
+      permitNumber: { stringValue: p.permitNumber || '' },
+      permitTypeCode: { stringValue: String(p.permitTypeCode || '') },
+      validFrom: { stringValue: p.validFrom || '' },
+      expirationDate: { stringValue: p.expirationDate || '' },
+      permitHolder: { stringValue: p.permitHolder || '' },
+      jobAddress: { stringValue: p.jobAddress || '' },
+      status: { stringValue: 'active' },
+      notes: { stringValue: 'Auto-saved from PDF scan' },
+      docUrls: { arrayValue: { values: window._ocrOriginalPdfDataUrl ? [{ stringValue: window._ocrOriginalPdfDataUrl }] : [] } },
+      createdAt: { stringValue: new Date().toISOString() },
+      createdBy: { stringValue: userEmail }
     };
-    Object.entries(fieldMap).forEach(([key, id]) => {
-      const el = document.getElementById(id);
-      if (el && extracted[key] && !el.value.trim()) el.value = extracted[key];
-    });
+    try {
+      await fetch(FS_URL + '/permits?key=' + FS_KEY, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields }) });
+    } catch(e) { console.warn('autoSaveOCRPermit error:', e); }
   }
 
   window.scanSelectedPages = async function() {
     const selected = ocrPages.filter((p, i) => ocrPageSelected[i]);
-    if (selected.length === 0) { window.showToast('\u2714 Tap pages to select which to scan', '#f59e0b'); return; }
+    if (selected.length === 0) { window.showToast('Tap pages to select which to scan', '#f59e0b'); return; }
     const statusEl = document.getElementById('ocr-status');
-    statusEl.textContent = `\u23f3 Scanning ${selected.length} page${selected.length>1?'s':''}\u2026`;
+    statusEl.textContent = 'Scanning ' + selected.length + ' page' + (selected.length > 1 ? 's' : '') + '...';
     statusEl.style.color = '#f59e0b';
     try {
-      // Split into batches of max 3 images to avoid token/parse issues
-      const BATCH = 3;
-      let anySuccess = false;
-      for (let i = 0; i < selected.length; i += BATCH) {
-        const batch = selected.slice(i, i + BATCH);
-        const batchNum = Math.floor(i/BATCH) + 1;
-        const totalBatches = Math.ceil(selected.length/BATCH);
-        if (totalBatches > 1) statusEl.textContent = `\u23f3 Scanning batch ${batchNum}/${totalBatches}\u2026`;
-        try {
-          const content = await ocrScanImages(batch, statusEl, `batch ${batchNum}`);
-          const extracted = extractOCRJson(content);
-          if (extracted) { mergeOCRFields(extracted); anySuccess = true; }
-        } catch(batchErr) {
-          console.warn('Batch OCR error:', batchErr);
+      const permits = await ocrScanAllPermits(selected);
+      if (!permits.length) throw new Error('No permit data found in selected pages');
+
+      const p119 = permits.filter(p => String(p.permitTypeCode).trim() === '119');
+      const others = permits.filter(p => String(p.permitTypeCode).trim() !== '119');
+
+      if (p119.length >= 1) {
+        fillPermitForm(p119[0]);
+        if (p119.length > 1) {
+          statusEl.textContent = 'Saving ' + (p119.length - 1) + ' additional type-119 permits...';
+          for (let i = 1; i < p119.length; i++) await autoSaveOCRPermit(p119[i]);
+          statusEl.textContent = '✅ ' + p119.length + ' type-119 permits: 1st filled above, ' + (p119.length - 1) + ' auto-saved to permits list';
+        } else {
+          statusEl.textContent = '✅ Permit type 119 found — fields filled above';
         }
-      }
-      if (anySuccess) {
-        statusEl.textContent = `\u2705 Scanned ${selected.length} page${selected.length>1?'s':''} — fields filled in above`;
-        statusEl.style.color = '#4ade80';
       } else {
-        throw new Error('Could not extract data from selected pages');
+        fillPermitForm(permits[0]);
+        statusEl.textContent = '✅ Found ' + permits.length + ' permit(s) — filled above (no type-119 detected)';
       }
+      if (others.length) statusEl.textContent += ' · ' + others.length + ' other type(s) saved as docs';
+      statusEl.style.color = '#4ade80';
       ocrPageSelected = ocrPageSelected.map(() => false);
       renderOCRThumbs();
+      setTimeout(function() { if (typeof allStandalonePermits !== 'undefined' && typeof renderPermitsCards === 'function') renderPermitsCards(allStandalonePermits); }, 1200);
     } catch(e) {
-      statusEl.textContent = '\u274c ' + e.message;
+      statusEl.textContent = '❌ ' + e.message;
       statusEl.style.color = '#f87171';
     }
   };
