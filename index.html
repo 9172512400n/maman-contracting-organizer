@@ -1,4 +1,4 @@
-<!-- v1775996189 -->
+<!-- v1775996190 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1246,7 +1246,11 @@ function doSignOut() {
     <!-- AUTO BACKUP -->
     <div style="background:#111;border:1px solid #2a2a2a;border-radius:12px;padding:16px;">
       <div style="font-size:13px;font-weight:800;color:#f59e0b;margin-bottom:6px;">⏰ Auto Backup (Daily 10 PM)</div>
-      <div style="font-size:12px;color:#888;margin-bottom:12px;">Automatically download a backup file every day at 10:00 PM to your device.</div>
+      <div style="font-size:12px;color:#888;margin-bottom:12px;">Automatically download a backup file every day at your chosen time.</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <label style="font-size:13px;color:#ccc;font-weight:700;">Backup time</label>
+        <input type="time" id="auto-backup-time" value="22:00" onchange="saveAutoBackupTime(this.value)" style="background:#111;border:1.5px solid #2a2a2a;border-radius:8px;padding:8px 12px;color:#fff;font-size:14px;font-weight:700;font-family:Inter,sans-serif;outline:none;" />
+      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <span style="font-size:13px;color:#ccc;font-weight:700;">Enable daily auto-backup</span>
         <label style="position:relative;display:inline-block;width:46px;height:26px;cursor:pointer;">
@@ -2570,6 +2574,8 @@ function doSignOut() {
     const lastTime = localStorage.getItem('last_backup_time');
     const lastEl = document.getElementById('last-backup-time');
     if (lastEl) lastEl.textContent = lastTime || 'Never';
+    const timeInput = document.getElementById('auto-backup-time');
+    if (timeInput) timeInput.value = localStorage.getItem('auto_backup_time') || '22:00';
   };
 
   window.exportAllData = async function() {
@@ -2667,8 +2673,14 @@ function doSignOut() {
       const knob = slider.querySelector('span');
       if (knob) { knob.style.background = enabled ? '#fff' : '#888'; knob.style.transform = enabled ? 'translateX(20px)' : 'translateX(0)'; }
     }
-    if (statusEl) { statusEl.textContent = enabled ? '✅ Auto-backup ON — downloads daily at 10:00 PM' : 'Auto-backup is off'; statusEl.style.color = enabled ? '#4ade80' : '#555'; }
+    const savedTime = localStorage.getItem("auto_backup_time") || "22:00"; const [bh,bm] = savedTime.split(":").map(Number); const ampm = bh>=12?"PM":"AM"; const h12 = bh%12||12; const tstr = h12+":"+(bm<10?"0":"")+bm+" "+ampm; if (statusEl) { statusEl.textContent = enabled ? "✅ Auto-backup ON — daily at "+tstr : "Auto-backup is off"; statusEl.style.color = enabled ? "#4ade80" : "#555"; }
   }
+
+  window.saveAutoBackupTime = function(val) {
+    localStorage.setItem("auto_backup_time", val);
+    updateAutoBackupUI(localStorage.getItem("auto_backup_enabled") === "1");
+    if (localStorage.getItem("auto_backup_enabled") === "1") scheduleAutoBackup();
+  };
 
   window.toggleAutoBackup = function(enabled) {
     localStorage.setItem('auto_backup_enabled', enabled ? '1' : '0');
@@ -2680,7 +2692,9 @@ function doSignOut() {
     if (window._autoBackupTimer) clearTimeout(window._autoBackupTimer);
     const now = new Date();
     const target = new Date();
-    target.setHours(22, 0, 0, 0);
+    const savedTime = localStorage.getItem("auto_backup_time") || "22:00";
+    const [bh, bm] = savedTime.split(":").map(Number);
+    target.setHours(bh, bm, 0, 0);
     if (target <= now) target.setDate(target.getDate() + 1);
     const ms = target - now;
     window._autoBackupTimer = setTimeout(function() {
