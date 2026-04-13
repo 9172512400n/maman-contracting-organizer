@@ -1764,7 +1764,20 @@ function doSignOut() {
 
           <!-- ASPHALT CALCULATOR -->
           <div id="calc-asphalt">
-            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+            <!-- Asphalt mode sub-tabs: WIDTH x LENGTH vs QUICK SF -->
+            <div style="display:flex;gap:8px;margin-bottom:16px;">
+              <button id="asp-subtab-wl" onclick="switchAspMode('wl')"
+                style="flex:1;padding:10px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:none;background:#e53e3e;color:#fff;font-family:'Inter',sans-serif;letter-spacing:0.3px;">
+                WIDTH × LENGTH
+              </button>
+              <button id="asp-subtab-sf" onclick="switchAspMode('sf')"
+                style="flex:1;padding:10px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:none;background:#2a2a2a;color:#aaa;font-family:'Inter',sans-serif;letter-spacing:0.3px;">
+                QUICK SF
+              </button>
+            </div>
+
+            <!-- WIDTH x LENGTH inputs -->
+            <div id="asp-panel-wl" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Inputs</div>
               <div style="display:grid;gap:12px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
@@ -1794,6 +1807,52 @@ function doSignOut() {
               </div>
             </div>
 
+            <!-- QUICK SF inputs -->
+            <div id="asp-panel-sf" style="display:none;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+              <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Quick SF Inputs</div>
+              <div style="display:grid;gap:12px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                  <label style="font-size:14px;color:#ccc;font-weight:600;white-space:nowrap;">Square Feet (SF)</label>
+                  <input type="number" id="asp-sf" placeholder="0" inputmode="decimal"
+                    style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                    oninput="calcAsphaltSF()"/>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                  <label style="font-size:14px;color:#ccc;font-weight:600;">Thickness (inches)</label>
+                  <input type="number" id="asp-sf-thickness" placeholder="0" inputmode="decimal"
+                    style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                    oninput="calcAsphaltSF()"/>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                  <label style="font-size:14px;color:#aaa;font-weight:600;">Cost per ton ($) <span style="font-size:11px;color:#555;">optional</span></label>
+                  <input type="number" id="asp-sf-cost" placeholder="optional" inputmode="decimal"
+                    style="width:130px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
+                    oninput="calcAsphaltSF()"/>
+                </div>
+              </div>
+            </div>
+
+            <!-- QUICK SF Results -->
+            <div id="asp-sf-results" style="display:none;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+              <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Results</div>
+              <div style="display:grid;gap:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#111;border-radius:10px;padding:12px 16px;">
+                  <div>
+                    <div style="color:#aaa;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Cubic Yards</div>
+                    <span id="asp-sf-result-cy" style="color:#fff;font-size:28px;font-weight:900;line-height:1;">—</span>
+                  </div>
+                  <div style="text-align:right;">
+                    <div style="color:#aaa;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Hot Mix (tons)</div>
+                    <span id="asp-sf-result-tons" style="color:#e53e3e;font-size:28px;font-weight:900;line-height:1;">—</span>
+                  </div>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#111;border-radius:10px;padding:12px 16px;border:1px solid #2a2a2a;">
+                  <span style="color:#4ade80;font-size:15px;font-weight:700;">💵 Total Cost</span>
+                  <span id="asp-sf-result-cost" style="color:#4ade80;font-size:26px;font-weight:900;">—</span>
+                </div>
+              </div>
+            </div>
+
             <!-- Results -->
             <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Results</div>
@@ -1815,10 +1874,17 @@ function doSignOut() {
               </div>
             </div>
 
-            <div style="display:flex;gap:10px;">
+            <!-- WL action buttons -->
+            <div id="asp-actions-wl" style="display:flex;gap:10px;">
               <button onclick="clearAsphalt()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
               <button onclick="shareAsphaltResult()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Text</button>
               <button onclick="emailAsphaltResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
+            </div>
+            <!-- SF action buttons -->
+            <div id="asp-actions-sf" style="display:none;gap:10px;">
+              <button onclick="clearAsphaltSF()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
+              <button onclick="shareAsphaltSFResult()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Text</button>
+              <button onclick="emailAsphaltSFResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
             </div>
           </div>
 
@@ -8499,6 +8565,22 @@ Cell: 516-306-3326`);
     }
   };
 
+  // Switch asphalt sub-mode: WIDTH x LENGTH vs QUICK SF
+  window.switchAspMode = function(mode) {
+    const isWL = mode === 'wl';
+    document.getElementById('asp-panel-wl').style.display = isWL ? 'block' : 'none';
+    document.getElementById('asp-panel-sf').style.display = isWL ? 'none' : 'block';
+    document.getElementById('asp-sf-results').style.display = 'none';
+    document.getElementById('asp-actions-wl').style.display = isWL ? 'flex' : 'none';
+    document.getElementById('asp-actions-sf').style.display = isWL ? 'none' : 'flex';
+    const wlBtn = document.getElementById('asp-subtab-wl');
+    const sfBtn = document.getElementById('asp-subtab-sf');
+    wlBtn.style.background = isWL ? '#e53e3e' : '#2a2a2a';
+    wlBtn.style.color = isWL ? '#fff' : '#aaa';
+    sfBtn.style.background = isWL ? '#2a2a2a' : '#e53e3e';
+    sfBtn.style.color = isWL ? '#aaa' : '#fff';
+  };
+
   // ── MEASUREMENTS CALCULATOR JS ─────────────────────────────────────────────
   let _mpRowCount = 0;
   let _mpWasteOn = false;
@@ -8750,6 +8832,56 @@ Cell: 516-306-3326`);
   window.clearAsphalt = function() {
     ['asp-width','asp-length','asp-thickness','asp-cost'].forEach(id => document.getElementById(id).value = '');
     ['asp-result-cy','asp-result-tons','asp-result-cost'].forEach(id => document.getElementById(id).textContent = '—');
+  };
+
+  // ── QUICK SF ASPHALT CALCULATOR ───────────────────────────────────────────
+  window.calcAsphaltSF = function() {
+    const sf = parseFloat(document.getElementById('asp-sf').value) || 0;
+    const t = parseFloat(document.getElementById('asp-sf-thickness').value) || 0;
+    const costPerTon = parseFloat(document.getElementById('asp-sf-cost').value) || 0;
+    const resBox = document.getElementById('asp-sf-results');
+    if (!sf || !t) {
+      resBox.style.display = 'none';
+      return;
+    }
+    resBox.style.display = 'block';
+    const cubicFeet = sf * (t / 12);
+    const cubicYards = cubicFeet / 27;
+    const tons = cubicYards * 2.025;
+    const totalCost = costPerTon ? tons * costPerTon : 0;
+    document.getElementById('asp-sf-result-cy').textContent = cubicYards.toFixed(2);
+    document.getElementById('asp-sf-result-tons').textContent = tons.toFixed(2);
+    document.getElementById('asp-sf-result-cost').textContent = costPerTon ? '$' + totalCost.toFixed(2) : '—';
+  };
+
+  window.clearAsphaltSF = function() {
+    ['asp-sf','asp-sf-thickness','asp-sf-cost'].forEach(id => document.getElementById(id).value = '');
+    ['asp-sf-result-cy','asp-sf-result-tons','asp-sf-result-cost'].forEach(id => document.getElementById(id).textContent = '—');
+    document.getElementById('asp-sf-results').style.display = 'none';
+  };
+
+  window.shareAsphaltSFResult = function() {
+    const sf = document.getElementById('asp-sf').value;
+    const t = document.getElementById('asp-sf-thickness').value;
+    const cy = document.getElementById('asp-sf-result-cy').textContent;
+    const tons = document.getElementById('asp-sf-result-tons').textContent;
+    const cost = document.getElementById('asp-sf-result-cost').textContent;
+    const text = `🛣️ Asphalt Estimate (Quick SF) — Maman Contracting\n\nSquare Feet: ${sf} SF | Thickness: ${t} in\n\nCubic Yards: ${cy}\nHot Mix (tons): ${tons}\nTotal Cost: ${cost}`;
+    if (navigator.share) {
+      navigator.share({ title: 'Asphalt Estimate', text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text).then(() => window.showToast('📋 Copied to clipboard!'));
+    }
+  };
+
+  window.emailAsphaltSFResult = function() {
+    const sf = document.getElementById('asp-sf').value;
+    const t = document.getElementById('asp-sf-thickness').value;
+    const cy = document.getElementById('asp-sf-result-cy').textContent;
+    const tons = document.getElementById('asp-sf-result-tons').textContent;
+    const cost = document.getElementById('asp-sf-result-cost').textContent;
+    const body = encodeURIComponent(`Asphalt Estimate (Quick SF)\n\nSquare Feet: ${sf} SF\nThickness: ${t} in\n\nCubic Yards: ${cy}\nHot Mix (tons): ${tons}\nTotal Cost: ${cost}\n\nMaman Contracting`);
+    window.location.href = `mailto:?subject=Asphalt%20Estimate&body=${body}`;
   };
 
   window.emailAsphaltResult = function() {
@@ -9217,6 +9349,25 @@ Cell: 516-306-3326`);
 </div>
 <!-- Service Worker Registration -->
 <script>
+// One-time localStorage health check — clears corrupted app state from broken deploys
+(function() {
+  try {
+    var appVersion = '20260412-1930';
+    if (localStorage.getItem('_appVersion') !== appVersion) {
+      var toRemove = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && (k.startsWith('_') || k === 'last-section' || k.startsWith('sched') || k.startsWith('filter'))) {
+          toRemove.push(k);
+        }
+      }
+      toRemove.forEach(function(k) { localStorage.removeItem(k); });
+      localStorage.setItem('_appVersion', appVersion);
+      console.log('App state reset for version', appVersion);
+    }
+  } catch(e) {}
+})();
+
 if ('serviceWorker' in navigator) {
   // Unregister any old service workers that may be caching stale code
   navigator.serviceWorker.getRegistrations().then(function(registrations) {
