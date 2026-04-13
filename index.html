@@ -1,4 +1,4 @@
-<!-- v1775996185 -->
+<!-- v1775996186 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6658,94 +6658,108 @@ Cell: 516-306-3326`
     if (statusEl) statusEl.textContent = '';
   };
 
+  // Helper: extract JSON from GPT response robustly
+  function extractOCRJson(content) {
+    // Try direct parse first
+    try { return JSON.parse(content.trim()); } catch(e) {}
+    // Strip markdown code blocks
+    const stripped = content.replace(/```json?\s*/gi, '').replace(/```/g, '').trim();
+    try { return JSON.parse(stripped); } catch(e) {}
+    // Find first {...} block
+    const m = stripped.match(/\{[\s\S]*?\}/);
+    if (m) { try { return JSON.parse(m[0]); } catch(e) {} }
+    return null;
+  }
+
+  // Helper: call GPT OCR with up to N images
+  async function ocrScanImages(images, statusEl, label) {
+    const apiKey = localStorage.getItem('openai_api_key') || OPENAI_API_KEY;
+    const imageContents = images.map(p => ({
+      type: 'image_url',
+      image_url: { url: `data:image/jpeg;base64,${p.b64}`, detail: 'high' }
+    }));
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({
+        model: 'gpt-4o', max_tokens: 800,
+        messages: [{ role: 'user', content: [
+          ...imageContents,
+          { type: 'text', text: 'These are pages of an NYC DOT permit document. Extract ONLY these fields as JSON: { "permitNumber": "", "validFrom": "", "expirationDate": "", "permitHolder": "", "permitTypeCode": "", "jobAddress": "" }. permitTypeCode = number only. jobAddress = house number + street name only. validFrom and expirationDate in YYYY-MM-DD format. If a field is not found, leave it empty. Return ONLY valid JSON, no markdown, no explanation.' }
+        ]}]
+      })
+    });
+    if (!response.ok) { const e = await response.json().catch(()=>({})); throw new Error(e.error?.message || 'API error ' + response.status); }
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || '';
+  }
+
+  // Merge extracted fields — only overwrite if field is currently empty
+  function mergeOCRFields(extracted) {
+    const fieldMap = {
+      permitNumber: 'pm-permitNumber',
+      permitTypeCode: 'pm-permitTypeCode',
+      validFrom: 'pm-validFrom',
+      expirationDate: 'pm-expirationDate',
+      permitHolder: 'pm-permitHolder',
+      jobAddress: 'pm-jobAddress'
+    };
+    Object.entries(fieldMap).forEach(([key, id]) => {
+      const el = document.getElementById(id);
+      if (el && extracted[key] && !el.value.trim()) el.value = extracted[key];
+    });
+  }
+
   window.scanSelectedPages = async function() {
     const selected = ocrPages.filter((p, i) => ocrPageSelected[i]);
     if (selected.length === 0) { window.showToast('\u2714 Tap pages to select which to scan', '#f59e0b'); return; }
     const statusEl = document.getElementById('ocr-status');
-    statusEl.textContent = `\u23f3 Scanning ${selected.length} selected page${selected.length>1?'s':''}\u2026`;
+    statusEl.textContent = `\u23f3 Scanning ${selected.length} page${selected.length>1?'s':''}\u2026`;
     statusEl.style.color = '#f59e0b';
     try {
-      const imageContents = selected.map(p => ({
-        type: 'image_url',
-        image_url: { url: `data:image/jpeg;base64,${p.b64}`, detail: 'high' }
-      }));
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_API_KEY },
-        body: JSON.stringify({
-          model: 'gpt-4o', max_tokens: 1000,
-          messages: [{ role: 'user', content: [
-            ...imageContents,
-            { type: 'text', text: 'These are pages of an NYC DOT permit document. Extract ONLY these fields as JSON: { "permitNumber": "", "validFrom": "", "expirationDate": "", "permitHolder": "", "permitTypeCode": "", "jobAddress": "" }. permitTypeCode = number only. jobAddress = house number + street name only. validFrom and expirationDate in YYYY-MM-DD format. Return ONLY valid JSON, no markdown.' }
-          ]}]
-        })
-      });
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || '';
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('Could not extract data');
-      const extracted = JSON.parse(jsonMatch[0]);
-      if (extracted.permitNumber) document.getElementById('pm-permitNumber').value = extracted.permitNumber;
-      if (extracted.permitTypeCode) document.getElementById('pm-permitTypeCode').value = extracted.permitTypeCode;
-      if (extracted.validFrom) document.getElementById('pm-validFrom').value = extracted.validFrom;
-      if (extracted.expirationDate) document.getElementById('pm-expirationDate').value = extracted.expirationDate;
-      if (extracted.permitHolder) document.getElementById('pm-permitHolder').value = extracted.permitHolder;
-      if (extracted.jobAddress) document.getElementById('pm-jobAddress').value = extracted.jobAddress;
-      statusEl.textContent = `\u2705 Scanned ${selected.length} page${selected.length>1?'s':''} successfully!`;
-      statusEl.style.color = '#4ade80';
-      // Keep all pages visible but uncheck scanned ones
+      // Split into batches of max 3 images to avoid token/parse issues
+      const BATCH = 3;
+      let anySuccess = false;
+      for (let i = 0; i < selected.length; i += BATCH) {
+        const batch = selected.slice(i, i + BATCH);
+        const batchNum = Math.floor(i/BATCH) + 1;
+        const totalBatches = Math.ceil(selected.length/BATCH);
+        if (totalBatches > 1) statusEl.textContent = `\u23f3 Scanning batch ${batchNum}/${totalBatches}\u2026`;
+        try {
+          const content = await ocrScanImages(batch, statusEl, `batch ${batchNum}`);
+          const extracted = extractOCRJson(content);
+          if (extracted) { mergeOCRFields(extracted); anySuccess = true; }
+        } catch(batchErr) {
+          console.warn('Batch OCR error:', batchErr);
+        }
+      }
+      if (anySuccess) {
+        statusEl.textContent = `\u2705 Scanned ${selected.length} page${selected.length>1?'s':''} — fields filled in above`;
+        statusEl.style.color = '#4ade80';
+      } else {
+        throw new Error('Could not extract data from selected pages');
+      }
       ocrPageSelected = ocrPageSelected.map(() => false);
       renderOCRThumbs();
     } catch(e) {
-      statusEl.textContent = '\u274c Error: ' + e.message;
+      statusEl.textContent = '\u274c ' + e.message;
       statusEl.style.color = '#f87171';
     }
   };
 
   window.scanAllPages = async function() {
     if (ocrPages.length === 0) { window.showToast('Add at least one page first', '#f59e0b'); return; }
+    // Select all then use scanSelectedPages
+    ocrPageSelected = ocrPages.map(() => true);
+    await window.scanSelectedPages();
+    return;
+    // (legacy code below kept for reference)
     const statusEl = document.getElementById('ocr-status');
     statusEl.textContent = `⏳ Scanning ${ocrPages.length} page${ocrPages.length>1?'s':''}…`;
     statusEl.style.color = '#f59e0b';
 
     try {
-      // Send all pages in one API call with multiple images
-      const imageContents = ocrPages.map(p => ({
-        type: 'image_url',
-        image_url: { url: `data:image/jpeg;base64,${p.b64}`, detail: 'high' }
-      }));
-
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_API_KEY },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          max_tokens: 1000,
-          messages: [{
-            role: 'user',
-            content: [
-              ...imageContents,
-              { type: 'text', text: 'These are pages of an NYC DOT permit document. Extract ONLY these fields as JSON: { "permitNumber": "", "validFrom": "", "expirationDate": "", "permitHolder": "", "permitTypeCode": "", "jobAddress": "" }. permitTypeCode = number only. jobAddress = house number + street name only. validFrom and expirationDate in YYYY-MM-DD format. Combine info from all pages. Return ONLY valid JSON, no markdown.' }
-            ]
-          }]
-        })
-      });
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || '';
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('Could not extract data from permit');
-      const extracted = JSON.parse(jsonMatch[0]);
-
-      // Fill form fields
-      if (extracted.permitNumber) document.getElementById('pm-permitNumber').value = extracted.permitNumber;
-      if (extracted.permitTypeCode) document.getElementById('pm-permitTypeCode').value = extracted.permitTypeCode;
-      if (extracted.validFrom) document.getElementById('pm-validFrom').value = extracted.validFrom;
-      if (extracted.expirationDate) document.getElementById('pm-expirationDate').value = extracted.expirationDate;
-      if (extracted.permitHolder) document.getElementById('pm-permitHolder').value = extracted.permitHolder;
-      if (extracted.jobAddress) document.getElementById('pm-jobAddress').value = extracted.jobAddress;
-
-      statusEl.textContent = `✅ Scanned ${ocrPages.length} page${ocrPages.length>1?'s':''} successfully!`;
+      statusEl.textContent = `✅ Done`;
       statusEl.style.color = '#4ade80';
       ocrPages = [];
       renderOCRThumbs();
