@@ -1,4 +1,4 @@
-<!-- v1775996183 -->
+<!-- v1775996184 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5698,6 +5698,11 @@ function doSignOut() {
 
     // Restore previously open groups so re-renders don't collapse them
     restoreOpenPermitGroups();
+    // Restore DOT state (date, time, checkboxes) for every group so re-renders never wipe user input
+    Object.keys(groups).forEach(addr => {
+      const groupKey = btoa(encodeURIComponent(addr)).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+      window.restoreDotState && window.restoreDotState(groupKey);
+    });
     // Init swipe-to-archive on all permit group cards
     setTimeout(() => window.initPermitSwipe && window.initPermitSwipe(), 100);
     } catch(e) {
@@ -5737,6 +5742,59 @@ function doSignOut() {
       if (row) row.classList.add('expanded');
     });
   }
+
+  // ── DOT STATE PERSISTENCE ─────────────────────────────────────────────────
+  // Save/restore date, time, permit checkboxes, bureau checkboxes per group
+  // so re-renders never reset the user's selections.
+  window._dotState = window._dotState || {};
+
+  window.saveDotState = function(groupKey) {
+    const state = window._dotState[groupKey] || {};
+    const dateEl = document.getElementById('dot-date-' + groupKey);
+    const timeEl = document.getElementById('dot-time-' + groupKey);
+    if (dateEl) state.date = dateEl.value;
+    if (timeEl) state.time = timeEl.value;
+    // Save permit checkbox states
+    const permitCbs = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
+    if (permitCbs.length) {
+      state.permits = {};
+      permitCbs.forEach(cb => { state.permits[cb.dataset.permitId] = cb.checked; });
+    }
+    // Save bureau checkbox states
+    const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
+    if (bureauCbs.length) {
+      state.bureaus = {};
+      bureauCbs.forEach(cb => { state.bureaus[cb.dataset.bureauId || cb.value || cb.dataset.bureau] = cb.checked; });
+    }
+    window._dotState[groupKey] = state;
+  };
+
+  window.restoreDotState = function(groupKey) {
+    const state = window._dotState[groupKey];
+    if (!state) return;
+    const dateEl = document.getElementById('dot-date-' + groupKey);
+    const timeEl = document.getElementById('dot-time-' + groupKey);
+    if (dateEl && state.date) dateEl.value = state.date;
+    if (timeEl && state.time) timeEl.value = state.time;
+    // Restore permit checkbox states
+    if (state.permits) {
+      const permitCbs = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
+      permitCbs.forEach(cb => {
+        if (state.permits.hasOwnProperty(cb.dataset.permitId)) {
+          cb.checked = state.permits[cb.dataset.permitId];
+        }
+      });
+    }
+    // Restore bureau checkbox states
+    if (state.bureaus) {
+      const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
+      bureauCbs.forEach(cb => {
+        const key = cb.dataset.bureauId || cb.value || cb.dataset.bureau;
+        if (state.bureaus.hasOwnProperty(key)) cb.checked = state.bureaus[key];
+      });
+    }
+    dotUpdateBtn(groupKey);
+  };
 
   // ── Swipe to Archive on Permit Groups ──────────────────────────────────
   window.initPermitSwipe = function() {
@@ -5837,6 +5895,8 @@ function doSignOut() {
 
   // DOT inspection: enable/disable Notify button based on date+time+bureau only
   window.dotUpdateBtn = function(groupKey) {
+    // Persist state so re-renders never reset user's selections
+    window.saveDotState && window.saveDotState(groupKey);
     const dateVal = (document.getElementById('dot-date-' + groupKey) || {}).value || '';
     const timeVal = (document.getElementById('dot-time-' + groupKey) || {}).value || '';
     const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
@@ -5874,6 +5934,19 @@ function doSignOut() {
         btn.style.cursor = ready ? 'pointer' : 'not-allowed';
         btn.title = '';
         if (expiredMsg) expiredMsg.style.display = 'none';
+        // Show which parameters are still missing
+        const missingEl = document.getElementById('dot-missing-' + groupKey);
+        if (missingEl) {
+          if (ready) {
+            missingEl.textContent = '';
+          } else {
+            const missing = [];
+            if (!dateVal) missing.push('📅 Date');
+            if (!timeVal) missing.push('⏰ Time');
+            if (!anyBureauChecked) missing.push('☑️ Permit checked');
+            missingEl.textContent = 'Still needed: ' + missing.join(' · ');
+          }
+        }
       }
     }
   };
