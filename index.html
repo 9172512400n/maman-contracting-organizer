@@ -1,4 +1,4 @@
-<!-- v1775996187 -->
+<!-- v1775996188 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6548,7 +6548,7 @@ Cell: 516-306-3326`
       docUrl: window._uploadedPermitDocUrl || '',
       docUrls: [
         ...(window._uploadedPermitDocUrls || (window._uploadedPermitDocUrl ? [window._uploadedPermitDocUrl] : [])),
-        ...(window._ocrOriginalPdfDataUrl ? [window._ocrOriginalPdfDataUrl] : [])
+        // PDF stored in Firebase Storage only — not inlined in Firestore
       ],
       originalPdfName: window._ocrOriginalPdfName || '',
     };
@@ -6723,7 +6723,7 @@ Cell: 516-306-3326`
       jobAddress: { stringValue: p.jobAddress || '' },
       status: { stringValue: 'active' },
       notes: { stringValue: 'Auto-saved from PDF scan' },
-      docUrls: { arrayValue: { values: window._ocrOriginalPdfDataUrl ? [{ stringValue: window._ocrOriginalPdfDataUrl }] : [] } },
+      docUrls: { arrayValue: { values: [] } },
       createdAt: { stringValue: new Date().toISOString() },
       createdBy: { stringValue: userEmail }
     };
@@ -6850,7 +6850,7 @@ Cell: 516-306-3326`
         }
         // Store original PDF as base64 data URL on the permit record
         const pdfReader = new FileReader();
-        pdfReader.onload = e => { window._ocrOriginalPdfDataUrl = e.target.result; window._ocrOriginalPdfName = file.name; };
+        pdfReader.onload = e => { window._ocrOriginalPdfName = file.name; /* PDF stored locally only — too large for Firestore */ };
         pdfReader.readAsDataURL(file);
         renderOCRThumbs();
         // Select all pages by default
