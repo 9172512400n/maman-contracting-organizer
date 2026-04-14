@@ -1,4 +1,4 @@
-<!-- v1775996206 -->
+<!-- v1775996187 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2495,7 +2495,6 @@ function doSignOut() {
   // Set persistence immediately so sessions survive page refresh
   setPersistence(auth, browserLocalPersistence).catch(e => console.warn('setPersistence:', e));
   const db = getFirestore(app);
-  window._db = db; // expose db globally for dynamic imports
 
   const ADMIN_EMAIL = 'nir@mamancontracting.com';
 
@@ -3030,8 +3029,7 @@ function doSignOut() {
     try {
       // Update the job's scheduleDay in Firestore
       const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-      const fsDb = window._db || db;
-      await updateDoc(doc(fsDb, 'jobs', jobId), { scheduleDay });
+      await updateDoc(doc(window._db, 'jobs', jobId), { scheduleDay });
 
       // Update local cache
       job.scheduleDay = scheduleDay;
@@ -3040,32 +3038,10 @@ function doSignOut() {
       const overlay = document.getElementById('quick-schedule-overlay');
       if (overlay) overlay.remove();
 
-      // Navigate to Schedule tab and jump to the chosen date's week
-      // Calculate how many weeks away the chosen date is from today
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const chosenDate = new Date(scheduleDay + 'T00:00:00');
-      // Find Monday of today's week
-      const todayDay = today.getDay(); // 0=Sun,1=Mon,...
-      const daysToMonday = (todayDay === 0) ? -6 : 1 - todayDay;
-      const thisMonday = new Date(today);
-      thisMonday.setDate(today.getDate() + daysToMonday);
-      // Find Monday of chosen date's week
-      const chosenDay = chosenDate.getDay();
-      const chosenDaysToMonday = (chosenDay === 0) ? -6 : 1 - chosenDay;
-      const chosenMonday = new Date(chosenDate);
-      chosenMonday.setDate(chosenDate.getDate() + chosenDaysToMonday);
-      // Week offset = difference in weeks
-      const diffMs = chosenMonday - thisMonday;
-      const weekOffset = Math.round(diffMs / (7 * 24 * 60 * 60 * 1000));
-      window._schedWeekOffset = weekOffset;
-      window._schedUserNavigated = true;
+      // Navigate to Schedule tab and refresh
       navTo(3);
-      if (typeof window.loadScheduleNotes === 'function') {
-        window.loadScheduleNotes().then(() => { if (typeof window.renderSchedule === 'function') window.renderSchedule(); });
-      } else if (typeof window.renderSchedule === 'function') {
-        window.renderSchedule();
-      }
+      window._schedWeekOffset = 0;
+      if (typeof window.renderSchedule === 'function') window.renderSchedule();
 
       // Show confirmation toast
       if (typeof showToast === 'function') {
@@ -3608,48 +3584,12 @@ function doSignOut() {
                   style="background:#1e3a5f;border:1.5px solid #2d5a9e;color:#60a5fa;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
                   📤 Share
                 </button>
-                ${!isCompleted ? `<button onclick="event.stopPropagation();markJobComplete('${safeId}')"
-                  style="background:#14532d;border:1.5px solid #16a34a;color:#4ade80;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;grid-column:span 2;">
-                  ✅ Mark Complete
-                </button>` : ''}
               </div>
             </div>
           </div>
         </div>`;
     }).join('');
   }
-
-  window.markJobComplete = async function(jobId) {
-    const j = allJobs.find(x => x.id === jobId);
-    if (!j) return;
-    if (!confirm('Mark "' + (j.address || 'this job') + '" as Completed?')) return;
-    const today = new Date().toISOString().split('T')[0];
-    try {
-      await updateDoc(doc(db, 'jobs', jobId), { status: 'Completed', completionDay: today });
-      j.status = 'Completed';
-      j.completionDay = today;
-      window.showToast('✅ Job marked complete!', '#22c55e');
-      // Re-render to update card
-      window.filterJobs ? window.filterJobs() : renderJobsTable(allJobs);
-      updateStats(allJobs);
-    } catch(e) {
-      // Fallback to REST
-      try {
-        const url = `${FS_BASE}/jobs/${jobId}?key=${API_KEY}&updateMask.fieldPaths=status&updateMask.fieldPaths=completionDay`;
-        await fetch(url, {
-          method: 'PATCH', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ fields: { status: { stringValue: 'Completed' }, completionDay: { stringValue: today } } })
-        });
-        j.status = 'Completed';
-        j.completionDay = today;
-        window.showToast('✅ Job marked complete!', '#22c55e');
-        window.filterJobs ? window.filterJobs() : renderJobsTable(allJobs);
-        updateStats(allJobs);
-      } catch(e2) {
-        alert('Failed to mark complete: ' + (e2.message || e2));
-      }
-    }
-  };
 
   window.toggleJobCard = function(jobId) {
     const detail = document.getElementById('jcard-detail-' + jobId);
@@ -5618,7 +5558,7 @@ function doSignOut() {
               try {
                 const docs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [{url: p.docUrl, name: 'Permit Doc'}] : []);
                 if (!docs.length) {
-                  return '<div style="font-size:13px;color:#555;padding:6px 0;">No document uploaded yet.</div>';
+                  return '<div style="font-size:13px;color:#555;padding:6px 0;">No document uploaded yet.<br><span style="font-size:11px;color:#444;">👆 Tap the green "Upload" button below to add</span></div>';
                 }
                 return docs.map(function(d, i) {
                   const url = typeof d === 'string' ? d : (d && d.url ? d.url : '');
@@ -5632,7 +5572,6 @@ function doSignOut() {
                 }).filter(Boolean).join('');
               } catch(e) { return ''; }
             })()}
-
           </div>
           <div class="permit-item-actions" style="margin-top:6px;">
             <button class="permit-edit-btn" onclick="event.stopPropagation();openEditPermit('${p.id}')">✏️ Edit</button>
@@ -6609,7 +6548,7 @@ Cell: 516-306-3326`
       docUrl: window._uploadedPermitDocUrl || '',
       docUrls: [
         ...(window._uploadedPermitDocUrls || (window._uploadedPermitDocUrl ? [window._uploadedPermitDocUrl] : [])),
-        // PDF stored in Firebase Storage only — not inlined in Firestore
+        ...(window._ocrOriginalPdfDataUrl ? [window._ocrOriginalPdfDataUrl] : [])
       ],
       originalPdfName: window._ocrOriginalPdfName || '',
     };
@@ -6784,7 +6723,7 @@ Cell: 516-306-3326`
       jobAddress: { stringValue: p.jobAddress || '' },
       status: { stringValue: 'active' },
       notes: { stringValue: 'Auto-saved from PDF scan' },
-      docUrls: { arrayValue: { values: [] } },
+      docUrls: { arrayValue: { values: window._ocrOriginalPdfDataUrl ? [{ stringValue: window._ocrOriginalPdfDataUrl }] : [] } },
       createdAt: { stringValue: new Date().toISOString() },
       createdBy: { stringValue: userEmail }
     };
@@ -6911,7 +6850,7 @@ Cell: 516-306-3326`
         }
         // Store original PDF as base64 data URL on the permit record
         const pdfReader = new FileReader();
-        pdfReader.onload = e => { window._ocrOriginalPdfName = file.name; /* PDF stored locally only — too large for Firestore */ };
+        pdfReader.onload = e => { window._ocrOriginalPdfDataUrl = e.target.result; window._ocrOriginalPdfName = file.name; };
         pdfReader.readAsDataURL(file);
         renderOCRThumbs();
         // Select all pages by default
@@ -7383,7 +7322,7 @@ Cell: 516-306-3326`
   // ── Schedule Day Notes ──────────────────────────────────────────────────
   window.scheduleNotes = {};
 
-  window.loadScheduleNotes = async function loadScheduleNotes() {
+  async function loadScheduleNotes() {
     try {
       const url = `${FS_BASE}/scheduleNotes?key=${API_KEY}&pageSize=100`;
       const r = await fetch(url);
@@ -9618,8 +9557,7 @@ Cell: 516-306-3326`);
     const newSize = sfMatch ? sfMatch[1] : j.projectSize;
     try {
       const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-      const fsDb2 = window._db || db;
-      await updateDoc(doc(fsDb2, 'jobs', jobId), { notes: newNotes, projectSize: newSize, updatedAt: new Date().toISOString() });
+      await updateDoc(doc(window._db, 'jobs', jobId), { notes: newNotes, projectSize: newSize, updatedAt: new Date().toISOString() });
     } catch(e) {
       const url = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents/jobs/' + jobId + '?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c&updateMask.fieldPaths=notes&updateMask.fieldPaths=projectSize';
       await fetch(url, {

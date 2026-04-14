@@ -27,8 +27,7 @@
       window._schedWeekOffset = 0; // always show current week on open
       window._schedTabJustOpened = true;
       window._schedUserNavigated = false;
-      const _loadNotes = typeof loadScheduleNotes !== 'undefined' ? loadScheduleNotes : (typeof window.loadScheduleNotes === 'function' ? window.loadScheduleNotes : null);
-      if (_loadNotes) { _loadNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); }); } else { renderSchedule(); }
+      loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
     }
   }
 

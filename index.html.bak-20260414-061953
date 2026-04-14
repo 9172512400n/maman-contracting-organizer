@@ -3608,48 +3608,12 @@ function doSignOut() {
                   style="background:#1e3a5f;border:1.5px solid #2d5a9e;color:#60a5fa;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
                   📤 Share
                 </button>
-                ${!isCompleted ? `<button onclick="event.stopPropagation();markJobComplete('${safeId}')"
-                  style="background:#14532d;border:1.5px solid #16a34a;color:#4ade80;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;grid-column:span 2;">
-                  ✅ Mark Complete
-                </button>` : ''}
               </div>
             </div>
           </div>
         </div>`;
     }).join('');
   }
-
-  window.markJobComplete = async function(jobId) {
-    const j = allJobs.find(x => x.id === jobId);
-    if (!j) return;
-    if (!confirm('Mark "' + (j.address || 'this job') + '" as Completed?')) return;
-    const today = new Date().toISOString().split('T')[0];
-    try {
-      await updateDoc(doc(db, 'jobs', jobId), { status: 'Completed', completionDay: today });
-      j.status = 'Completed';
-      j.completionDay = today;
-      window.showToast('✅ Job marked complete!', '#22c55e');
-      // Re-render to update card
-      window.filterJobs ? window.filterJobs() : renderJobsTable(allJobs);
-      updateStats(allJobs);
-    } catch(e) {
-      // Fallback to REST
-      try {
-        const url = `${FS_BASE}/jobs/${jobId}?key=${API_KEY}&updateMask.fieldPaths=status&updateMask.fieldPaths=completionDay`;
-        await fetch(url, {
-          method: 'PATCH', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ fields: { status: { stringValue: 'Completed' }, completionDay: { stringValue: today } } })
-        });
-        j.status = 'Completed';
-        j.completionDay = today;
-        window.showToast('✅ Job marked complete!', '#22c55e');
-        window.filterJobs ? window.filterJobs() : renderJobsTable(allJobs);
-        updateStats(allJobs);
-      } catch(e2) {
-        alert('Failed to mark complete: ' + (e2.message || e2));
-      }
-    }
-  };
 
   window.toggleJobCard = function(jobId) {
     const detail = document.getElementById('jcard-detail-' + jobId);

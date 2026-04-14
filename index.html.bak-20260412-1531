@@ -1,4 +1,4 @@
-<!-- v1775996206 -->
+<!-- v1775996177 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -531,9 +531,6 @@
     .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .section-header h2 { font-size: 15px; font-weight: 700; color: #fff; }
 
-    /* QUICK SF placeholder */
-    #asp-sf::placeholder, #con-sf::placeholder { color: #555; font-weight: 400; }
-
     /* TOAST */
     #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: #22c55e; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; z-index: 99999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
     #toast.show { opacity: 1; }
@@ -841,14 +838,9 @@ function navTo(idx) {
   document.body.style.overflow = '';
   // Side effects
   if (idx === 3 && typeof window.renderSchedule === 'function') {
-    window._schedWeekOffset = 0;
+    window._schedWeekOffset = 0; // always reset to current week when opening schedule
     window._schedTabJustOpened = true;
     window._schedUserNavigated = false;
-    window._schedCrewFilter = 'all';
-    window._schedNeedsRender = false;
-    document.querySelectorAll('.crew-pill').forEach(function(b) {
-      b.classList.toggle('active', b.dataset.crew === 'all');
-    });
     window.renderSchedule();
   }
   // Also call module navTo if available (for any extra logic)
@@ -1313,11 +1305,11 @@ function doSignOut() {
 
       <!-- Multi-page previews -->
       <div id="ocr-pages-preview" style="display:none;margin-top:10px;">
-        <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Select pages to scan (tap to toggle ✓):</div>
+        <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Pages Queued for Scan:</div>
         <div id="ocr-thumbs-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button onclick="document.getElementById('ocr-add-input').click()" style="flex:1;min-width:90px;padding:9px;background:#1a1a2e;border:1.5px solid #2d3a6e;border-radius:8px;color:#60a5fa;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">+ Add Page</button>
-          <button onclick="scanSelectedPages()" style="flex:1;min-width:90px;padding:9px;background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🔍 Scan Selected</button>
+        <div style="display:flex;gap:8px;">
+          <button onclick="document.getElementById('ocr-add-input').click()" style="flex:1;padding:9px;background:#1a1a2e;border:1.5px solid #2d3a6e;border-radius:8px;color:#60a5fa;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">+ Add Page</button>
+          <button onclick="scanAllPages()" style="flex:1;padding:9px;background:#e53e3e;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">🔍 Scan All Pages</button>
           <button onclick="clearOCRPages()" style="padding:9px 12px;background:#450a0a;border:none;border-radius:8px;color:#f87171;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
         </div>
       </div>
@@ -1767,20 +1759,7 @@ function doSignOut() {
 
           <!-- ASPHALT CALCULATOR -->
           <div id="calc-asphalt">
-            <!-- Asphalt mode sub-tabs: WIDTH x LENGTH vs QUICK SF -->
-            <div style="display:flex;gap:8px;margin-bottom:16px;">
-              <button id="asp-subtab-wl" onclick="switchAspMode('wl')"
-                style="flex:1;padding:10px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:none;background:#e53e3e;color:#fff;font-family:'Inter',sans-serif;letter-spacing:0.3px;">
-                WIDTH × LENGTH
-              </button>
-              <button id="asp-subtab-sf" onclick="switchAspMode('sf')"
-                style="flex:1;padding:10px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:none;background:#2a2a2a;color:#aaa;font-family:'Inter',sans-serif;letter-spacing:0.3px;">
-                QUICK SF
-              </button>
-            </div>
-
-            <!-- WIDTH x LENGTH inputs -->
-            <div id="asp-panel-wl" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Inputs</div>
               <div style="display:grid;gap:12px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
@@ -1810,73 +1789,6 @@ function doSignOut() {
               </div>
             </div>
 
-            <!-- QUICK SF inputs -->
-            <div id="asp-panel-sf" style="display:none;">
-              <!-- Main SF input -->
-              <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:12px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-                  <span style="font-size:16px;">&#9889;</span>
-                  <span style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Enter Total Square Footage</span>
-                </div>
-                <div style="position:relative;">
-                  <input type="number" id="asp-sf" placeholder="e.g. 5000" inputmode="decimal"
-                    style="width:100%;padding:14px 52px 14px 16px;background:#111;border:1.5px solid #2a2a2a;border-radius:10px;color:#fff;font-size:22px;font-weight:700;font-family:'Inter',sans-serif;"
-                    oninput="calcAsphaltSF()"
-                    onfocus="this.style.borderColor='#e53e3e'"
-                    onblur="this.style.borderColor='#2a2a2a'"/>
-                  <span style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:700;color:#555;">ft²</span>
-                </div>
-              </div>
-              <!-- Additional inputs -->
-              <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
-                <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Additional Inputs</div>
-                <div style="display:grid;gap:12px;">
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-                    <label style="font-size:14px;color:#ccc;font-weight:600;">Thickness</label>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <input type="number" id="asp-sf-thickness" placeholder="0" inputmode="decimal"
-                        style="width:110px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
-                        oninput="calcAsphaltSF()"/>
-                      <span style="font-size:13px;font-weight:600;color:#666;">inches</span>
-                    </div>
-                  </div>
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-                    <div>
-                      <label style="font-size:14px;color:#ccc;font-weight:600;">Cost per ton</label>
-                      <div style="font-size:11px;color:#555;margin-top:2px;">optional</div>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <span style="font-size:14px;font-weight:700;color:#666;">$</span>
-                      <input type="number" id="asp-sf-cost" placeholder="0" inputmode="decimal"
-                        style="width:110px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
-                        oninput="calcAsphaltSF()"/>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- QUICK SF Results -->
-            <div id="asp-sf-results" style="display:none;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
-              <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Results</div>
-              <div style="display:grid;gap:12px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;background:#111;border-radius:10px;padding:12px 16px;">
-                  <div>
-                    <div style="color:#aaa;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Cubic Yards</div>
-                    <span id="asp-sf-result-cy" style="color:#fff;font-size:28px;font-weight:900;line-height:1;">—</span>
-                  </div>
-                  <div style="text-align:right;">
-                    <div style="color:#aaa;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Hot Mix (tons)</div>
-                    <span id="asp-sf-result-tons" style="color:#e53e3e;font-size:28px;font-weight:900;line-height:1;">—</span>
-                  </div>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;background:#111;border-radius:10px;padding:12px 16px;border:1px solid #2a2a2a;">
-                  <span style="color:#4ade80;font-size:15px;font-weight:700;">💵 Total Cost</span>
-                  <span id="asp-sf-result-cost" style="color:#4ade80;font-size:26px;font-weight:900;">—</span>
-                </div>
-              </div>
-            </div>
-
             <!-- Results -->
             <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Results</div>
@@ -1898,36 +1810,16 @@ function doSignOut() {
               </div>
             </div>
 
-            <!-- WL action buttons -->
-            <div id="asp-actions-wl" style="display:flex;gap:10px;">
+            <div style="display:flex;gap:10px;">
               <button onclick="clearAsphalt()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
               <button onclick="shareAsphaltResult()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Text</button>
               <button onclick="emailAsphaltResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
-            </div>
-            <!-- SF action buttons -->
-            <div id="asp-actions-sf" style="display:none;gap:10px;">
-              <button onclick="clearAsphaltSF()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
-              <button onclick="shareAsphaltSFResult()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Text</button>
-              <button onclick="emailAsphaltSFResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
             </div>
           </div>
 
           <!-- CONCRETE CALCULATOR -->
           <div id="calc-concrete" style="display:none;">
-            <!-- Concrete mode sub-tabs: WIDTH x LENGTH vs QUICK SF -->
-            <div style="display:flex;gap:8px;margin-bottom:16px;">
-              <button id="con-subtab-wl" onclick="switchConMode('wl')"
-                style="flex:1;padding:10px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:none;background:#e53e3e;color:#fff;font-family:'Inter',sans-serif;letter-spacing:0.3px;">
-                WIDTH × LENGTH
-              </button>
-              <button id="con-subtab-sf" onclick="switchConMode('sf')"
-                style="flex:1;padding:10px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;border:none;background:#2a2a2a;color:#aaa;font-family:'Inter',sans-serif;letter-spacing:0.3px;">
-                QUICK SF
-              </button>
-            </div>
-
-            <!-- WIDTH x LENGTH inputs -->
-            <div id="con-panel-wl" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Inputs</div>
               <div style="display:grid;gap:12px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
@@ -1957,75 +1849,7 @@ function doSignOut() {
               </div>
             </div>
 
-            <!-- QUICK SF inputs -->
-            <div id="con-panel-sf" style="display:none;">
-              <!-- Main SF input -->
-              <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:12px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-                  <span style="font-size:16px;">&#9889;</span>
-                  <span style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Enter Total Square Footage</span>
-                </div>
-                <div style="position:relative;">
-                  <input type="number" id="con-sf" placeholder="e.g. 5000" inputmode="decimal"
-                    style="width:100%;padding:14px 52px 14px 16px;background:#111;border:1.5px solid #2a2a2a;border-radius:10px;color:#fff;font-size:22px;font-weight:700;font-family:'Inter',sans-serif;"
-                    oninput="calcConcreteSF()"
-                    onfocus="this.style.borderColor='#e53e3e'"
-                    onblur="this.style.borderColor='#2a2a2a'"/>
-                  <span style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:700;color:#555;">ft²</span>
-                </div>
-              </div>
-              <!-- Additional inputs -->
-              <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
-                <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;">Additional Inputs</div>
-                <div style="display:grid;gap:12px;">
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-                    <label style="font-size:14px;color:#ccc;font-weight:600;">Thickness</label>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <input type="number" id="con-sf-thickness" placeholder="0" inputmode="decimal"
-                        style="width:110px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
-                        oninput="calcConcreteSF()"/>
-                      <span style="font-size:13px;font-weight:600;color:#666;">inches</span>
-                    </div>
-                  </div>
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-                    <div>
-                      <label style="font-size:14px;color:#ccc;font-weight:600;">Cost per yard</label>
-                      <div style="font-size:11px;color:#555;margin-top:2px;">optional</div>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <span style="font-size:14px;font-weight:700;color:#666;">$</span>
-                      <input type="number" id="con-sf-cost" placeholder="0" inputmode="decimal"
-                        style="width:110px;padding:10px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:8px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;text-align:right;"
-                        oninput="calcConcreteSF()"/>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- QUICK SF Results -->
-            <div id="con-sf-results" style="display:none;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
-              <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Results</div>
-              <div style="display:grid;gap:12px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;background:#111;border-radius:10px;padding:12px 16px;">
-                  <div>
-                    <div style="color:#aaa;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Cubic Yards</div>
-                    <span id="con-sf-result-cy" style="color:#fff;font-size:28px;font-weight:900;line-height:1;">—</span>
-                  </div>
-                  <div style="text-align:right;">
-                    <div style="color:#aaa;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Bags (80lb)</div>
-                    <span id="con-sf-result-bags" style="color:#e53e3e;font-size:28px;font-weight:900;line-height:1;">—</span>
-                  </div>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;background:#111;border-radius:10px;padding:12px 16px;border:1px solid #2a2a2a;">
-                  <span style="color:#4ade80;font-size:15px;font-weight:700;">💵 Total Cost</span>
-                  <span id="con-sf-result-cost" style="color:#4ade80;font-size:26px;font-weight:900;">—</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- WL Results -->
-            <div id="con-panel-wl-results" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
+            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:16px;">
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;">Results</div>
               <div style="display:grid;gap:12px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;background:#111;border-radius:10px;padding:12px 16px;">
@@ -2045,17 +1869,10 @@ function doSignOut() {
               </div>
             </div>
 
-            <!-- WL action buttons -->
-            <div id="con-actions-wl" style="display:flex;gap:10px;">
+            <div style="display:flex;gap:10px;">
               <button onclick="clearConcrete()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
               <button onclick="shareConcreteResult()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Text</button>
               <button onclick="emailConcreteResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
-            </div>
-            <!-- SF action buttons -->
-            <div id="con-actions-sf" style="display:none;gap:10px;">
-              <button onclick="clearConcreteSF()" style="flex:1;padding:14px;background:#450a0a;border:none;border-radius:10px;color:#f87171;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Clear</button>
-              <button onclick="shareConcreteSFResult()" style="flex:1;padding:14px;background:#14532d;border:none;border-radius:10px;color:#4ade80;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📱 Text</button>
-              <button onclick="emailConcreteSFResult()" style="flex:1;padding:14px;background:#1e3a5f;border:none;border-radius:10px;color:#60a5fa;font-size:15px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">📧 Email</button>
             </div>
           </div>
 
@@ -2130,7 +1947,7 @@ function doSignOut() {
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Measurements (one per line)</div>
               <div style="display:flex;gap:10px;align-items:flex-start;">
                 <textarea id="sf-measurements"
-                  placeholder="Say or type: 10x10 · 8 by 26 · 90x50&#10;Mic: 5 min auto-stop · each entry resets · tap 🔴 to stop · say 'delete' to undo"
+                  placeholder="10x10&#10;8x26&#10;90x50&#10;Hundred by 20&#10;Say 'delete' to undo last"
                   oninput="calcSFPrice()"
                   style="flex:1;min-height:140px;padding:12px 14px;background:#111;border:1.5px solid #2a2a2a;border-radius:10px;color:#fff;font-size:15px;font-family:'Inter',sans-serif;resize:vertical;line-height:1.7;outline:none;"></textarea>
                 <button id="sf-mic-btn" onclick="sfStartVoice()"
@@ -2495,7 +2312,6 @@ function doSignOut() {
   // Set persistence immediately so sessions survive page refresh
   setPersistence(auth, browserLocalPersistence).catch(e => console.warn('setPersistence:', e));
   const db = getFirestore(app);
-  window._db = db; // expose db globally for dynamic imports
 
   const ADMIN_EMAIL = 'nir@mamancontracting.com';
 
@@ -3030,8 +2846,7 @@ function doSignOut() {
     try {
       // Update the job's scheduleDay in Firestore
       const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-      const fsDb = window._db || db;
-      await updateDoc(doc(fsDb, 'jobs', jobId), { scheduleDay });
+      await updateDoc(doc(window._db, 'jobs', jobId), { scheduleDay });
 
       // Update local cache
       job.scheduleDay = scheduleDay;
@@ -3040,32 +2855,10 @@ function doSignOut() {
       const overlay = document.getElementById('quick-schedule-overlay');
       if (overlay) overlay.remove();
 
-      // Navigate to Schedule tab and jump to the chosen date's week
-      // Calculate how many weeks away the chosen date is from today
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const chosenDate = new Date(scheduleDay + 'T00:00:00');
-      // Find Monday of today's week
-      const todayDay = today.getDay(); // 0=Sun,1=Mon,...
-      const daysToMonday = (todayDay === 0) ? -6 : 1 - todayDay;
-      const thisMonday = new Date(today);
-      thisMonday.setDate(today.getDate() + daysToMonday);
-      // Find Monday of chosen date's week
-      const chosenDay = chosenDate.getDay();
-      const chosenDaysToMonday = (chosenDay === 0) ? -6 : 1 - chosenDay;
-      const chosenMonday = new Date(chosenDate);
-      chosenMonday.setDate(chosenDate.getDate() + chosenDaysToMonday);
-      // Week offset = difference in weeks
-      const diffMs = chosenMonday - thisMonday;
-      const weekOffset = Math.round(diffMs / (7 * 24 * 60 * 60 * 1000));
-      window._schedWeekOffset = weekOffset;
-      window._schedUserNavigated = true;
+      // Navigate to Schedule tab and refresh
       navTo(3);
-      if (typeof window.loadScheduleNotes === 'function') {
-        window.loadScheduleNotes().then(() => { if (typeof window.renderSchedule === 'function') window.renderSchedule(); });
-      } else if (typeof window.renderSchedule === 'function') {
-        window.renderSchedule();
-      }
+      window._schedWeekOffset = 0;
+      if (typeof window.renderSchedule === 'function') window.renderSchedule();
 
       // Show confirmation toast
       if (typeof showToast === 'function') {
@@ -3263,23 +3056,16 @@ function doSignOut() {
   let _pollInterval = null;
   async function loadAllData() {
     // Load all data in parallel — no more sequential blocking, much faster startup
-    Promise.allSettled([
+    await Promise.allSettled([
       // Jobs (render immediately when ready)
       restFetch('jobs').then(jobs => {
         allJobs = jobs.sort((a,b) => (b.createdAt||'') > (a.createdAt||'') ? 1 : -1);
         window.allJobs = allJobs;
         renderJobsTable(allJobs); renderDashboardRecent(allJobs); updateStats(allJobs); checkPermitExpiry();
-        // Mark other sections as needing refresh when user visits them
-        window._jobsNeedRefresh = false; window._permitsNeedRefresh = true; window._contactsNeedRefresh = true;
-        window._schedWeekOffset = 0;
+        window._schedWeekOffset = 0; // always show current week when fresh data loads
         window._schedTabJustOpened = true;
         window._schedUserNavigated = false;
-        // Always render schedule when jobs load
-        window._schedCrewFilter = window._schedCrewFilter || 'all';
-        document.querySelectorAll('.crew-pill').forEach(b => {
-          b.classList.toggle('active', b.dataset.crew === window._schedCrewFilter);
-        });
-        loadScheduleNotes().then(() => { window._schedWeekOffset = window._schedUserNavigated ? window._schedWeekOffset : (new Date().getDay()===0?1:0); renderSchedule(); });
+        loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
       }).catch(e => console.error('jobs load failed:', e)),
 
       // Contacts (needed for customer autocomplete in New Job)
@@ -3331,10 +3117,7 @@ function doSignOut() {
     // Load immediately then poll every 30s
     loadAllData();
     if (_pollInterval) clearInterval(_pollInterval);
-    // Poll every 60s instead of 30s, and only when tab is visible
-    _pollInterval = setInterval(function() {
-      if (!document.hidden) loadAllData();
-    }, 60000);
+    _pollInterval = setInterval(loadAllData, 30000);
 
     // Keep unsubscribe stubs so cleanup code doesn't break
     jobsUnsubscribe = () => {};
@@ -3608,48 +3391,12 @@ function doSignOut() {
                   style="background:#1e3a5f;border:1.5px solid #2d5a9e;color:#60a5fa;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
                   📤 Share
                 </button>
-                ${!isCompleted ? `<button onclick="event.stopPropagation();markJobComplete('${safeId}')"
-                  style="background:#14532d;border:1.5px solid #16a34a;color:#4ade80;padding:10px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;grid-column:span 2;">
-                  ✅ Mark Complete
-                </button>` : ''}
               </div>
             </div>
           </div>
         </div>`;
     }).join('');
   }
-
-  window.markJobComplete = async function(jobId) {
-    const j = allJobs.find(x => x.id === jobId);
-    if (!j) return;
-    if (!confirm('Mark "' + (j.address || 'this job') + '" as Completed?')) return;
-    const today = new Date().toISOString().split('T')[0];
-    try {
-      await updateDoc(doc(db, 'jobs', jobId), { status: 'Completed', completionDay: today });
-      j.status = 'Completed';
-      j.completionDay = today;
-      window.showToast('✅ Job marked complete!', '#22c55e');
-      // Re-render to update card
-      window.filterJobs ? window.filterJobs() : renderJobsTable(allJobs);
-      updateStats(allJobs);
-    } catch(e) {
-      // Fallback to REST
-      try {
-        const url = `${FS_BASE}/jobs/${jobId}?key=${API_KEY}&updateMask.fieldPaths=status&updateMask.fieldPaths=completionDay`;
-        await fetch(url, {
-          method: 'PATCH', headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ fields: { status: { stringValue: 'Completed' }, completionDay: { stringValue: today } } })
-        });
-        j.status = 'Completed';
-        j.completionDay = today;
-        window.showToast('✅ Job marked complete!', '#22c55e');
-        window.filterJobs ? window.filterJobs() : renderJobsTable(allJobs);
-        updateStats(allJobs);
-      } catch(e2) {
-        alert('Failed to mark complete: ' + (e2.message || e2));
-      }
-    }
-  };
 
   window.toggleJobCard = function(jobId) {
     const detail = document.getElementById('jcard-detail-' + jobId);
@@ -5618,7 +5365,7 @@ function doSignOut() {
               try {
                 const docs = Array.isArray(p.docUrls) && p.docUrls.length ? p.docUrls : (p.docUrl ? [{url: p.docUrl, name: 'Permit Doc'}] : []);
                 if (!docs.length) {
-                  return '<div style="font-size:13px;color:#555;padding:6px 0;">No document uploaded yet.</div>';
+                  return '<div style="font-size:13px;color:#555;padding:6px 0;">No document uploaded yet.<br><span style="font-size:11px;color:#444;">👆 Tap the green "Upload" button below to add</span></div>';
                 }
                 return docs.map(function(d, i) {
                   const url = typeof d === 'string' ? d : (d && d.url ? d.url : '');
@@ -5632,7 +5379,6 @@ function doSignOut() {
                 }).filter(Boolean).join('');
               } catch(e) { return ''; }
             })()}
-
           </div>
           <div class="permit-item-actions" style="margin-top:6px;">
             <button class="permit-edit-btn" onclick="event.stopPropagation();openEditPermit('${p.id}')">✏️ Edit</button>
@@ -5759,11 +5505,6 @@ function doSignOut() {
 
     // Restore previously open groups so re-renders don't collapse them
     restoreOpenPermitGroups();
-    // Restore DOT state (date, time, checkboxes) for every group so re-renders never wipe user input
-    Object.keys(groups).forEach(addr => {
-      const groupKey = btoa(encodeURIComponent(addr)).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
-      window.restoreDotState && window.restoreDotState(groupKey);
-    });
     // Init swipe-to-archive on all permit group cards
     setTimeout(() => window.initPermitSwipe && window.initPermitSwipe(), 100);
     } catch(e) {
@@ -5803,59 +5544,6 @@ function doSignOut() {
       if (row) row.classList.add('expanded');
     });
   }
-
-  // ── DOT STATE PERSISTENCE ─────────────────────────────────────────────────
-  // Save/restore date, time, permit checkboxes, bureau checkboxes per group
-  // so re-renders never reset the user's selections.
-  window._dotState = window._dotState || {};
-
-  window.saveDotState = function(groupKey) {
-    const state = window._dotState[groupKey] || {};
-    const dateEl = document.getElementById('dot-date-' + groupKey);
-    const timeEl = document.getElementById('dot-time-' + groupKey);
-    if (dateEl) state.date = dateEl.value;
-    if (timeEl) state.time = timeEl.value;
-    // Save permit checkbox states
-    const permitCbs = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
-    if (permitCbs.length) {
-      state.permits = {};
-      permitCbs.forEach(cb => { state.permits[cb.dataset.permitId] = cb.checked; });
-    }
-    // Save bureau checkbox states
-    const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
-    if (bureauCbs.length) {
-      state.bureaus = {};
-      bureauCbs.forEach(cb => { state.bureaus[cb.dataset.bureauId || cb.value || cb.dataset.bureau] = cb.checked; });
-    }
-    window._dotState[groupKey] = state;
-  };
-
-  window.restoreDotState = function(groupKey) {
-    const state = window._dotState[groupKey];
-    if (!state) return;
-    const dateEl = document.getElementById('dot-date-' + groupKey);
-    const timeEl = document.getElementById('dot-time-' + groupKey);
-    if (dateEl && state.date) dateEl.value = state.date;
-    if (timeEl && state.time) timeEl.value = state.time;
-    // Restore permit checkbox states
-    if (state.permits) {
-      const permitCbs = document.querySelectorAll(`.dot-permit-cb[data-group="${groupKey}"]`);
-      permitCbs.forEach(cb => {
-        if (state.permits.hasOwnProperty(cb.dataset.permitId)) {
-          cb.checked = state.permits[cb.dataset.permitId];
-        }
-      });
-    }
-    // Restore bureau checkbox states
-    if (state.bureaus) {
-      const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
-      bureauCbs.forEach(cb => {
-        const key = cb.dataset.bureauId || cb.value || cb.dataset.bureau;
-        if (state.bureaus.hasOwnProperty(key)) cb.checked = state.bureaus[key];
-      });
-    }
-    dotUpdateBtn(groupKey);
-  };
 
   // ── Swipe to Archive on Permit Groups ──────────────────────────────────
   window.initPermitSwipe = function() {
@@ -5956,8 +5644,6 @@ function doSignOut() {
 
   // DOT inspection: enable/disable Notify button based on date+time+bureau only
   window.dotUpdateBtn = function(groupKey) {
-    // Persist state so re-renders never reset user's selections
-    window.saveDotState && window.saveDotState(groupKey);
     const dateVal = (document.getElementById('dot-date-' + groupKey) || {}).value || '';
     const timeVal = (document.getElementById('dot-time-' + groupKey) || {}).value || '';
     const bureauCbs = document.querySelectorAll(`.dot-bureau-cb[data-group="${groupKey}"]`);
@@ -5995,19 +5681,6 @@ function doSignOut() {
         btn.style.cursor = ready ? 'pointer' : 'not-allowed';
         btn.title = '';
         if (expiredMsg) expiredMsg.style.display = 'none';
-        // Show which parameters are still missing
-        const missingEl = document.getElementById('dot-missing-' + groupKey);
-        if (missingEl) {
-          if (ready) {
-            missingEl.textContent = '';
-          } else {
-            const missing = [];
-            if (!dateVal) missing.push('📅 Date');
-            if (!timeVal) missing.push('⏰ Time');
-            if (!anyBureauChecked) missing.push('☑️ Permit checked');
-            missingEl.textContent = 'Still needed: ' + missing.join(' · ');
-          }
-        }
       }
     }
   };
@@ -6399,41 +6072,6 @@ Cell: 516-306-3326`
     const statusEl = document.getElementById('ocr-status');
     if (statusEl) { statusEl.textContent = '⏳ Scanning permit…'; statusEl.style.color = '#f59e0b'; }
 
-    // If PDF, convert first page to image via PDF.js, then OCR that
-    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-      try {
-        if (!window.pdfjsLib) {
-          await new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-            s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; resolve(); };
-            s.onerror = reject;
-            document.head.appendChild(s);
-          });
-        }
-        if (statusEl) { statusEl.textContent = '⏳ Rendering PDF…'; }
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        const page = await pdf.getPage(1);
-        const viewport = page.getViewport({ scale: 2.0 });
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width; canvas.height = viewport.height;
-        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        // Create a synthetic image File from the canvas and re-call this function
-        canvas.toBlob(async (blob) => {
-          const imgFile = new File([blob], file.name.replace(/\.pdf$/i, '.jpg'), { type: 'image/jpeg' });
-          const dt = new DataTransfer();
-          dt.items.add(imgFile);
-          input.files = dt.files;
-          window.handleScanInputForAddress(input, cardAddress);
-        }, 'image/jpeg', 0.92);
-        return;
-      } catch(pdfErr) {
-        if (statusEl) { statusEl.textContent = '❌ Could not read PDF. Try Camera or Photo Library instead.'; statusEl.style.color = '#f87171'; }
-        return;
-      }
-    }
-
     try {
       // Convert file to base64
       const base64 = await new Promise((resolve, reject) => {
@@ -6607,11 +6245,7 @@ Cell: 516-306-3326`
       notes: document.getElementById('pm-notes').value.trim(),
       linkedJobId: document.getElementById('pm-linked-job')?.value || '',
       docUrl: window._uploadedPermitDocUrl || '',
-      docUrls: [
-        ...(window._uploadedPermitDocUrls || (window._uploadedPermitDocUrl ? [window._uploadedPermitDocUrl] : [])),
-        // PDF stored in Firebase Storage only — not inlined in Firestore
-      ],
-      originalPdfName: window._ocrOriginalPdfName || '',
+      docUrls: window._uploadedPermitDocUrls || (window._uploadedPermitDocUrl ? [window._uploadedPermitDocUrl] : []),
     };
 
     const FS_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
@@ -6675,33 +6309,19 @@ Cell: 516-306-3326`
     input.value = '';
   };
 
-  // Track which pages are selected for OCR (all selected by default)
-  let ocrPageSelected = [];
-
   window.renderOCRThumbs = function() {
     const row = document.getElementById('ocr-thumbs-row');
     const preview = document.getElementById('ocr-pages-preview');
     if (!row) return;
     if (ocrPages.length === 0) { preview.style.display = 'none'; return; }
     preview.style.display = 'block';
-    // Ensure selection array matches pages (default all selected)
-    while (ocrPageSelected.length < ocrPages.length) ocrPageSelected.push(true);
-    ocrPageSelected = ocrPageSelected.slice(0, ocrPages.length);
-    row.innerHTML = ocrPages.map((p,i) => {
-      const sel = ocrPageSelected[i];
-      return `
-        <div onclick="toggleOCRPage(${i})" style="position:relative;cursor:pointer;">
-          <img src="${p.url}" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:2.5px solid ${sel ? '#e53e3e' : '#2a2a2a'};opacity:${sel ? '1' : '0.45'};transition:all 0.15s;"/>
-          <div style="position:absolute;top:4px;left:4px;width:20px;height:20px;border-radius:5px;background:${sel ? '#e53e3e' : 'rgba(0,0,0,0.6)'};border:2px solid ${sel ? '#e53e3e' : '#555'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;">${sel ? '✓' : ''}</div>
-          <button onclick="event.stopPropagation();removeOCRPage(${i})" style="position:absolute;top:-6px;right:-6px;background:#450a0a;border:1px solid #e53e3e;border-radius:50%;width:18px;height:18px;color:#f87171;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900;">×</button>
-          <div style="font-size:9px;color:${sel ? '#fff' : '#555'};text-align:center;margin-top:3px;font-weight:700;">Pg ${i+1}</div>
-        </div>`;
-    }).join('');
-  };
-
-  window.toggleOCRPage = function(idx) {
-    ocrPageSelected[idx] = !ocrPageSelected[idx];
-    renderOCRThumbs();
+    row.innerHTML = ocrPages.map((p,i) => `
+      <div style="position:relative;">
+        <img src="${p.url}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1.5px solid #2a2a2a;"/>
+        <button onclick="removeOCRPage(${i})" style="position:absolute;top:-6px;right:-6px;background:#e53e3e;border:none;border-radius:50%;width:18px;height:18px;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:900;">×</button>
+        <div style="font-size:9px;color:#666;text-align:center;margin-top:2px;">Pg ${i+1}</div>
+      </div>
+    `).join('');
   };
 
   window.removeOCRPage = function(idx) {
@@ -6711,138 +6331,55 @@ Cell: 516-306-3326`
 
   window.clearOCRPages = function() {
     ocrPages = [];
-    ocrPageSelected = [];
-    window._ocrOriginalPdfDataUrl = null;
-    window._ocrOriginalPdfName = null;
     renderOCRThumbs();
     const statusEl = document.getElementById('ocr-status');
     if (statusEl) statusEl.textContent = '';
   };
 
-  // Helper: extract JSON from GPT response robustly
-  function extractOCRJson(content) {
-    // Try direct parse first
-    try { return JSON.parse(content.trim()); } catch(e) {}
-    // Strip markdown code blocks
-    const stripped = content.replace(/```json?\s*/gi, '').replace(/```/g, '').trim();
-    try { return JSON.parse(stripped); } catch(e) {}
-    // Find first {...} block
-    const m = stripped.match(/\{[\s\S]*?\}/);
-    if (m) { try { return JSON.parse(m[0]); } catch(e) {} }
-    return null;
-  }
-
-  // Scan images and return ALL unique permits as an array
-  async function ocrScanAllPermits(images) {
-    const apiKey = localStorage.getItem('openai_api_key') || OPENAI_API_KEY;
-    const MAX = 4;
-    let allPermits = [];
-    for (let i = 0; i < images.length; i += MAX) {
-      const batch = images.slice(i, i + MAX);
-      const imageContents = batch.map(p => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + p.b64, detail: 'high' } }));
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify({
-          model: 'gpt-4o', max_tokens: 1200,
-          messages: [{ role: 'user', content: [
-            ...imageContents,
-            { type: 'text', text: 'These are pages from an NYC DOT permit package. There may be MULTIPLE different permits (different permit numbers or type codes). Find ALL unique permits and return a JSON ARRAY: [{ "permitNumber": "", "validFrom": "", "expirationDate": "", "permitHolder": "", "permitTypeCode": "", "jobAddress": "" }]. One object per unique permit number. permitTypeCode = number only (e.g. 119). jobAddress = house number + street name only. Dates in YYYY-MM-DD. Skip blank/non-permit pages. Return ONLY a valid JSON array, no markdown.' }
-          ]}]
-        })
-      });
-      if (!response.ok) { const e = await response.json().catch(()=>({})); throw new Error(e.error && e.error.message ? e.error.message : 'API error ' + response.status); }
-      const data = await response.json();
-      const content = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
-      const parsed = extractOCRJson(content);
-      if (Array.isArray(parsed)) allPermits = allPermits.concat(parsed.filter(p => p.permitNumber || p.permitTypeCode));
-      else if (parsed && (parsed.permitNumber || parsed.permitTypeCode)) allPermits.push(parsed);
-    }
-    const seen = new Set();
-    return allPermits.filter(p => { const k = (p.permitNumber||'')+'|'+(p.permitTypeCode||''); if (seen.has(k)) return false; seen.add(k); return true; });
-  }
-
-  function fillPermitForm(p) {
-    if (p.permitNumber) document.getElementById('pm-permitNumber').value = p.permitNumber;
-    if (p.permitTypeCode) document.getElementById('pm-permitTypeCode').value = p.permitTypeCode;
-    if (p.validFrom) document.getElementById('pm-validFrom').value = p.validFrom;
-    if (p.expirationDate) document.getElementById('pm-expirationDate').value = p.expirationDate;
-    if (p.permitHolder) document.getElementById('pm-permitHolder').value = p.permitHolder;
-    if (p.jobAddress) document.getElementById('pm-jobAddress').value = p.jobAddress;
-  }
-
-  async function autoSaveOCRPermit(p) {
-    const FS_KEY = 'AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c';
-    const FS_URL = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents';
-    const userEmail = (typeof currentUser !== 'undefined' && currentUser && currentUser.email) || '';
-    const fields = {
-      permitNumber: { stringValue: p.permitNumber || '' },
-      permitTypeCode: { stringValue: String(p.permitTypeCode || '') },
-      validFrom: { stringValue: p.validFrom || '' },
-      expirationDate: { stringValue: p.expirationDate || '' },
-      permitHolder: { stringValue: p.permitHolder || '' },
-      jobAddress: { stringValue: p.jobAddress || '' },
-      status: { stringValue: 'active' },
-      notes: { stringValue: 'Auto-saved from PDF scan' },
-      docUrls: { arrayValue: { values: [] } },
-      createdAt: { stringValue: new Date().toISOString() },
-      createdBy: { stringValue: userEmail }
-    };
-    try {
-      await fetch(FS_URL + '/permits?key=' + FS_KEY, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields }) });
-    } catch(e) { console.warn('autoSaveOCRPermit error:', e); }
-  }
-
-  window.scanSelectedPages = async function() {
-    const selected = ocrPages.filter((p, i) => ocrPageSelected[i]);
-    if (selected.length === 0) { window.showToast('Tap pages to select which to scan', '#f59e0b'); return; }
-    const statusEl = document.getElementById('ocr-status');
-    statusEl.textContent = 'Scanning ' + selected.length + ' page' + (selected.length > 1 ? 's' : '') + '...';
-    statusEl.style.color = '#f59e0b';
-    try {
-      const permits = await ocrScanAllPermits(selected);
-      if (!permits.length) throw new Error('No permit data found in selected pages');
-
-      const p119 = permits.filter(p => String(p.permitTypeCode).trim() === '119');
-      const others = permits.filter(p => String(p.permitTypeCode).trim() !== '119');
-
-      if (p119.length >= 1) {
-        fillPermitForm(p119[0]);
-        if (p119.length > 1) {
-          statusEl.textContent = 'Saving ' + (p119.length - 1) + ' additional type-119 permits...';
-          for (let i = 1; i < p119.length; i++) await autoSaveOCRPermit(p119[i]);
-          statusEl.textContent = '✅ ' + p119.length + ' type-119 permits: 1st filled above, ' + (p119.length - 1) + ' auto-saved to permits list';
-        } else {
-          statusEl.textContent = '✅ Permit type 119 found — fields filled above';
-        }
-      } else {
-        fillPermitForm(permits[0]);
-        statusEl.textContent = '✅ Found ' + permits.length + ' permit(s) — filled above (no type-119 detected)';
-      }
-      if (others.length) statusEl.textContent += ' · ' + others.length + ' other type(s) saved as docs';
-      statusEl.style.color = '#4ade80';
-      ocrPageSelected = ocrPageSelected.map(() => false);
-      renderOCRThumbs();
-      setTimeout(function() { if (typeof allStandalonePermits !== 'undefined' && typeof renderPermitsCards === 'function') renderPermitsCards(allStandalonePermits); }, 1200);
-    } catch(e) {
-      statusEl.textContent = '❌ ' + e.message;
-      statusEl.style.color = '#f87171';
-    }
-  };
-
   window.scanAllPages = async function() {
     if (ocrPages.length === 0) { window.showToast('Add at least one page first', '#f59e0b'); return; }
-    // Select all then use scanSelectedPages
-    ocrPageSelected = ocrPages.map(() => true);
-    await window.scanSelectedPages();
-    return;
-    // (legacy code below kept for reference)
     const statusEl = document.getElementById('ocr-status');
     statusEl.textContent = `⏳ Scanning ${ocrPages.length} page${ocrPages.length>1?'s':''}…`;
     statusEl.style.color = '#f59e0b';
 
     try {
-      statusEl.textContent = `✅ Done`;
+      // Send all pages in one API call with multiple images
+      const imageContents = ocrPages.map(p => ({
+        type: 'image_url',
+        image_url: { url: `data:image/jpeg;base64,${p.b64}`, detail: 'high' }
+      }));
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + OPENAI_API_KEY },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          max_tokens: 1000,
+          messages: [{
+            role: 'user',
+            content: [
+              ...imageContents,
+              { type: 'text', text: 'These are pages of an NYC DOT permit document. Extract ONLY these fields as JSON: { "permitNumber": "", "validFrom": "", "expirationDate": "", "permitHolder": "", "permitTypeCode": "", "jobAddress": "" }. permitTypeCode = number only. jobAddress = house number + street name only. validFrom and expirationDate in YYYY-MM-DD format. Combine info from all pages. Return ONLY valid JSON, no markdown.' }
+            ]
+          }]
+        })
+      });
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || '';
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('Could not extract data from permit');
+      const extracted = JSON.parse(jsonMatch[0]);
+
+      // Fill form fields
+      if (extracted.permitNumber) document.getElementById('pm-permitNumber').value = extracted.permitNumber;
+      if (extracted.permitTypeCode) document.getElementById('pm-permitTypeCode').value = extracted.permitTypeCode;
+      if (extracted.validFrom) document.getElementById('pm-validFrom').value = extracted.validFrom;
+      if (extracted.expirationDate) document.getElementById('pm-expirationDate').value = extracted.expirationDate;
+      if (extracted.permitHolder) document.getElementById('pm-permitHolder').value = extracted.permitHolder;
+      if (extracted.jobAddress) document.getElementById('pm-jobAddress').value = extracted.jobAddress;
+
+      statusEl.textContent = `✅ Scanned ${ocrPages.length} page${ocrPages.length>1?'s':''} successfully!`;
       statusEl.style.color = '#4ade80';
       ocrPages = [];
       renderOCRThumbs();
@@ -6865,67 +6402,12 @@ Cell: 516-306-3326`
       reader.onload = e => {
         const b64 = e.target.result.split(',')[1];
         ocrPages.push({ b64, url: e.target.result, name: file.name });
-        ocrPageSelected = ocrPages.map(() => true);
         renderOCRThumbs();
-        statusEl.textContent = `📄 ${ocrPages.length} page${ocrPages.length>1?'s':''} ready — tap pages to select, then “Scan Selected”`;
+        statusEl.textContent = `📄 ${ocrPages.length} page${ocrPages.length>1?'s':''} ready — tap "Scan All Pages" or add more`;
         statusEl.style.color = '#60a5fa';
       };
       reader.readAsDataURL(file);
       input.value = '';
-      return;
-    }
-
-    // PDF support: render all pages to images using PDF.js then add to OCR queue
-    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-      statusEl.textContent = '⏳ Loading PDF pages…';
-      statusEl.style.color = '#f59e0b';
-      input.value = '';
-      try {
-        // Lazy-load PDF.js from CDN if not already loaded
-        if (!window.pdfjsLib) {
-          await new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-            s.onload = () => {
-              window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-              resolve();
-            };
-            s.onerror = reject;
-            document.head.appendChild(s);
-          });
-        }
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        const numPages = pdf.numPages;
-        statusEl.textContent = `⏳ Rendering ${numPages} page${numPages>1?'s':''}…`;
-        for (let i = 1; i <= numPages; i++) {
-          const page = await pdf.getPage(i);
-          const viewport = page.getViewport({ scale: 2.0 });
-          const canvas = document.createElement('canvas');
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-          const b64 = dataUrl.split(',')[1];
-          ocrPages.push({ b64, url: dataUrl, name: file.name + ' p' + i });
-        }
-        // Store original PDF as base64 data URL on the permit record
-        const pdfReader = new FileReader();
-        pdfReader.onload = e => { window._ocrOriginalPdfName = file.name; /* PDF stored locally only — too large for Firestore */ };
-        pdfReader.readAsDataURL(file);
-        renderOCRThumbs();
-        // Select all pages by default
-        ocrPageSelected = ocrPages.map(() => true);
-        renderOCRThumbs();
-        const pp = document.getElementById('ocr-pages-preview');
-        if (pp) pp.style.display = 'block';
-        statusEl.textContent = `📄 PDF: ${numPages} page${numPages>1?'s':''} — tap pages to select, then “Scan Selected”`;
-        statusEl.style.color = '#60a5fa';
-      } catch(pdfErr) {
-        console.warn('PDF render error:', pdfErr);
-        statusEl.textContent = '❌ Could not read PDF. Try a clearer scan or use Camera.';
-        statusEl.style.color = '#f87171';
-      }
       return;
     }
 
@@ -7383,7 +6865,7 @@ Cell: 516-306-3326`
   // ── Schedule Day Notes ──────────────────────────────────────────────────
   window.scheduleNotes = {};
 
-  window.loadScheduleNotes = async function loadScheduleNotes() {
+  async function loadScheduleNotes() {
     try {
       const url = `${FS_BASE}/scheduleNotes?key=${API_KEY}&pageSize=100`;
       const r = await fetch(url);
@@ -7504,15 +6986,6 @@ Cell: 516-306-3326`
   };
 
   window.renderSchedule = function() {
-    // If jobs not loaded yet, wait and retry using window.allJobs
-    if (!window.allJobs || window.allJobs.length === 0) {
-      setTimeout(function() {
-        if (window._currentSection === 3 || parseInt(localStorage.getItem('last-section')||'0') === 3) {
-          window.renderSchedule();
-        }
-      }, 500);
-      return;
-    }
     // Always show current (or upcoming) work week unless user has explicitly navigated
     if (!window._schedUserNavigated) {
       const _todayDow = new Date().getDay(); // 0=Sun, 1=Mon...6=Sat
@@ -8095,51 +7568,17 @@ Cell: 516-306-3326`);
   window.schedMoveJobPrompt = function(jobId) {
     const j = allJobs.find(x => x.id === jobId);
     if (!j) return;
-    // Remove any existing move overlay
-    const existing = document.getElementById('sched-move-overlay');
-    if (existing) existing.remove();
-    // Build calendar picker overlay
-    const overlay = document.createElement('div');
-    overlay.id = 'sched-move-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
-    const today = new Date().toISOString().split('T')[0];
-    const currentDate = j.scheduleDay || today;
-    overlay.innerHTML = `
-      <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:20px;padding:28px;width:100%;max-width:360px;">
-        <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:6px;">📅 Move Job</div>
-        <div style="font-size:13px;color:#888;margin-bottom:20px;">${j.address || 'Job'}</div>
-        <label style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px;">Select New Date</label>
-        <input type="date" id="sched-move-date" value="${currentDate}"
-          style="width:100%;padding:14px;background:#111;border:1.5px solid #e53e3e;border-radius:10px;color:#fff;font-size:16px;font-family:'Inter',sans-serif;outline:none;-webkit-appearance:none;" />
-        <div style="display:flex;gap:10px;margin-top:20px;">
-          <button onclick="document.getElementById('sched-move-overlay').remove()"
-            style="flex:1;padding:13px;background:#2a2a2a;border:none;border-radius:10px;color:#aaa;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">Cancel</button>
-          <button onclick="confirmSchedMove('${jobId}')"
-            style="flex:1;padding:13px;background:#e53e3e;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">✅ Move</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    // Auto-open the date picker on mobile
-    setTimeout(() => { const di = document.getElementById('sched-move-date'); if (di) di.showPicker && di.showPicker(); }, 100);
-  };
-
-  window.confirmSchedMove = function(jobId) {
-    const di = document.getElementById('sched-move-date');
-    if (!di) return;
-    const newDay = di.value;
+    const newDay = prompt('Move to date (YYYY-MM-DD):', j.scheduleDay || '');
     if (!newDay) return;
-    const overlay = document.getElementById('sched-move-overlay');
-    if (overlay) overlay.remove();
-    const j = allJobs.find(x => x.id === jobId);
-    if (!j) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDay)) { alert('Invalid date format. Use YYYY-MM-DD.'); return; }
     j.scheduleDay = newDay;
     try {
       if (typeof updateDoc !== 'undefined' && typeof doc !== 'undefined' && typeof db !== 'undefined') {
         updateDoc(doc(db, 'jobs', jobId), { scheduleDay: newDay });
       }
-    } catch(e) { console.warn('confirmSchedMove update error:', e); }
+    } catch(e) { console.warn('schedMoveJobPrompt update error:', e); }
     loadScheduleNotes().then(() => renderSchedule());
-    window.showToast && window.showToast('📅 Job moved to ' + newDay);
+    window.showToast && window.showToast('📅 Job moved to ' + newDay, '#374151');
   };
 
   window.exportSingleJob = function(jobId) {
@@ -8449,12 +7888,9 @@ Cell: 516-306-3326`);
     closeDrawer();
     // Side effects
     if (idx === 3 && typeof renderSchedule === 'function') {
-      window._schedWeekOffset = 0;
+      window._schedWeekOffset = 0; // always show current week on open
       window._schedTabJustOpened = true;
       window._schedUserNavigated = false;
-      window._schedCrewFilter = 'all';
-      window._schedNeedsRender = false;
-      document.querySelectorAll('.crew-pill').forEach(b => { b.classList.toggle('active', b.dataset.crew === 'all'); });
       loadScheduleNotes().then(() => { window._schedWeekOffset = 0; renderSchedule(); });
     }
   }
@@ -8842,8 +8278,7 @@ Cell: 516-306-3326`);
   let _csTimer = null;
   window.customerSearchOpen = function(val) {
     clearTimeout(_csTimer);
-    if (!val || val.length < 2) { var d=document.getElementById("customer-suggestions"); if(d) d.style.display="none"; return; }
-    _csTimer = setTimeout(function() { _customerSearchNow(val); }, 300);
+    _csTimer = setTimeout(function() { _customerSearchNow(val); }, 250);
   };
   function _customerSearchNow(val) {
     const dropdown = document.getElementById('customer-suggestions');
@@ -9034,22 +8469,6 @@ Cell: 516-306-3326`);
     if (type === 'measurements' && document.getElementById('mp-rows').children.length === 0) {
       mpAddRow(); mpAddRow(); mpAddRow();
     }
-  };
-
-  // Switch asphalt sub-mode: WIDTH x LENGTH vs QUICK SF
-  window.switchAspMode = function(mode) {
-    const isWL = mode === 'wl';
-    document.getElementById('asp-panel-wl').style.display = isWL ? 'block' : 'none';
-    document.getElementById('asp-panel-sf').style.display = isWL ? 'none' : 'block';
-    document.getElementById('asp-sf-results').style.display = 'none';
-    document.getElementById('asp-actions-wl').style.display = isWL ? 'flex' : 'none';
-    document.getElementById('asp-actions-sf').style.display = isWL ? 'none' : 'flex';
-    const wlBtn = document.getElementById('asp-subtab-wl');
-    const sfBtn = document.getElementById('asp-subtab-sf');
-    wlBtn.style.background = isWL ? '#e53e3e' : '#2a2a2a';
-    wlBtn.style.color = isWL ? '#fff' : '#aaa';
-    sfBtn.style.background = isWL ? '#2a2a2a' : '#e53e3e';
-    sfBtn.style.color = isWL ? '#aaa' : '#fff';
   };
 
   // ── MEASUREMENTS CALCULATOR JS ─────────────────────────────────────────────
@@ -9305,56 +8724,6 @@ Cell: 516-306-3326`);
     ['asp-result-cy','asp-result-tons','asp-result-cost'].forEach(id => document.getElementById(id).textContent = '—');
   };
 
-  // ── QUICK SF ASPHALT CALCULATOR ───────────────────────────────────────────
-  window.calcAsphaltSF = function() {
-    const sf = parseFloat(document.getElementById('asp-sf').value) || 0;
-    const t = parseFloat(document.getElementById('asp-sf-thickness').value) || 0;
-    const costPerTon = parseFloat(document.getElementById('asp-sf-cost').value) || 0;
-    const resBox = document.getElementById('asp-sf-results');
-    if (!sf || !t) {
-      resBox.style.display = 'none';
-      return;
-    }
-    resBox.style.display = 'block';
-    const cubicFeet = sf * (t / 12);
-    const cubicYards = cubicFeet / 27;
-    const tons = cubicYards * 2.025;
-    const totalCost = costPerTon ? tons * costPerTon : 0;
-    document.getElementById('asp-sf-result-cy').textContent = cubicYards.toFixed(2);
-    document.getElementById('asp-sf-result-tons').textContent = tons.toFixed(2);
-    document.getElementById('asp-sf-result-cost').textContent = costPerTon ? '$' + totalCost.toFixed(2) : '—';
-  };
-
-  window.clearAsphaltSF = function() {
-    ['asp-sf','asp-sf-thickness','asp-sf-cost'].forEach(id => document.getElementById(id).value = '');
-    ['asp-sf-result-cy','asp-sf-result-tons','asp-sf-result-cost'].forEach(id => document.getElementById(id).textContent = '—');
-    document.getElementById('asp-sf-results').style.display = 'none';
-  };
-
-  window.shareAsphaltSFResult = function() {
-    const sf = document.getElementById('asp-sf').value;
-    const t = document.getElementById('asp-sf-thickness').value;
-    const cy = document.getElementById('asp-sf-result-cy').textContent;
-    const tons = document.getElementById('asp-sf-result-tons').textContent;
-    const cost = document.getElementById('asp-sf-result-cost').textContent;
-    const text = `🛣️ Asphalt Estimate (Quick SF) — Maman Contracting\n\nSquare Feet: ${sf} SF | Thickness: ${t} in\n\nCubic Yards: ${cy}\nHot Mix (tons): ${tons}\nTotal Cost: ${cost}`;
-    if (navigator.share) {
-      navigator.share({ title: 'Asphalt Estimate', text }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(text).then(() => window.showToast('📋 Copied to clipboard!'));
-    }
-  };
-
-  window.emailAsphaltSFResult = function() {
-    const sf = document.getElementById('asp-sf').value;
-    const t = document.getElementById('asp-sf-thickness').value;
-    const cy = document.getElementById('asp-sf-result-cy').textContent;
-    const tons = document.getElementById('asp-sf-result-tons').textContent;
-    const cost = document.getElementById('asp-sf-result-cost').textContent;
-    const body = encodeURIComponent(`Asphalt Estimate (Quick SF)\n\nSquare Feet: ${sf} SF\nThickness: ${t} in\n\nCubic Yards: ${cy}\nHot Mix (tons): ${tons}\nTotal Cost: ${cost}\n\nMaman Contracting`);
-    window.location.href = `mailto:?subject=Asphalt%20Estimate&body=${body}`;
-  };
-
   window.emailAsphaltResult = function() {
     const w = document.getElementById('asp-width').value;
     const l = document.getElementById('asp-length').value;
@@ -9390,70 +8759,6 @@ Cell: 516-306-3326`);
   window.clearConcrete = function() {
     ['con-width','con-length','con-thickness','con-cost'].forEach(id => document.getElementById(id).value = '');
     ['con-result-cy','con-result-bags','con-result-cost'].forEach(id => document.getElementById(id).textContent = '—');
-  };
-
-  // Switch concrete sub-mode: WIDTH x LENGTH vs QUICK SF
-  window.switchConMode = function(mode) {
-    const isWL = mode === 'wl';
-    document.getElementById('con-panel-wl').style.display = isWL ? 'block' : 'none';
-    document.getElementById('con-panel-wl-results').style.display = isWL ? 'block' : 'none';
-    document.getElementById('con-panel-sf').style.display = isWL ? 'none' : 'block';
-    document.getElementById('con-sf-results').style.display = 'none';
-    document.getElementById('con-actions-wl').style.display = isWL ? 'flex' : 'none';
-    document.getElementById('con-actions-sf').style.display = isWL ? 'none' : 'flex';
-    const wlBtn = document.getElementById('con-subtab-wl');
-    const sfBtn = document.getElementById('con-subtab-sf');
-    wlBtn.style.background = isWL ? '#e53e3e' : '#2a2a2a';
-    wlBtn.style.color = isWL ? '#fff' : '#aaa';
-    sfBtn.style.background = isWL ? '#2a2a2a' : '#e53e3e';
-    sfBtn.style.color = isWL ? '#aaa' : '#fff';
-  };
-
-  // ── QUICK SF CONCRETE CALCULATOR ────────────────────────────────────────
-  window.calcConcreteSF = function() {
-    const sf = parseFloat(document.getElementById('con-sf').value) || 0;
-    const t = parseFloat(document.getElementById('con-sf-thickness').value) || 0;
-    const costPerYard = parseFloat(document.getElementById('con-sf-cost').value) || 0;
-    const resBox = document.getElementById('con-sf-results');
-    if (!sf || !t) { resBox.style.display = 'none'; return; }
-    resBox.style.display = 'block';
-    const cubicFeet = sf * (t / 12);
-    const cubicYards = cubicFeet / 27;
-    const bags = Math.ceil(cubicYards * 40); // ~40 bags per cubic yard
-    const totalCost = costPerYard ? cubicYards * costPerYard : 0;
-    document.getElementById('con-sf-result-cy').textContent = cubicYards.toFixed(2);
-    document.getElementById('con-sf-result-bags').textContent = bags;
-    document.getElementById('con-sf-result-cost').textContent = costPerYard ? '$' + totalCost.toFixed(2) : '—';
-  };
-
-  window.clearConcreteSF = function() {
-    ['con-sf','con-sf-thickness','con-sf-cost'].forEach(id => document.getElementById(id).value = '');
-    ['con-sf-result-cy','con-sf-result-bags','con-sf-result-cost'].forEach(id => document.getElementById(id).textContent = '—');
-    document.getElementById('con-sf-results').style.display = 'none';
-  };
-
-  window.shareConcreteSFResult = function() {
-    const sf = document.getElementById('con-sf').value;
-    const t = document.getElementById('con-sf-thickness').value;
-    const cy = document.getElementById('con-sf-result-cy').textContent;
-    const bags = document.getElementById('con-sf-result-bags').textContent;
-    const cost = document.getElementById('con-sf-result-cost').textContent;
-    const text = `🏗️ Concrete Estimate (Quick SF) — Maman Contracting\n\nSquare Feet: ${sf} SF | Thickness: ${t} in\n\nCubic Yards: ${cy}\n80lb Bags: ${bags}\nTotal Cost: ${cost}`;
-    if (navigator.share) {
-      navigator.share({ title: 'Concrete Estimate', text }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(text).then(() => window.showToast('📋 Copied to clipboard!'));
-    }
-  };
-
-  window.emailConcreteSFResult = function() {
-    const sf = document.getElementById('con-sf').value;
-    const t = document.getElementById('con-sf-thickness').value;
-    const cy = document.getElementById('con-sf-result-cy').textContent;
-    const bags = document.getElementById('con-sf-result-bags').textContent;
-    const cost = document.getElementById('con-sf-result-cost').textContent;
-    const body = encodeURIComponent(`Concrete Estimate (Quick SF)\n\nSquare Feet: ${sf} SF\nThickness: ${t} in\n\nCubic Yards: ${cy}\n80lb Bags: ${bags}\nTotal Cost: ${cost}\n\nMaman Contracting`);
-    window.location.href = `mailto:?subject=Concrete%20Estimate&body=${body}`;
   };
 
   // ── SF + PRICE CALCULATOR ─────────────────────────────────────────────────
@@ -9618,8 +8923,7 @@ Cell: 516-306-3326`);
     const newSize = sfMatch ? sfMatch[1] : j.projectSize;
     try {
       const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-      const fsDb2 = window._db || db;
-      await updateDoc(doc(fsDb2, 'jobs', jobId), { notes: newNotes, projectSize: newSize, updatedAt: new Date().toISOString() });
+      await updateDoc(doc(window._db, 'jobs', jobId), { notes: newNotes, projectSize: newSize, updatedAt: new Date().toISOString() });
     } catch(e) {
       const url = 'https://firestore.googleapis.com/v1/projects/maman-contracting-app/databases/(default)/documents/jobs/' + jobId + '?key=AIzaSyBVuXZnTjB2YaJRC6HEKdd9ITQrj-AmL2c&updateMask.fieldPaths=notes&updateMask.fieldPaths=projectSize';
       await fetch(url, {
@@ -9763,12 +9067,10 @@ Cell: 516-306-3326`);
     if (_sfListening) { _sfRec && _sfRec.stop(); return; }
     _sfRec = new SR();
     _sfRec.lang = 'en-US'; _sfRec.interimResults = false; _sfRec.continuous = true;
-    let _sfAutoStop = null;
-    const resetAutoStop = () => { clearTimeout(_sfAutoStop); _sfAutoStop = setTimeout(() => { if(_sfListening && _sfRec) { _sfRec.stop(); window.showToast && window.showToast('🎙️ Mic auto-stopped after 5 min', '#888'); } }, 300000); };
-    _sfRec.onstart = () => { _sfListening=true; if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';} resetAutoStop(); };
-    _sfRec.onend   = () => { _sfListening=false; clearTimeout(_sfAutoStop); if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';} };
-    _sfRec.onerror = () => { _sfListening=false; clearTimeout(_sfAutoStop); if(btn) btn.textContent='🎙️'; };
-    _sfRec.onresult = e => { resetAutoStop();
+    _sfRec.onstart = () => { _sfListening=true; if(btn){btn.textContent='🔴';btn.style.background='linear-gradient(135deg,#b91c1c,#991b1b)';} };
+    _sfRec.onend   = () => { _sfListening=false; if(btn){btn.textContent='🎙️';btn.style.background='linear-gradient(135deg,#e53e3e,#b91c1c)';} };
+    _sfRec.onerror = () => { _sfListening=false; if(btn) btn.textContent='🎙️'; };
+    _sfRec.onresult = e => {
       for (let i=e.resultIndex; i<e.results.length; i++) {
         if (e.results[i].isFinal) {
           const t = e.results[i][0].transcript.trim();
@@ -9885,29 +9187,11 @@ Cell: 516-306-3326`);
 </div>
 <!-- Service Worker Registration -->
 <script>
-// One-time localStorage health check — clears corrupted app state from broken deploys
-(function() {
-  try {
-    var appVersion = '20260412-1930';
-    if (localStorage.getItem('_appVersion') !== appVersion) {
-      var toRemove = [];
-      for (var i = 0; i < localStorage.length; i++) {
-        var k = localStorage.key(i);
-        if (k && (k.startsWith('_') || k === 'last-section' || k.startsWith('sched') || k.startsWith('filter'))) {
-          toRemove.push(k);
-        }
-      }
-      toRemove.forEach(function(k) { localStorage.removeItem(k); });
-      localStorage.setItem('_appVersion', appVersion);
-      console.log('App state reset for version', appVersion);
-    }
-  } catch(e) {}
-})();
-
 if ('serviceWorker' in navigator) {
-  // Unregister any old service workers that may be caching stale code
-  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-    for (let reg of registrations) { reg.unregister(); }
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('✅ SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
   });
 
   // Init SF area rows after all scripts load
