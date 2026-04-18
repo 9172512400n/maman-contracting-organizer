@@ -27,22 +27,51 @@
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent !important; max-width: 100%; }
 
     /* ── MOBILE STABILITY ── */
-    html { height: 100%; height: 100dvh; overflow: hidden; overflow-x: hidden; max-width: 100vw; }
-    body { height: 100%; height: 100dvh; overflow: hidden; overflow-x: hidden; position: fixed; width: 100%; max-width: 100vw; }
-    .main { height: 100dvh; }
+    html {
+      --app-shell-height: 100dvh;
+      --bottom-nav-offset: 6px;
+      --bottom-nav-height: 68px;
+      --bottom-nav-clearance: calc(var(--bottom-nav-height) + var(--bottom-nav-offset) + 28px + env(safe-area-inset-bottom, 0px));
+      --section-bottom-padding: calc(var(--bottom-nav-height) + var(--bottom-nav-offset) + 52px + env(safe-area-inset-bottom, 0px));
+      height: 100%;
+      height: var(--app-shell-height);
+      overflow: hidden;
+      overflow-x: hidden;
+      max-width: 100vw;
+    }
+    body {
+      height: 100%;
+      height: var(--app-shell-height);
+      min-height: var(--app-shell-height);
+      overflow: hidden;
+      overflow-x: hidden;
+      position: fixed;
+      width: 100%;
+      max-width: 100vw;
+    }
+    .main { height: var(--app-shell-height); }
     .content { 
-      height: calc(100dvh - 56px - env(safe-area-inset-top, 0px) - 58px - env(safe-area-inset-bottom, 0px));
-      overflow-y: auto;
+      height: calc(var(--app-shell-height) - 56px - env(safe-area-inset-top, 0px) - var(--bottom-nav-clearance));
+      overflow: hidden;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
     }
     #bottom-nav {
-      bottom: 12px;
-      bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      bottom: calc(var(--bottom-nav-offset) + env(safe-area-inset-bottom, 0px));
       padding-bottom: 0;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    html.embedded-ios-webview.embedded-ios-keyboard-open {
+      --bottom-nav-clearance: 0px;
+      --section-bottom-padding: calc(28px + env(safe-area-inset-bottom, 0px));
+    }
+    html.embedded-ios-webview.embedded-ios-keyboard-open #bottom-nav {
+      opacity: 0;
+      pointer-events: none;
+      transform: translate3d(0, calc(100% + 24px), 0);
     }
 
-    body { font-family: 'Inter', sans-serif; background: #111; color: #f0f0f0; display: flex; min-height: 100vh; min-height: 100dvh; transition: background 0.3s, color 0.3s; overflow: hidden; }
+    body { font-family: 'Inter', sans-serif; background: #111; color: #f0f0f0; display: flex; min-height: 100vh; min-height: var(--app-shell-height); transition: background 0.3s, color 0.3s; overflow: hidden; }
 
     /* LOGIN SCREEN */
     #login-screen {
@@ -144,6 +173,15 @@
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       box-sizing: border-box;
+      scroll-padding-bottom: var(--section-bottom-padding);
+    }
+    .sections-wrapper .section::after {
+      content: '';
+      display: block;
+      height: calc(var(--section-bottom-padding) - 24px);
+      min-height: calc(var(--section-bottom-padding) - 24px);
+      width: 100%;
+      pointer-events: none;
     }
     .sections-wrapper .section.active-section {
       display: block;
@@ -159,6 +197,7 @@
     .sections-outer {
       overflow: hidden;
       flex: 1;
+      min-height: 0;
       width: 100%;
       height: 100%;
       touch-action: pan-y;
@@ -166,6 +205,11 @@
     }
     .section {
       touch-action: pan-y;
+    }
+    #calc-sf-price input,
+    #calc-sf-price textarea {
+      scroll-margin-top: 96px;
+      scroll-margin-bottom: 180px;
     }
 
     /* ── DRAWER (hamburger slide-out) ───────────────────────────────────── */
@@ -278,7 +322,7 @@
     }
 
     /* ── MAIN ───────────────────────────────────────────────────────────── */
-    .main { flex: 1; margin-left: 0; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow-x: hidden; overflow-y: hidden; }
+    .main { flex: 1; margin-left: 0; display: flex; flex-direction: column; height: 100vh; height: var(--app-shell-height); overflow-x: hidden; overflow-y: hidden; }
 
     /* TOPBAR */
     .topbar {
@@ -343,8 +387,7 @@
     .btn-signout:hover { color: #aaa; }
 
     /* CONTENT */
-    .content { flex: 1; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-    .sections-wrapper .section { padding-bottom: 94px; } /* clear floating bottom nav */
+    .content { flex: 1; overflow: hidden; -webkit-overflow-scrolling: touch; }
 
     /* PERMIT EXPIRY BANNER */
     .permit-alert-banner {
@@ -2218,7 +2261,7 @@ function doSignOut() {
             </div>
 
             <!-- Section 1: Measurements -->
-            <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:14px;">
+            <div id="sf-pricing-card" style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;padding:20px;margin-bottom:14px;">
               <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">Measurements (one per line)</div>
               <div style="display:flex;gap:10px;align-items:flex-start;">
                 <textarea id="sf-measurements"
@@ -9077,11 +9120,188 @@ Cell: 516-306-3326`);
   document.getElementById('permit-modal').addEventListener('click', function(e) {
     if (e.target === this && typeof closePermitModal === 'function') closePermitModal();
   });
+  (function initEmbeddedIosWebViewFix() {
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAppleWebKit = /AppleWebKit/i.test(ua);
+    const isStandalone = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    const isEmbeddedIOSWebView = isIOS && isAppleWebKit && (!/Safari/i.test(ua) || isStandalone);
+    if (!isEmbeddedIOSWebView) return;
+
+    const root = document.documentElement;
+    const fieldSelector = [
+      'input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"])',
+      'textarea',
+      'select',
+      '[contenteditable="true"]'
+    ].join(', ');
+
+    let stableViewportHeight = 0;
+    let syncTimer = null;
+    let keepVisibleTimers = [];
+
+    function clearKeepVisibleTimers() {
+      keepVisibleTimers.forEach(clearTimeout);
+      keepVisibleTimers = [];
+    }
+
+    function viewportHeight() {
+      const viewport = window.visualViewport;
+      return viewport
+        ? viewport.height + viewport.offsetTop
+        : (window.innerHeight || root.clientHeight || 0);
+    }
+
+    function isTextField(target) {
+      return !!(target && target.matches && target.matches(fieldSelector));
+    }
+
+    function fieldSafeZones(target) {
+      const inSfPriceCalc = !!(target && target.closest && target.closest('#calc-sf-price'));
+      return {
+        top: inSfPriceCalc ? 96 : 84,
+        bottom: inSfPriceCalc ? 132 : 24
+      };
+    }
+
+    function getScrollableParent(target) {
+      const activeSection = target && target.closest && target.closest('.section.active-section');
+      if (activeSection) return activeSection;
+      let node = target && target.parentElement;
+      while (node && node !== document.body && node !== document.documentElement) {
+        const style = window.getComputedStyle(node);
+        const overflowY = style ? style.overflowY : '';
+        const canScroll = (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay')
+          && node.scrollHeight > node.clientHeight + 2;
+        if (canScroll) return node;
+        node = node.parentElement;
+      }
+      return document.scrollingElement || document.documentElement;
+    }
+
+    function elementTopWithinContainer(element, container) {
+      let top = 0;
+      let node = element;
+      while (node && node !== container) {
+        top += node.offsetTop || 0;
+        node = node.offsetParent;
+      }
+      return top;
+    }
+
+    function anchoredScrollTop(target, container) {
+      if (!target || !container) return null;
+      if (target.id !== 'sf-price-per-sf') return null;
+
+      const pricingCard = document.getElementById('sf-pricing-card');
+      const anchor = pricingCard || target;
+      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+      const desiredTop = 104;
+      return Math.max(0, Math.min(maxScrollTop, elementTopWithinContainer(anchor, container) - desiredTop));
+    }
+
+    function nudgeFieldIntoView(target) {
+      if (!isTextField(target)) return;
+      const viewport = window.visualViewport;
+      const visibleViewportHeight = viewport ? viewport.height : window.innerHeight;
+      const rect = target.getBoundingClientRect();
+      const safeZones = fieldSafeZones(target);
+      const container = getScrollableParent(target);
+      const isRootScroller = container === document.scrollingElement
+        || container === document.documentElement
+        || container === document.body;
+      const anchoredTop = !isRootScroller ? anchoredScrollTop(target, container) : null;
+      if (anchoredTop !== null) {
+        container.scrollTop = anchoredTop;
+        return;
+      }
+      const containerRect = isRootScroller
+        ? { top: 0, bottom: visibleViewportHeight }
+        : container.getBoundingClientRect();
+      const topLimit = Math.max(containerRect.top + 8, safeZones.top);
+      const bottomLimit = Math.min(containerRect.bottom - 8, visibleViewportHeight - safeZones.bottom);
+      if (bottomLimit <= topLimit) return;
+
+      let delta = 0;
+      if (rect.bottom > bottomLimit) {
+        delta = rect.bottom - bottomLimit;
+      } else if (rect.top < topLimit) {
+        delta = rect.top - topLimit;
+      }
+      if (Math.abs(delta) < 4) return;
+
+      if (isRootScroller) {
+        window.scrollBy(0, delta);
+        return;
+      }
+
+      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+      container.scrollTop = Math.max(0, Math.min(maxScrollTop, container.scrollTop + delta));
+    }
+
+    function keepFieldVisible(target) {
+      if (!isTextField(target)) return;
+      clearKeepVisibleTimers();
+      [90, 220, 420, 700].forEach(function(delay) {
+        keepVisibleTimers.push(setTimeout(function() {
+          if (document.activeElement !== target) return;
+          nudgeFieldIntoView(target);
+        }, delay));
+      });
+    }
+
+    function syncViewport(forceReset) {
+      const currentViewportHeight = viewportHeight();
+      if (forceReset || !stableViewportHeight || currentViewportHeight > stableViewportHeight - 80) {
+        stableViewportHeight = currentViewportHeight;
+      }
+
+      const active = document.activeElement;
+      const keyboardHeight = Math.max(0, stableViewportHeight - currentViewportHeight);
+      const keyboardOpen = isTextField(active) && keyboardHeight > 120;
+
+      root.classList.add('embedded-ios-webview', 'safari-input-fix');
+      root.classList.toggle('embedded-ios-keyboard-open', keyboardOpen);
+      root.style.setProperty('--app-shell-height', `${stableViewportHeight || currentViewportHeight}px`);
+      root.style.setProperty('--embedded-keyboard-height', `${keyboardHeight}px`);
+
+      if (keyboardOpen) keepFieldVisible(active);
+    }
+
+    function scheduleSync(forceReset) {
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => syncViewport(forceReset), 40);
+    }
+
+    syncViewport(true);
+    window.addEventListener('load', function() { syncViewport(true); });
+    window.addEventListener('resize', function() { scheduleSync(false); }, { passive: true });
+    window.addEventListener('orientationchange', function() { scheduleSync(true); }, { passive: true });
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function() { scheduleSync(false); });
+    }
+
+    document.addEventListener('focusin', function(e) {
+      if (!isTextField(e.target)) return;
+      scheduleSync(false);
+      keepFieldVisible(e.target);
+    }, true);
+
+    document.addEventListener('focusout', function(e) {
+      if (!isTextField(e.target)) return;
+      clearKeepVisibleTimers();
+      setTimeout(function() { syncViewport(false); }, 180);
+    }, true);
+  })();
   (function initSafariInputFixes() {
     const ua = navigator.userAgent || '';
     const vendor = navigator.vendor || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const isSafari = /Safari/i.test(ua) && /Apple/i.test(vendor) && !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|OPiOS|Android/i.test(ua);
-    if (!isSafari) return;
+    const isStandalone = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    const isEmbeddedIOSWebView = isIOS && /AppleWebKit/i.test(ua) && (!/Safari/i.test(ua) || isStandalone);
+    if (!isSafari && !isEmbeddedIOSWebView) return;
 
     document.documentElement.classList.add('safari-input-fix');
 
